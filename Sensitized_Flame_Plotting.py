@@ -12,7 +12,25 @@ import os
 import matplotlib.patches as mpl_patches
 #from tkinter import filedialog
 
-
+def rxn_plots(F_info):
+    """[Insert Information]"""
+    
+    
+def rxn_strength_plots(F_info, nrxns):
+    """[Insert Information]"""
+    flame_strength = []
+    for flame in F_info:
+        flame_sens = []
+        for fs in nrxns:
+            flame_sens.append()
+        flame_info = {'Sensitivity': flame_sens,
+                      'Conditions': flame['Conditions']}
+        flame_strength.append(flame_info)
+    
+def rxn_interest_plots():
+    """[Insert Information]"""
+    
+    
 if __name__ == "__main__":
     Folder_name = input('Please type name of folder.'
                         '\n If blank, use last folder:\n')
@@ -34,3 +52,11 @@ if __name__ == "__main__":
 
     with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
         flame_info = pickle.load(f)
+        
+    flame = []
+    no_flame = []
+    for x in flame_info:
+        if x['Flame'] == None:
+            no_flame.append(x)
+        else:
+            flame.append(x)
