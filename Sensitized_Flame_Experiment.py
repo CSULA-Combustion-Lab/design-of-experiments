@@ -6,16 +6,17 @@ Created on Fri Mar 20 09:52:04 2020
 """
 
 import os
+import errno
 import time, sys
 import numpy as np
-import cantera as ct
+# import cantera as ct
 import itertools as it
 path = (r'D:\School\Cal State La\Extracurricular\NOx Combustion Research')
 sys.path.insert(0, path)
 from utilities import flame
 from datetime import datetime
 # import math
-# import pickle
+import pickle
 
 ####Set experiment parameters
 mechanism = 'h2_burke2012.cti' #Mechanism file
@@ -54,8 +55,8 @@ else:
 a = x+y/4-z/2       #molar oxygen-fuel ratio
 diluent_name = 'N2' #chemical formula of diluent
 
-save_files = False  # If true, save files for plotting script
-debug      = False  # If true, print lots of information for debugging.
+save_files = True  # If true, save files for plotting script
+debug      = True  # If true, print lots of information for debugging.
 
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
 #Debug parameters [Pressure, Equivalence Ratio, Fuel, Temperature]
@@ -163,6 +164,7 @@ if __name__ == "__main__":
         toc = time.time()
         duration = toc - tic
         print('Dubugging time: '+format(duration, '0.5f')+' seconds\n')
+   
     #Simulation loop
     else:
         print('Initial number of cases: '+format(len(paramlist)))
@@ -180,47 +182,76 @@ if __name__ == "__main__":
             else:
                 converged.append(1)
         toc = time.time()
-        print('Number of cases converged', len(converged))
+        print('Number of cases converged:', len(converged))
         duration = toc-tic
         print('Total time '+format(duration, '0.5f')+' seconds.\n')
     
     # Save files
-    # if save_files:
-        # print('Creating Directory...')
-        # #Creat Directory Name
-        # now = datetime.now()
-        # dt_string = now.strftime("%d_%m_%Y %H.%M.%S")
-        # # dt_string = 'test2'
-        # directory = dt_string
-
-        # #Save Path
-        # parent_dir = r'[Add Folder Name]'
-        # save_path = os.path.join(parent_dir, directory)
-        # os.makedirs(save_path)
-
-        # figures_dir = '[Add Folder Name]'
-        # figure_path = os.path.join(save_path, figures_dir)
-        # os.makedirs(figure_path)
-        # print('Directory Created')
+    if save_files:
+        #Save Path/Parent Directory
+        parent_dir = 'Flame_Sensitivity_Results'
+        try:
+            os.makedirs(parent_dir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
         
-        # print('\nCreating Text File...')
-        # #Text Description
-        # filename  = 'Case Description.txt'
-        # filename  = os.path.join(save_path, filename)
-        # f         = open(filename, "w")
-        # text_description = ("[Insert Information]")
-        # f.write(text_description)
-        # f.close()
-        # print('\nText File Created')
-        
-        # print('\nStart file saving...')
-        # save_time_start = time.time()
-        # # This loop can make the saving easier. Just put the thing to be
-        # # saved and the file name in the save_list
-        # save_list = [(flame_information, 'Flame Information.pkl')]
-        # for item in save_list:
-        #     file = os.path.join(save_path, item[1])
-        #     with open(file, 'wb') as f:
-        #         pickle.dump(item[0], f)
-        # save_time_end = time.time()
-        # print('End file saving')
+        #Debug directory
+        if debug:
+            print('Start debug file save...')
+            debug_dir = 'debug'
+            debug_path = os.path.join(parent_dir, debug_dir)
+            if not os.path.exists(debug_path):
+                try:
+                    os.makedirs(debug_path)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+                        
+            figures_dir = 'Flame_Sensitivity_Plots'
+            save_path   = os.path.join(parent_dir, debug_dir)
+            figure_path = os.path.join(save_path, figures_dir)
+            if not os.path.exists(figure_path):
+                try:
+                    os.makedirs(figure_path)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+                        
+            debug_file = os.path.join(debug_path, 'flame_info_debug.pkl')
+            with open(debug_file, 'wb') as f:
+                pickle.dump(flame_info_debug, f)
+            print('End debug file save')
+         
+        else:               
+            #Create Directory Name
+            print('Creating Directory...')
+            now = datetime.now()
+            dt_string = now.strftime("%Y_%m_%d %H.%M.%S Flame_Speed_Sens")
+            directory = dt_string
+            save_path = os.path.join(parent_dir, directory)
+            os.makedirs(save_path)
+    
+            figures_dir = 'Flame_Sensitivity_Plots'
+            figure_path = os.path.join(save_path, figures_dir)
+            os.makedirs(figure_path)
+            print('Directory Created')
+            
+            print('\nCreating text file...')
+            #Text Description
+            filename  = 'Case Description.txt'
+            filename  = os.path.join(save_path, filename)
+            f         = open(filename, "w")
+            text_description = ("[Insert Information]")
+            f.write(text_description)
+            f.close()
+            print('\nText file created')
+            
+            print('\nStart file saving...')
+            save_time_start = time.time()
+    
+            file = os.path.join(save_path, 'Flame Information.pkl')
+            with open(file, 'wb') as f:
+                pickle.dump(flame_info, f)
+            save_time_end = time.time()
+            print('End file saving')
