@@ -149,6 +149,7 @@ if __name__ == "__main__":
     totaliterations = len(P)*len(Phi)*len(Fuel)
     paramlist       = list(it.product(P,Phi,Fuel))
 
+    #Debug loop
     if debug:
         print('Debugging in process..')
         print('\nConditions Used:'
@@ -160,6 +161,9 @@ if __name__ == "__main__":
                                       conditions, debug)
         print('Debuggin complete!')
         toc = time.time()
+        duration = toc - tic
+        print('Dubugging time: '+format(duration, '0.5f')+' seconds\n')
+    #Simulation loop
     else:
         print('Initial number of cases: '+format(len(paramlist)))
         print('\nStart of simulations...')
@@ -176,8 +180,8 @@ if __name__ == "__main__":
             else:
                 converged.append(1)
         toc = time.time()
-        duration = toc-tic
         print('Number of cases converged', len(converged))
+        duration = toc-tic
         print('Total time '+format(duration, '0.5f')+' seconds.\n')
     
     # Save files
