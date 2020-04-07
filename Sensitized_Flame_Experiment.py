@@ -281,7 +281,7 @@ if __name__ == "__main__":
                                 "==========================================\n"
                                 "\n=============Time/Converged=============\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
-                                "Cases Converged "+format(len(converged))+"\n"
+                                "Cases Converged: "+format(len(converged))+"\n"
                                 "Run time: "+format(duration, '0.5f')+" [s]\n"
                                 "========================================")
             f.write(text_description)
