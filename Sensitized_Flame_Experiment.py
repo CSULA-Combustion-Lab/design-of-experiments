@@ -25,9 +25,9 @@ mechanism = 'h2_burke2012.cti' #Mechanism file
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(1), np.log10(100), 1) #Pressure [atm]
+P    = np.logspace(np.log10(1), np.log10(100), 2) #Pressure [atm]
 Phi  = np.logspace(np.log10(0.1), np.log10(1), 2) #Equivalence ratio
-Fuel = np.logspace(np.log10(0.1), np.log10(1.2), 2) #Fuel mole fraction
+Fuel = np.logspace(np.log10(0.1), np.log10(0.85), 2) #Fuel mole fraction
 
 #Diluent/Oxygen Ratio
 DtO = np.linspace(1, 10, 2) #Maybe use this instead of fuel parameter 
@@ -56,7 +56,7 @@ a = x+y/4-z/2       #molar oxygen-fuel ratio
 diluent_name = 'N2' #chemical formula of diluent
 
 save_files = True  # If true, save files for plotting script
-debug      = True  # If true, print lots of information for debugging.
+debug      = False  # If true, print lots of information for debugging.
 
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
 #Debug parameters [Pressure, Equivalence Ratio, Fuel, Temperature]
@@ -217,7 +217,34 @@ if __name__ == "__main__":
                 except OSError as e:
                     if e.errno != errno.EEXIST:
                         raise
-                        
+            
+            print('\nCreating text file...')
+            #Text Description
+            filename  = 'Case Description.txt'
+            filename  = os.path.join(save_path, filename)
+            f         = open(filename, "w")
+            text_description = ("This file provides debug information.\n The "
+                                "following information are the parameters "
+                                "and cases simulated\n\n"
+                                "==========Parameters==========\n"
+                                "Initial Temperature: "+format(Debug_params[3])
+                                +" [Kelvin]\nPressure: "
+                                +format(Debug_params[0])+" [atm]\n"
+                                "Equivalence Ratio: "+format(Debug_params[1])+
+                                "\nFuel Mole Fraction: "
+                                +format(Debug_params[2])+"\n"
+                                "==============================\n"
+                                "\n==========Flame-Information==========\n"
+                                "FLame Speed: "+format(flame_info['Flame'][1])
+                                +" [m/s]"
+                                "\n=====================================\n"
+                                "\n==============Time==============\n"
+                                "Run time: "+format(duration, '0.5f')+" [s]\n"
+                                "================================")
+            f.write(text_description)
+            f.close()
+            print('\nText file created')
+            
             debug_file = os.path.join(debug_path, 'flame_info_debug.pkl')
             with open(debug_file, 'wb') as f:
                 pickle.dump(flame_info_debug, f)
@@ -242,7 +269,21 @@ if __name__ == "__main__":
             filename  = 'Case Description.txt'
             filename  = os.path.join(save_path, filename)
             f         = open(filename, "w")
-            text_description = ("[Insert Information]")
+            text_description = ("This file provides simulation information.\n"
+                                "The following information are the parameters "
+                                "and cases simulated\n\n"
+                                "================Parameters================"
+                                "\nInitial Temperature: "+format(Tint)
+                                +" [Kelvin]\nPressure Range: "
+                                +format(P)+" [atm]\nEquivalence Ratio Range: "
+                                +format(Phi)+"\nFuel Mole Fraction Range: "
+                                +format(Fuel)+"\n"
+                                "==========================================\n"
+                                "\n=============Time/Converged=============\n"
+                                "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
+                                "Cases Converged "+format(len(converged))+"\n"
+                                "Run time: "+format(duration, '0.5f')+" [s]\n"
+                                "========================================")
             f.write(text_description)
             f.close()
             print('\nText file created')
