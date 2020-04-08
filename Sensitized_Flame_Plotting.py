@@ -58,10 +58,11 @@ def rxn_plots(F_info, save_path):
     plt.close(fig)
     
     
-def rxn_strength_plots(F_info, nrxns):
+def rxn_strength_plots(F_info, rxn_int, nrxns):
     """[Insert Information]"""
-    flame_strength = []
-    for flame in F_info:
+    sens_strength = []
+    average_nrxns = rxn_average(F_info, nrxns)
+    for f in F_info:
         flame_sens = []
         for fs in nrxns:
             flame_sens.append()
@@ -109,7 +110,15 @@ def rxn_interest_plots(F_info, rxn_int, save_path):
         plt.savefig(save_path+'\\Reaction Number '+format(Rxn_num)+
                     ' Initial Temperature '+format(Tint)+' [K].png')
     plt.close(fig)
-    
+
+def rxn_average(flame, nrxns):
+    average_sens = []
+    rxn_sens     = []
+    for s in f['Flame'][0]:
+        rxns_sens.append(abs([s][1]))
+    rxns_sens.sort()
+    top_nrxns = rxns_sens[-nrxns:]
+    average.append(sum(top_nrxns)/len(top_nrxns))
     
 if __name__ == "__main__":
     Folder_name = input('Please type name of folder.'
@@ -122,17 +131,21 @@ if __name__ == "__main__":
     with open('last run.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
-    Load_path   = 'Flame_Sensitivity_Results'+Load_folder
-    Plot_path   = Load_path+'\\Flame_Sensitivity_Plots'
+    #Paths for loading and saving files
+    Load_path = 'Flame_Sensitivity_Results'+Load_folder
+    Plot_path = Load_path+'\\Flame_Sensitivity_Plots'
 
+    #Open up text file with description of simulation
     file = open(Load_path+'\\Case Description.txt','r')
     Description = file.read()
     file.close()
     print(Description)
 
+    #Import flame file found in corresponding folder
     with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
         flame_info = pickle.load(f)
         
+    #Create two lists of flame and no_flame created from flame_info    
     flame = []
     no_flame = []
     for x in flame_info:
