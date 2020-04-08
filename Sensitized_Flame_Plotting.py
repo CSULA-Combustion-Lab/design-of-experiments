@@ -60,27 +60,43 @@ def rxn_plots(f_info, save_path):
     
 def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path):
     """[Insert Information]"""
-    Tint     = f_info[0]['Conditions'][3]
-    Pressure = []
-    Fuel     = []
-    Phi      = []
-    sens_strength = []
+    Tint = f_info[0]['Conditions'][3]
+    #List for strengths
+    Pressure      = []
+    Fuel          = []
+    Phi           = []
+    Sens_strength = []
+    #Lists for above threshold
+    P_threshold        = []
+    F_threshold        = []
+    Phi_threshold      = []
+    Sens_str_threshold = []
     for f in f_info:
         average_nrxns = rxn_average(f, nrxns)
         strength = f['Flame'][0][rxn_int][1]/average_nrxns
-        sens_strength.append(strength)
+        Sens_strength.append(strength)
         Pressure.append(f['Conditions'][0])
         Fuel.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
+        
+    for n in range(len(Sens_strength)):
+        if Sens_strength[n] >= threshold:
+            P_threshold.append(f_info[n]['Conditions'][0])
+            F_threshold.append(f_info[n]['Conditions'][1])
+            Phi_threshold.append(f_info[n]['Conditions'][2])
+            Sens_str_threshold.append(Sens_strength[n])
+            
+    #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
+    cond_dict = {'P': [Pressure, 'Pressure [atm]', P_threshold],
+                 'F': [Fuel, 'Fuel [Mole Fraction]', F_threshold],
+                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
+                 'T': [Tint, 'Temperature [K]'],
+                 'Strength': [Sens_strength, 'Rxn Strength',
+                              Sens_str_threshold]}
+    
     figa, axesa = plt.subplots(nrows=1, ncols=3, figsize=(15, 10), sharey=True)
     axa         = axesa.flatten()
     fs          = 15
-    #Dictionary organized as follow 'Key': [Data, axis-label]
-    cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel [Mole Fraction]'],
-                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'T': [Tint, 'Temperature [K]'],
-                 'Strength': [sens_strength, 'Rxn Strength']}
     conditions_a = ['P', 'F', 'Phi']
     for a, condition in zip(axa, conditions_a):
         x_key = condition
@@ -100,37 +116,39 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path):
                     ' Average Strength against top '+format(nrxns)+' rxns'
                     ' with Initial Temperature '+format(Tint)+'K.png')
     plt.close(figa)
-    
-    figb, axesb = plt.subplots(nrows=1, ncols=3, figsize=(15, 10))
-    axb         = axesb.flatten()
+                
+    figb, axesb  = plt.subplots(nrows=1, ncols=3, figsize=(15, 10))
+    axb          = axesb.flatten()
     conditions_b = [('P', 'F'), ('P', 'Phi'), ('F', 'Phi')]
     for a, condition in zip(axb, conditions_b):
         x_key = condition[0]
         y_key = condition[1]
-        a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
+        a.plot(cond_dict[x_key][2], cond_dict[y_key][2], ls='none',
                marker='o', mfc='none', mec='k')
         a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
         a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
         a.set_xscale('log')
+        a.set_yscale('log')
         a.grid(True)
 
-        figa.suptitle('Reaction '+format(f_info[0]['Flame'][0][rxn_int][2])+
-                      '\nInitial Temperature: '+format(Tint)+' [K]')
-        figa.tight_layout(rect=[0, 0.03, 1, 0.95])
+        figb.suptitle('Reaction '+format(f_info[0]['Flame'][0][rxn_int][2])+
+                      '\n Threshold >= '+format(threshold)+
+                      ' Initial Temperature: '+format(Tint)+' [K]')
+        figb.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.savefig(save_path+'\\Reaction '
                     +format(f_info[0]['Flame'][0][rxn_int][0])+
-                    ' Average Strength against top '+format(nrxns)+' rxns'
+                    ' Average Strength above_equal to '+format(threshold)+
                     ' with Initial Temperature '+format(Tint)+'K.png')
-    plt.close(figa)
+    plt.close(figb)
 
 
 def rxn_average(flame, nrxns):
     """[Insert Information]"""
-    rxn_sens     = []
+    rxn_sens = []
     for s in flame['Flame'][0]:
         rxn_sens.append(abs(s[1]))
     rxn_sens.sort()
-    top_nrxns = rxn_sens[-nrxns:]
+    top_nrxns    = rxn_sens[-nrxns:]
     average_sens = (sum(top_nrxns)/len(top_nrxns))
     return average_sens
  
@@ -215,7 +233,7 @@ if __name__ == "__main__":
     #                               'Conditions': [P, Fuel, Phi, Tin, Mix]}
     
     #Plot Functions
-    Rxn_interest = 5 #Reaction number of the reaction of interest
+    Rxn_interest = 1 #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 2 #Threshold for rxn_interst to be above in average strength
     rxn_plots(Flame, Plot_path)
