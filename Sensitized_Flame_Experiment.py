@@ -25,12 +25,11 @@ mechanism = 'h2_burke2012.cti' #Mechanism file
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(1), np.log10(100), 2) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.1), np.log10(1), 2) #Equivalence ratio
-Fuel = np.logspace(np.log10(0.1), np.log10(0.85), 2) #Fuel mole fraction
+P    = np.logspace(np.log10(.1), np.log10(100), 4) #Pressure [atm]
+Phi  = np.linspace(0.4, 2.5, 4) #Equivalence ratio
+Fuel = np.linspace(0.1, 0.85, 4) #Fuel mole fraction
+OtO = np.linspace(.1, .3, 4) #Oxygen to Oxidizer ratio [Air = .21]
 
-#Diluent/Oxygen Ratio
-DtO = np.linspace(1, 10, 2) #Maybe use this instead of fuel parameter 
 
 #Initial Temperature
 Tint = 273.15 #Temperature [K]
@@ -55,18 +54,20 @@ else:
 a = x+y/4-z/2       #molar oxygen-fuel ratio
 diluent_name = 'N2' #chemical formula of diluent
 
+oxidizer   = False # If true, OtO will be used instead of Fuel Mole Fraction
 save_files = True  # If true, save files for plotting script
 debug      = False  # If true, print lots of information for debugging.
 
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
-#Debug parameters [Pressure, Equivalence Ratio, Fuel, Temperature]
-Debug_params = [1, 1, 0.42, 300]
+#Debug parameters [Pressure, Equivalence Ratio, Fuel or Oxygen, Temperature]
+Debug_params = [1, 1, 0.21, 300]
 LogLevel     = 1
 
-conditions = {'Parameters': [P, Phi, Fuel, Tint],
+conditions = {'Parameters': [P, Phi, Fuel, Tint, OtO],
               'Mixture': [fuel_name, x, y, z, a, diluent_name],
               'Files': [mechanism, flame_temp],
-              'Debug': [Debug_params, LogLevel]}
+              'Debug': [Debug_params, LogLevel],
+              'T/F': [debug, oxidizer]}
 
 def parallelize(param, cond, fun):
     """[Fill in information]"""
@@ -108,16 +109,27 @@ def parallelize(param, cond, fun):
     outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
     return outlist
 
-def flame_sens(P, Phi, Fuel, Tin, Cond, debug=False):
+def flame_sens(P, Phi, F_O, Tin, Cond):
     """[Fill in information]"""
     chem         = Cond['Files'][0]
     tempfile     = Cond['Files'][1]
     a            = Cond['Mixture'][4]
     Fuel_name    = Cond['Mixture'][0]
     Diluent_name = Cond['Mixture'][5]
-    Oxygen       = a/Phi*Fuel
-    Diluent      = 1 - Oxygen - Fuel
-    Mix = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
+    oxidizer     = Cond['T/F'][1]
+    debug        = Cond['T/F'][0]
+    if oxidizer:
+        OtO     = F_O
+        noxy    = (Phi*OtO)/a
+        Oxygen  = OtO/(noxy + 1)
+        Fuel    = noxy/(noxy + 1)
+        Diluent = (1 - OtO)/(noxy + 1)
+        Mix     = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
+    else:
+        Fuel    = F_O
+        Oxygen  = a/Phi*Fuel
+        Diluent = 1 - Oxygen - Fuel
+        Mix     = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
    
     if debug:
         logl = Cond['Debug'][1]
@@ -147,8 +159,12 @@ if __name__ == "__main__":
     tic = time.time()
     #Initializing
     iteration       = 0
-    totaliterations = len(P)*len(Phi)*len(Fuel)
-    paramlist       = list(it.product(P,Phi,Fuel))
+    if oxidizer:
+        totaliterations = len(P)*len(Phi)*len(OtO)
+        paramlist       = list(it.product(P,Phi,Fuel))
+    else:
+        totaliterations = len(P)*len(Phi)*len(Fuel)
+        paramlist       = list(it.product(P,Phi,Fuel))
 
     #Debug loop
     if debug:
@@ -158,8 +174,7 @@ if __name__ == "__main__":
               '\nPhi: '+format(Debug_params[1])+
               '\nFuel: '+format(Debug_params[2])+
               '\nTemperature: '+format(Debug_params[3])+' [K]')
-        flame_info_debug = flame_sens(*Debug_params,
-                                      conditions, debug)
+        flame_info_debug = flame_sens(*Debug_params, conditions)
         print('Debuggin complete!')
         toc = time.time()
         duration = toc - tic
