@@ -25,8 +25,9 @@ def rxn_plots(f_info, save_path):
         for m in f['Flame'][0]:
             ms = abs(m[1])
             if ms > max_sens:
-                max_num = m[0]
-        Max_rxn.append(f['Flame'][0][max_num][1])
+                max_sens = ms
+                max_num  = m[0]
+        Max_rxn.append(f['Flame'][0][max_num][0])
         Pressure.append(f['Conditions'][0])
         Fuel.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
