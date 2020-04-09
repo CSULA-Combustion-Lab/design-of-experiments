@@ -49,7 +49,8 @@ def rxn_plots(f_info, save_path):
                marker='o', mfc='none', mec='k')
         a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
         a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
-        a.set_xscale('log')
+        if x_key == 'P':
+            a.set_xscale('log')
         a.grid(True)
 
         fig.suptitle('Initial Temperature: '+format(Tint)+' [K]')
@@ -106,7 +107,8 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path):
                marker='o', mfc='none', mec='k')
         a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
         a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
-        a.set_xscale('log')
+        if x_key == 'P':
+            a.set_xscale('log')
         a.grid(True)
 
         figa.suptitle('Reaction '+format(f_info[0]['Flame'][0][rxn_int][2])+
@@ -128,8 +130,10 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path):
                marker='o', mfc='none', mec='k')
         a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
         a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
-        a.set_xscale('log')
-        a.set_yscale('log')
+        if x_key == 'P':
+            a.set_xscale('log')
+        if y_key == 'P':
+            a.set_yscale('log')
         a.grid(True)
 
         figb.suptitle('Reaction '+format(f_info[0]['Flame'][0][rxn_int][2])+
@@ -234,7 +238,7 @@ if __name__ == "__main__":
     #                               'Conditions': [P, Fuel, Phi, Tin, Mix]}
     
     #Plot Functions
-    Rxn_interest = 1 #Reaction number of the reaction of interest
+    Rxn_interest = 3 #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 2 #Threshold for rxn_interst to be above in average strength
     rxn_plots(Flame, Plot_path)
