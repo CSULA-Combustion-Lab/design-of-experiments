@@ -20,14 +20,9 @@ def rxn_plots(f_info, save_path):
     Phi      = []
     Max_rxn  = []
     for f in f_info:
-        max_sens = 0
-        max_num  = 0
-        for m in f['Flame'][0]:
-            ms = abs(m[1])
-            if ms > max_sens:
-                max_sens = ms
-                max_num  = m[0]
-        Max_rxn.append(f['Flame'][0][max_num][0])
+        max_rxn  = max_sens(f)
+        max_num  = max_rxn[0]
+        Max_rxn.append(max_num)
         Pressure.append(f['Conditions'][0])
         Fuel.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
@@ -146,7 +141,54 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path):
                     ' with Initial Temperature '+format(Tint)+'K.png')
     plt.close(figb)
 
-
+      
+def rxn_interest_plots(f_info, rxn_int, save_path):
+    """[Insert Information]"""
+    Pressure = []
+    Fuel     = []
+    Phi      = []
+    Tint     = f_info[0]['Conditions'][3]
+    Rxn_name = f_info[0]['Flame'][0][rxn_int][2]
+    Rxn_num  = f_info[0]['Flame'][0][rxn_int][0]
+    for f in f_info:
+        Rxn_sens = f['Flame'][0][rxn_int][1]
+        Max_rxn_sens = max_sens(f)
+        if Rxn_sens == Max_rxn_sens[1]:
+            Pressure.append(f['Conditions'][0])
+            Fuel.append(f['Conditions'][1])
+            Phi.append(f['Conditions'][2])
+            
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(15, 10))
+    ax        = axes.flatten()
+    fs        = 15
+    #Dictionary organized as follow 'Key': [Data, axis-label]
+    cond_dict = {'P': [Pressure, 'Pressure [atm]'],
+                  'F': [Fuel, 'Fuel [Mole Fraction]'],
+                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
+                  'T': [Tint, 'Temperature [K]']}
+    conditions = [('P', 'F'), ('P', 'Phi'), ('F', 'Phi')]
+    
+    #Three subplots of unique paired independent variables
+    for a, condition in zip(ax, conditions):
+        x_key = condition[0]
+        y_key = condition[1]
+        a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
+                marker='o', mfc='none', mec='k')
+        a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
+        a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+        a.set_xscale('log')
+        a.set_yscale('log')
+        a.grid(True)
+        fig.suptitle('Reaction Number: '+format(Rxn_num)+
+                      ' Reaction Name: '+Rxn_name+
+                      '\nInitial Temperature: '+format(Tint)+' [K]')
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.savefig(save_path+'\\Reaction Number '+format(Rxn_num)+
+                    ' Max Sensitivity for Parameters with'
+                    ' Initial Temperature '+format(Tint)+'K.png')
+    plt.close(fig)
+    
+    
 def rxn_average(flame, nrxns):
     """[Insert Information]"""
     rxn_sens = []
@@ -156,48 +198,17 @@ def rxn_average(flame, nrxns):
     top_nrxns    = rxn_sens[-nrxns:]
     average_sens = (sum(top_nrxns)/len(top_nrxns))
     return average_sens
- 
-    
-# def rxn_interest_plots(f_info, rxn_int, save_path):
-#     """[Insert Information]"""
-#     Pressure = []
-#     Fuel     = []
-#     Phi      = []
-#     Tint     = f_info[0]['Conditions'][3]
-#     Rxn_name = f_info[0]['Flame'][0][rxn_int][2]
-#     Rxn_num  = f_info[0]['Flame'][0][rxn_int][0]
-#     for f in f_info:
-#         Pressure.append(f['Conditions'][0])
-#         Fuel.append(f['Conditions'][1])
-#         Phi.append(f['Conditions'][2])
-#     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(15, 10))
-#     ax        = axes.flatten()
-#     fs        = 15
-#     #Dictionary organized as follow 'Key': [Data, axis-label]
-#     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-#                  'F': [Fuel, 'Fuel [Mole Fraction]'],
-#                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-#                  'T': [Tint, 'Temperature [K]']}
-#     conditions = [('P', 'F'), ('P', 'Phi'), ('F', 'Phi')]
-#     #Three subplots of unique paired independent variables
-#     for a, condition in zip(ax, conditions):
-#         x_key = condition[0]
-#         y_key = condition[1]
-#         a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
-#                marker='o', mfc='none', mec='k')
-#         a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
-#         a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
-#         a.set_xscale('log')
-#         a.set_yscale('log')
-#         a.grid(True)
 
-#         fig.suptitle('Reaction Number: '+format(Rxn_num)+
-#                       'Reaction Name: '+Rxn_name+
-#                       '\nInitial Temperature: '+format(Tint)+' [K]')
-#         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-#         plt.savefig(save_path+'\\Reaction Number '+format(Rxn_num)+
-#                     ' Initial Temperature '+format(Tint)+'K.png')
-#     plt.close(fig)
+
+def max_sens(flame):
+    max_rxn_num  = 0
+    max_rxn_sens = 0
+    for m in flame['Flame'][0]:
+        if abs(m[1]) > max_rxn_sens:
+            max_rxn_num  = m[0]
+            max_rxn_sens = m[1]
+    max_rxn = [max_rxn_num, max_rxn_sens]
+    return max_rxn
 
     
 if __name__ == "__main__":
@@ -243,3 +254,4 @@ if __name__ == "__main__":
     Threshold    = 2 #Threshold for rxn_interst to be above in average strength
     rxn_plots(Flame, Plot_path)
     rxn_strength_plots(Flame, Rxn_interest, Nrxns, Threshold, Plot_path)
+    rxn_interest_plots(Flame, Rxn_interest, Plot_path)
