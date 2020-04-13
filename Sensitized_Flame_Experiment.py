@@ -28,7 +28,7 @@ flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 P    = np.logspace(np.log10(.1), np.log10(100), 15) #Pressure [atm]
 Phi  = np.linspace(0.4, 2.5, 8) #Equivalence ratio
 Fuel = np.linspace(0.1, 0.85, 8) #Fuel mole fraction
-OtO = np.linspace(.1, .3, 8) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.linspace(.1, .3, 8) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -158,10 +158,10 @@ if __name__ == "__main__":
     #Start time
     tic = time.time()
     #Initializing
-    iteration       = 0
+    iteration = 0
     if oxidizer:
         totaliterations = len(P)*len(Phi)*len(OtO)
-        paramlist       = list(it.product(P,Phi,Fuel))
+        paramlist       = list(it.product(P,Phi,OtO))
     else:
         totaliterations = len(P)*len(Phi)*len(Fuel)
         paramlist       = list(it.product(P,Phi,Fuel))
