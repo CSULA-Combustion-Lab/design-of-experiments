@@ -25,10 +25,10 @@ mechanism = 'h2_burke2012.cti' #Mechanism file
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(.1), np.log10(100), 4) #Pressure [atm]
-Phi  = np.linspace(0.4, 2.5, 4) #Equivalence ratio
-Fuel = np.linspace(0.1, 0.85, 4) #Fuel mole fraction
-OtO = np.linspace(.1, .3, 4) #Oxygen to Oxidizer ratio [Air = .21]
+P    = np.logspace(np.log10(.1), np.log10(100), 15) #Pressure [atm]
+Phi  = np.linspace(0.4, 2.5, 8) #Equivalence ratio
+Fuel = np.linspace(0.1, 0.85, 8) #Fuel mole fraction
+OtO = np.linspace(.1, .3, 8) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -54,7 +54,7 @@ else:
 a = x+y/4-z/2       #molar oxygen-fuel ratio
 diluent_name = 'N2' #chemical formula of diluent
 
-oxidizer   = False # If true, OtO will be used instead of Fuel Mole Fraction
+oxidizer   = True # If true, OtO will be used instead of Fuel Mole Fraction
 save_files = True  # If true, save files for plotting script
 debug      = False  # If true, print lots of information for debugging.
 
@@ -238,6 +238,10 @@ if __name__ == "__main__":
             filename  = 'Case Description.txt'
             filename  = os.path.join(save_path, filename)
             f         = open(filename, "w")
+            if oxidizer:
+                F_O_text  = "\nOxygen to Oxidizer Fraction: "
+            else:
+                F_O_text  = "\nFuel Mole Fraction: "
             text_description = ("This file provides debug information.\n The "
                                 "following information are the parameters "
                                 "and cases simulated\n\n"
@@ -246,8 +250,7 @@ if __name__ == "__main__":
                                 +" [Kelvin]\nPressure: "
                                 +format(Debug_params[0])+" [atm]\n"
                                 "Equivalence Ratio: "+format(Debug_params[1])+
-                                "\nFuel Mole Fraction: "
-                                +format(Debug_params[2])+"\n"
+                                F_O_text+format(Debug_params[2])+"\n"
                                 "==============================\n"
                                 "\n==========Flame-Information==========\n"
                                 "FLame Speed: "+format(flame_info['Flame'][1])
@@ -284,6 +287,11 @@ if __name__ == "__main__":
             filename  = 'Case Description.txt'
             filename  = os.path.join(save_path, filename)
             f         = open(filename, "w")
+            if oxidizer:
+                F_O_text = ("\nOxygen to Oxidizer Mole Fraction Range: "
+                            +format(OtO)+"\n")
+            else:
+                F_O_text = "\nFuel Mole Fraction Range: "+format(Fuel)+"\n"
             text_description = ("This file provides simulation information.\n"
                                 "The following information are the parameters "
                                 "and cases simulated\n\n"
@@ -291,8 +299,7 @@ if __name__ == "__main__":
                                 "\nInitial Temperature: "+format(Tint)
                                 +" [Kelvin]\nPressure Range: "
                                 +format(P)+" [atm]\nEquivalence Ratio Range: "
-                                +format(Phi)+"\nFuel Mole Fraction Range: "
-                                +format(Fuel)+"\n"
+                                +format(Phi)+F_O_text+
                                 "==========================================\n"
                                 "\n=============Time/Converged=============\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
