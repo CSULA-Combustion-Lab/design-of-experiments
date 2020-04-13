@@ -176,8 +176,10 @@ def rxn_interest_plots(f_info, rxn_int, save_path):
                 marker='o', mfc='none', mec='k')
         a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
         a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
-        a.set_xscale('log')
-        a.set_yscale('log')
+        if x_key == 'P':
+            a.set_xscale('log')
+        if y_key == 'P':
+            a.set_yscale('log')
         a.grid(True)
         fig.suptitle('Reaction Number: '+format(Rxn_num)+
                       ' Reaction Name: '+Rxn_name+
@@ -187,6 +189,47 @@ def rxn_interest_plots(f_info, rxn_int, save_path):
                     ' Max Sensitivity for Parameters with'
                     ' Initial Temperature '+format(Tint)+'K.png')
     plt.close(fig)
+    
+
+def flame_speed_plots(f_info, min_speed, save_path):
+    """[Insert Information]"""
+    Pressure = []
+    Fuel     = []
+    Phi      = []
+    Su       = []
+    Tint     = f_info[0]['Conditions'][3]
+    for s in f_info:
+        Pressure.append(s['Conditions'][0])
+        Fuel.append(s['Conditions'][1])
+        Phi.append(s['Conditions'][2])
+        Su.append(s['Flame'][1])
+        
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(15, 10), sharey=True)
+    ax        = axes.flatten()
+    fs        = 15
+    #Dictionary organized as follow 'Key': [Data, axis-label]
+    cond_dict = {'P': [Pressure, 'Pressure [atm]'],
+                 'F': [Fuel, 'Fuel [Mole Fraction]'],
+                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
+                 'T': [Tint, 'Temperature [K]'],
+                 'Su': [Su, 'Su [m/s]']}
+    conditions = ['P', 'F', 'Phi']
+    for a, condition in zip(ax, conditions):
+        x_key = condition
+        y_key = 'Su'
+        a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
+                marker='o', mfc='none', mec='k')
+        a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
+        a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+        if x_key == 'P':
+            a.set_xscale('log')
+        a.grid(True)
+        fig.suptitle('Initial Temperature: '+format(Tint)+' [K]')
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
+                    ' Initial Temperature '+format(Tint)+'K.png')
+    plt.close(fig)
+    
     
     
 def rxn_average(flame, nrxns):
@@ -249,9 +292,11 @@ if __name__ == "__main__":
     #                               'Conditions': [P, Fuel, Phi, Tin, Mix]}
     
     #Plot Functions
-    Rxn_interest = 3 #Reaction number of the reaction of interest
+    Rxn_interest = 14 #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 2 #Threshold for rxn_interst to be above in average strength
+    Min_speed    = 2 #Minimum flame speed, lower limit
     rxn_plots(Flame, Plot_path)
     rxn_strength_plots(Flame, Rxn_interest, Nrxns, Threshold, Plot_path)
     rxn_interest_plots(Flame, Rxn_interest, Plot_path)
+    flame_speed_plots(Flame, Min_speed, Plot_path)
