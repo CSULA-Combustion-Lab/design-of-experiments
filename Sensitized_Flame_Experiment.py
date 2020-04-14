@@ -25,14 +25,14 @@ mechanism = 'h2_burke2012.cti' #Mechanism file
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(.1), np.log10(100), 15) #Pressure [atm]
-Phi  = np.linspace(0.4, 2.5, 8) #Equivalence ratio
+P    = np.logspace(np.log10(1), np.log10(10), 2) #Pressure [atm]
+Phi  = np.linspace(0.1, 1.5, 150) #Equivalence ratio
 Fuel = np.linspace(0.1, 0.85, 8) #Fuel mole fraction
-OtO  = np.linspace(.1, .3, 8) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.linspace(.21, .25, 1) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
-Tint = 273.15 #Temperature [K]
+Tint = 365 #Temperature [K]
 
 #Parameters for mixture
 fuel_name = 'H2' #chemical formula of fuel
@@ -148,7 +148,9 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
     f.sensitivity()
     flame_sens = f.sens
     Su         = f.flame_result.u[0]
-    flame_info = {'Flame': [flame_sens, Su],
+    flame_temp = f.flame_result.T[-1]
+    flame_rho  = f.flame_result.density_mass[-1]
+    flame_info = {'Flame': [flame_sens, Su, flame_rho, flame_temp],
                   'Conditions': [P, Fuel, Phi, Tin, Mix]}
     return flame_info
 
