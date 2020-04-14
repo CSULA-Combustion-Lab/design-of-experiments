@@ -196,24 +196,28 @@ def flame_speed_plots(f_info, min_speed, save_path):
     Pressure = []
     Fuel     = []
     Phi      = []
+    Dil_frac = []
     Su       = []
+    Diluent  = f_info[0]['Conditions'][4][0][0]
     Tint     = f_info[0]['Conditions'][3]
     for s in f_info:
         Pressure.append(s['Conditions'][0])
         Fuel.append(s['Conditions'][1])
         Phi.append(s['Conditions'][2])
+        Dil_frac.append(s['Conditions'][4][0][1])
         Su.append(s['Flame'][1])
         
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(15, 10), sharey=True)
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10), sharey=True)
     ax        = axes.flatten()
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
                  'F': [Fuel, 'Fuel [Mole Fraction]'],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
+                 'Dil':[Dil_frac, Diluent+' Mole Fraction'],
                  'T': [Tint, 'Temperature [K]'],
                  'Su': [Su, 'Su [m/s]']}
-    conditions = ['P', 'F', 'Phi']
+    conditions = ['P', 'F', 'Phi', 'Dil']
     for a, condition in zip(ax, conditions):
         x_key = condition
         y_key = 'Su'
@@ -229,7 +233,6 @@ def flame_speed_plots(f_info, min_speed, save_path):
         plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
                     ' Initial Temperature '+format(Tint)+'K.png')
     plt.close(fig)
-    
     
     
 def rxn_average(flame, nrxns):
@@ -288,8 +291,9 @@ if __name__ == "__main__":
         else:
             Flame.append(x)
             
-    #Note flame is a dictionary of {'Flame': [Flame_sens Su], 
-    #                               'Conditions': [P, Fuel, Phi, Tin, Mix]}
+    #Note Flame and No_flame are dictionaries 
+    # {'Flame': [Flame_sens Su Flame_rho, Flame_temp], 
+    #  'Conditions': [P, Fuel, Phi, Tin, Mix]}
     
     #Plot Functions
     Rxn_interest = 14 #Reaction number of the reaction of interest
