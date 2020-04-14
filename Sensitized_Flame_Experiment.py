@@ -9,13 +9,11 @@ import os
 import errno
 import time, sys
 import numpy as np
-# import cantera as ct
 import itertools as it
 path = (r'D:\School\Cal State La\Extracurricular\NOx Combustion Research')
 sys.path.insert(0, path)
 from utilities import flame
 from datetime import datetime
-# import math
 import pickle
 
 ####Set experiment parameters
@@ -26,9 +24,9 @@ flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
 P    = np.logspace(np.log10(1), np.log10(10), 2) #Pressure [atm]
-Phi  = np.linspace(0.1, 1.5, 150) #Equivalence ratio
+Phi  = np.linspace(0.1, 1.5, 2) #Equivalence ratio
 Fuel = np.linspace(0.1, 0.85, 8) #Fuel mole fraction
-OtO  = np.linspace(.21, .25, 1) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.linspace(.077, .21, 2) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -129,6 +127,11 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
         Fuel    = F_O
         Oxygen  = a/Phi*Fuel
         Diluent = 1 - Oxygen - Fuel
+        OtO     = Oxygen/(Oxygen + Diluent)
+        if Diluent < 0:
+            flame_info = {'Flame': None,
+                          'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
+            return flame_info
         Mix     = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
    
     if debug:
@@ -143,15 +146,15 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
     f.run(mingrid=200, loglevel=logl)
     if f.flame_result is None:
         flame_info = {'Flame': None,
-                      'Conditions': [P, Fuel, Phi, Tin, Mix]}
+                      'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
         return flame_info
     f.sensitivity()
     flame_sens = f.sens
     Su         = f.flame_result.u[0]
     flame_temp = f.flame_result.T[-1]
-    flame_rho  = f.flame_result.density_mass[-1]
+    flame_rho  = f.flame_result.density_mass[0]
     flame_info = {'Flame': [flame_sens, Su, flame_rho, flame_temp],
-                  'Conditions': [P, Fuel, Phi, Tin, Mix]}
+                  'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
     return flame_info
 
 
@@ -247,7 +250,12 @@ if __name__ == "__main__":
             text_description = ("This file provides debug information.\n The "
                                 "following information are the parameters "
                                 "and cases simulated\n\n"
-                                "==========Parameters==========\n"
+                                "==========Properties==========\n"
+                                "Mechanism "+mechanism+"\n"
+                                "Fuel: "+fuel_name+"\n"
+                                "Diluent: "+diluent_name+"\n"
+                                "==============================\n"
+                                "\n==========Parameters==========\n"
                                 "Initial Temperature: "+format(Debug_params[3])
                                 +" [Kelvin]\nPressure: "
                                 +format(Debug_params[0])+" [atm]\n"
@@ -297,6 +305,11 @@ if __name__ == "__main__":
             text_description = ("This file provides simulation information.\n"
                                 "The following information are the parameters "
                                 "and cases simulated\n\n"
+                                "==========Properties==========\n"
+                                "Mechanism "+mechanism+"\n"
+                                "Fuel: "+fuel_name+"\n"
+                                "Diluent: "+diluent_name+"\n"
+                                "==============================\n"
                                 "================Parameters================"
                                 "\nInitial Temperature: "+format(Tint)
                                 +" [Kelvin]\nPressure Range: "
