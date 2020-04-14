@@ -7,9 +7,7 @@ Created on Mon Apr  6 14:20:01 2020
 
 import pickle
 import matplotlib.pyplot as plt
-import numpy as np
 import os
-import matplotlib.patches as mpl_patches
 #from tkinter import filedialog
 
 def rxn_plots(f_info, save_path):
@@ -191,7 +189,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path):
     plt.close(fig)
     
 
-def flame_speed_plots(f_info, min_speed, save_path):
+def flame_speed_plots(f_info, save_path):
     """[Insert Information]"""
     Pressure = []
     Fuel     = []
@@ -291,6 +289,12 @@ if __name__ == "__main__":
         else:
             Flame.append(x)
             
+    Min_speed          = 0 #Minimum flame speed, lower limit
+    Flame_speed_filter = []
+    for x in Flame:
+        if x['Flame'][1] >= Min_speed:
+            Flame_speed_filter.append(x)
+            
     #Note Flame and No_flame are dictionaries 
     # {'Flame': [Flame_sens Su Flame_rho, Flame_temp], 
     #  'Conditions': [P, Fuel, Phi, Tin, Mix]}
@@ -299,8 +303,7 @@ if __name__ == "__main__":
     Rxn_interest = 14 #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 2 #Threshold for rxn_interst to be above in average strength
-    Min_speed    = 2 #Minimum flame speed, lower limit
     rxn_plots(Flame, Plot_path)
-    rxn_strength_plots(Flame, Rxn_interest, Nrxns, Threshold, Plot_path)
-    rxn_interest_plots(Flame, Rxn_interest, Plot_path)
-    flame_speed_plots(Flame, Min_speed, Plot_path)
+    rxn_strength_plots(Flame_speed_filter, Rxn_interest, Nrxns, Threshold, Plot_path)
+    rxn_interest_plots(Flame_speed_filter, Rxn_interest, Plot_path)
+    flame_speed_plots(Flame_speed_filter, Plot_path)
