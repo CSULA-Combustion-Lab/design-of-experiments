@@ -17,7 +17,7 @@ from datetime import datetime
 import pickle
 
 ####Set experiment parameters
-mechanism = 'h2_burke2012.cti' #Mechanism file
+mechanism = 'chem_trioxane.cti' #Mechanism file
 
 #Working directory
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
@@ -30,10 +30,10 @@ OtO  = np.linspace(.077, .21, 2) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
-Tint = 365 #Temperature [K]
+Tint = 373 #Temperature [K]
 
 #Parameters for mixture
-fuel_name = 'H2' #chemical formula of fuel
+fuel_name = 'C3H6O3' #chemical formula of fuel
 
 #Fuel C(x)H(y)O(z)
 if fuel_name.find('C',0) == -1:
@@ -52,20 +52,37 @@ else:
 a = x+y/4-z/2       #molar oxygen-fuel ratio
 diluent_name = 'N2' #chemical formula of diluent
 
-oxidizer   = True # If true, OtO will be used instead of Fuel Mole Fraction
-save_files = True  # If true, save files for plotting script
-debug      = False  # If true, print lots of information for debugging.
 
+custom     = True # If true, custom styles used for range and save files
+oxidizer   = False # If true, OtO will be used instead of Fuel Mole Fraction
+debug      = False # If true, print lots of information for debugging.
+save_files = True # If true, save files for plotting script
+
+#Debug Files
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
 #Debug parameters [Pressure, Equivalence Ratio, Fuel or Oxygen, Temperature]
 Debug_params = [1, 1, 0.21, 300]
 LogLevel     = 1
 
-conditions = {'Parameters': [P, Phi, Fuel, Tint, OtO],
-              'Mixture': [fuel_name, x, y, z, a, diluent_name],
-              'Files': [mechanism, flame_temp],
-              'Debug': [Debug_params, LogLevel],
-              'T/F': [debug, oxidizer]}
+
+#Custom loop
+if custom:
+    P      = [0.5, 1]
+    Fuel   = 0.05
+    Oxygen = np.linspace(0.05,0.95,100)
+    conditions = {'Parameters': [P, Fuel, Oxygen, Tint],
+                  'Mixture': [fuel_name, x, y, z, a, diluent_name],
+                  'Files': [mechanism, flame_temp],
+                  'Debug': [Debug_params, LogLevel],
+                  'T/F': [debug, oxidizer, custom]}
+#Normal loop
+else:
+    conditions = {'Parameters': [P, Phi, Fuel, Tint, OtO],
+                  'Mixture': [fuel_name, x, y, z, a, diluent_name],
+                  'Files': [mechanism, flame_temp],
+                  'Debug': [Debug_params, LogLevel],
+                  'T/F': [debug, oxidizer, custom]}
+
 
 def parallelize(param, cond, fun):
     """[Fill in information]"""
@@ -114,9 +131,18 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
     a            = Cond['Mixture'][4]
     Fuel_name    = Cond['Mixture'][0]
     Diluent_name = Cond['Mixture'][5]
-    oxidizer     = Cond['T/F'][1]
     debug        = Cond['T/F'][0]
-    if oxidizer:
+    oxidizer     = Cond['T/F'][1]
+    custom       = Cond['T/F'][2]
+    
+    if custom:
+        Fuel    = Phi
+        Oxygen  = F_O
+        Diluent = 1 - Oxygen - Fuel
+        OtO     = Oxygen/(Oxygen + Diluent)
+        Phi     = Oxygen/(Fuel*a)
+        Mix     = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
+    elif oxidizer:
         OtO     = F_O
         noxy    = (Phi*OtO)/a
         Oxygen  = OtO/(noxy + 1)
@@ -128,11 +154,12 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
         Oxygen  = a/Phi*Fuel
         Diluent = 1 - Oxygen - Fuel
         OtO     = Oxygen/(Oxygen + Diluent)
-        if Diluent < 0:
-            flame_info = {'Flame': None,
-                          'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
-            return flame_info
         Mix     = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
+        
+    if Diluent < 0:
+        flame_info = {'Flame': None,
+                      'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
+        return flame_info
    
     if debug:
         logl = Cond['Debug'][1]
@@ -149,11 +176,11 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
                       'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
         return flame_info
     f.sensitivity()
-    flame_sens = f.sens
-    Su         = f.flame_result.u[0]
-    flame_temp = f.flame_result.T[-1]
-    flame_rho  = f.flame_result.density_mass[0]
-    flame_info = {'Flame': [flame_sens, Su, flame_rho, flame_temp],
+    flame_sens = f.sens #Rxn sensitivities 
+    Su         = f.flame_result.u[0]  #Flame speed at the front
+    flame_T    = f.flame_result.T[-1] #Flame temperature at end
+    flame_rho  = f.flame_result.density_mass[0] #Flame density at the front
+    flame_info = {'Flame': [flame_sens, Su, flame_rho, flame_T],
                   'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
     return flame_info
 
@@ -164,7 +191,13 @@ if __name__ == "__main__":
     tic = time.time()
     #Initializing
     iteration = 0
-    if oxidizer:
+    if custom: 
+        totaliterations = len(P)*len(Oxygen)
+        paramlist       = []
+        for i in P:
+            for k in Oxygen:
+                paramlist.append((i, Fuel, k))
+    elif oxidizer:
         totaliterations = len(P)*len(Phi)*len(OtO)
         paramlist       = list(it.product(P,Phi,OtO))
     else:
@@ -278,6 +311,7 @@ if __name__ == "__main__":
                 pickle.dump(flame_info_debug, f)
             print('End debug file save')
          
+        #Normal directory
         else:               
             #Create Directory Name
             print('Creating Directory...')
@@ -315,6 +349,27 @@ if __name__ == "__main__":
                                 +" [Kelvin]\nPressure Range: "
                                 +format(P)+" [atm]\nEquivalence Ratio Range: "
                                 +format(Phi)+F_O_text+
+                                "==========================================\n"
+                                "\n=============Time/Converged=============\n"
+                                "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
+                                "Cases Converged: "+format(len(converged))+"\n"
+                                "Run time: "+format(duration, '0.5f')+" [s]\n"
+                                "========================================")
+            if custom:
+                text_description = ("The following simulation was a custom"
+                                " run using the follow properties and "
+                                " parameters.\n\n"
+                                "==========Properties==========\n"
+                                "Mechanism "+mechanism+"\n"
+                                "Fuel: "+fuel_name+"\n"
+                                "Diluent: "+diluent_name+"\n"
+                                "==============================\n"
+                                "================Parameters================"
+                                "\nInitial Temperature: "+format(Tint)
+                                +" [Kelvin]\nPressure Range: "+format(P)+
+                                " [atm]\nFuel Range: "+format(Fuel)+
+                                " [mole fraction]\nOxygen Range: "
+                                +format(Oxygen)+" [mole fraction]\n"
                                 "==========================================\n"
                                 "\n=============Time/Converged=============\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
