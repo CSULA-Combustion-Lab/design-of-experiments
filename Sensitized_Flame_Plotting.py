@@ -5,9 +5,10 @@ Created on Mon Apr  6 14:20:01 2020
 @author: Kodo Bear
 """
 
+import os
+import numpy
 import pickle
 import matplotlib.pyplot as plt
-import os
 #from tkinter import filedialog
 
 def rxn_plots(f_info, save_path):
@@ -29,7 +30,7 @@ def rxn_plots(f_info, save_path):
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel [Mole Fraction]'],
+                 'F': [Fuel, 'Fuel Mole Fraction [%]'],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
                  'T': [Tint, 'Temperature [K]'],
                  'Rxn': [Max_rxn, 'Rxn Number']}
@@ -83,7 +84,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path):
             
     #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
     cond_dict = {'P': [Pressure, 'Pressure [atm]', P_threshold],
-                 'F': [Fuel, 'Fuel [Mole Fraction]', F_threshold],
+                 'F': [Fuel, 'Fuel Mole Fraction [%]', F_threshold],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
                  'T': [Tint, 'Temperature [K]'],
                  'Strength': [Sens_strength, 'Rxn Strength',
@@ -161,7 +162,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path):
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                  'F': [Fuel, 'Fuel [Mole Fraction]'],
+                  'F': [Fuel, 'Fuel Mole Fraction [%]'],
                   'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
                   'T': [Tint, 'Temperature [K]']}
     conditions = [('P', 'F'), ('P', 'Phi'), ('F', 'Phi')]
@@ -195,6 +196,7 @@ def flame_speed_plots(f_info, save_path):
     Fuel     = []
     Phi      = []
     Dil_frac = []
+    Oxygen   = []
     Su       = []
     Diluent  = f_info[0]['Conditions'][4][0][0]
     Tint     = f_info[0]['Conditions'][3]
@@ -203,6 +205,7 @@ def flame_speed_plots(f_info, save_path):
         Fuel.append(s['Conditions'][1])
         Phi.append(s['Conditions'][2])
         Dil_frac.append(s['Conditions'][4][0][1])
+        Oxygen.append(s['Conditions'][4][1][1])
         Su.append(s['Flame'][1])
         
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10), sharey=True)
@@ -210,9 +213,10 @@ def flame_speed_plots(f_info, save_path):
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel [Mole Fraction]'],
+                 'F': [Fuel, 'Fuel Mole Fraction [%]'],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'Dil':[Dil_frac, Diluent+' Mole Fraction'],
+                 'Dil':[Dil_frac, Diluent+' Mole Fraction [%]'],
+                 'O2':[Oxygen, 'Oxygen Mole Fraction [%]'],
                  'T': [Tint, 'Temperature [K]'],
                  'Su': [Su, 'Su [m/s]']}
     conditions = ['P', 'F', 'Phi', 'Dil']
@@ -233,7 +237,7 @@ def flame_speed_plots(f_info, save_path):
     plt.close(fig)
     
 
-def rxn_sens_bar_plots(flame, nrxns):
+def rxn_sens_bar_plots(flame, nrxns, save_path):
     """[Insert Information]"""
     fig, ax = plt.subplots()
     ax.grid(axis='x', which='major', ls='--')
@@ -254,7 +258,7 @@ def rxn_sens_bar_plots(flame, nrxns):
     ax.set_xlabel('Normalized Sensitivity')
     ax.set_ylim([max(ylocs)+0.5, min(ylocs)-0.5])
     fig.tight_layout()
-    fig.savefig(os.path.join(workingdir, 'Flame Sensitivity.png'))
+    fig.savefig(os.path.join(save_path, 'Flame Sensitivity Bar Plot.png'))
     plt.close(fig)
     
 def rxn_average(flame, nrxns):
