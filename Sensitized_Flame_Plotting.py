@@ -232,6 +232,30 @@ def flame_speed_plots(f_info, save_path):
                     ' Initial Temperature '+format(Tint)+'K.png')
     plt.close(fig)
     
+
+def rxn_sens_bar_plots(flame, nrxns):
+    """[Insert Information]"""
+    fig, ax = plt.subplots()
+    ax.grid(axis='x', which='major', ls='--')
+    ax.grid(axis='y', which='minor', c='k')
+    sens = []
+    for f in flame:
+        sens.append(f['Flame'])
+    sens.sort(key=lambda x: abs(x[1]), reverse=True)
+    sens_plot = sens[:nrxns]
+    ylocs = numpy.arange(nrxns)
+    ax.barh(ylocs, [x[1] for x in sens_plot], align='center')
+    ax.set_yticks(ylocs)
+    ax.set_yticklabels([x[2] for x in sens_plot])
+    ax.set_yticks(ylocs - 0.5, minor=True)
+#    ax.tick_params(axis='y', which='minor', bottom='off')
+    ax.invert_yaxis()
+    ax.axvline(c='k')
+    ax.set_xlabel('Normalized Sensitivity')
+    ax.set_ylim([max(ylocs)+0.5, min(ylocs)-0.5])
+    fig.tight_layout()
+    fig.savefig(os.path.join(workingdir, 'Flame Sensitivity.png'))
+    plt.close(fig)
     
 def rxn_average(flame, nrxns):
     """[Insert Information]"""
