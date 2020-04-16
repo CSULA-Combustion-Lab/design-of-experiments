@@ -17,7 +17,7 @@ from datetime import datetime
 import pickle
 
 ####Set experiment parameters
-mechanism = 'chem_trioxane.cti' #Mechanism file
+mechanism = 'Li_model.cti' #Mechanism file
 
 #Working directory
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
@@ -30,10 +30,10 @@ OtO  = np.linspace(.077, .21, 2) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
-Tint = 373 #Temperature [K]
+Tint = 323 #Temperature [K]
 
 #Parameters for mixture
-fuel_name = 'C3H6O3' #chemical formula of fuel
+fuel_name = 'CH3OH' #chemical formula of fuel
 
 #Fuel C(x)H(y)O(z)
 if fuel_name.find('C',0) == -1:
@@ -53,10 +53,10 @@ a = x+y/4-z/2       #molar oxygen-fuel ratio
 diluent_name = 'N2' #chemical formula of diluent
 
 
-custom     = True # If true, custom styles used for range and save files
-oxidizer   = False # If true, OtO will be used instead of Fuel Mole Fraction
+custom     = False # If true, custom styles used for range and save files
+oxidizer   = True # If true, OtO will be used instead of Fuel Mole Fraction
 debug      = False # If true, print lots of information for debugging.
-save_files = True # If true, save files for plotting script
+save_files = False # If true, save files for plotting script
 
 #Debug Files
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
@@ -69,7 +69,7 @@ LogLevel     = 1
 if custom:
     P      = [0.5, 1]
     Fuel   = 0.05
-    Oxygen = np.linspace(0.05,0.95,100)
+    Oxygen = np.linspace(0.05,0.95,50)
     conditions = {'Parameters': [P, Fuel, Oxygen, Tint],
                   'Mixture': [fuel_name, x, y, z, a, diluent_name],
                   'Files': [mechanism, flame_temp],
@@ -140,7 +140,7 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
         Oxygen  = F_O
         Diluent = 1 - Oxygen - Fuel
         OtO     = Oxygen/(Oxygen + Diluent)
-        Phi     = Oxygen/(Fuel*a)
+        Phi     = a/Oxygen*Fuel
         Mix     = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
     elif oxidizer:
         OtO     = F_O
