@@ -219,7 +219,7 @@ def flame_speed_plots(f_info, save_path):
                  'O2':[Oxygen, 'Oxygen Mole Fraction [%]'],
                  'T': [Tint, 'Temperature [K]'],
                  'Su': [Su, 'Su [m/s]']}
-    conditions = ['P', 'F', 'Phi', 'Dil']
+    conditions = ['P', 'F', 'Phi', 'O2']
     for a, condition in zip(ax, conditions):
         x_key = condition
         y_key = 'Su'
@@ -237,14 +237,20 @@ def flame_speed_plots(f_info, save_path):
     plt.close(fig)
     
 
-def rxn_sens_bar_plots(flame, nrxns, save_path):
+def rxn_sens_bar_plots(flame, nrxns, spec_cond, save_path):
     """[Insert Information]"""
     fig, ax = plt.subplots()
     ax.grid(axis='x', which='major', ls='--')
     ax.grid(axis='y', which='minor', c='k')
-    sens = []
-    for f in flame:
-        sens.append(f['Flame'])
+    sens     = []
+    pressure = []
+    oxygen   = []
+    for i in spec_cond['P']:
+        for j in spec_cond['O2']:
+            for f in flame:
+                if f['Condtions'][0] == i and f['Conditions'][4][1][1] == j:
+                    sens.append(f['Flame'][0])
+                    pressure.append()
     sens.sort(key=lambda x: abs(x[1]), reverse=True)
     sens_plot = sens[:nrxns]
     ylocs = numpy.arange(nrxns)
@@ -328,10 +334,16 @@ if __name__ == "__main__":
     #  'Conditions': [P, Fuel, Phi, Tin, Mix]}
     
     #Plot Functions
-    Rxn_interest = 14 #Reaction number of the reaction of interest
-    Nrxns        = 5 #Top n-reactions
-    Threshold    = 2 #Threshold for rxn_interst to be above in average strength
-    rxn_plots(Flame, Plot_path)
-    rxn_strength_plots(Flame_speed_filter, Rxn_interest, Nrxns, Threshold, Plot_path)
-    rxn_interest_plots(Flame_speed_filter, Rxn_interest, Plot_path)
+    Rxn_interest = [28,29,30] #Reaction number of the reaction of interest
+    Nrxns        = 9 #Top n-reactions
+    Threshold    = 0 #Threshold for rxn_interst to be above in average strength
+    Spec_Conditions = {'Key': ['P', 'O2'],
+                       'O2': [0.25, 0.5],
+                       'P': [0.5, 1]}
+    rxn_plots(Flame_speed_filter, Plot_path)
     flame_speed_plots(Flame_speed_filter, Plot_path)
+    rxn_sens_bar_plots(Flame_speed_filter, Nrxns, Spec_Conditions, Plot_path)
+    for Rxns in Rxn_interest:
+        rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+                           Threshold, Plot_path)
+        rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path)
