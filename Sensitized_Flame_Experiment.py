@@ -7,26 +7,28 @@ Created on Fri Mar 20 09:52:04 2020
 
 import os
 import errno
+import pickle
 import time, sys
 import numpy as np
+import cantera as ct
 import itertools as it
 path = (r'D:\School\Cal State La\Extracurricular\NOx Combustion Research')
 sys.path.insert(0, path)
 from utilities import flame
 from datetime import datetime
-import pickle
 
 ####Set experiment parameters
 mechanism = 'Li_model.cti' #Mechanism file
+gas = ct.Solution(mechanism)
 
 #Working directory
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(1), np.log10(10), 2) #Pressure [atm]
-Phi  = np.linspace(0.1, 1.5, 2) #Equivalence ratio
-Fuel = np.linspace(0.1, 0.85, 8) #Fuel mole fraction
-OtO  = np.linspace(.077, .21, 2) #Oxygen to Oxidizer ratio [Air = .21]
+P    = np.logspace(np.log10(.05), np.log10(10), 8) #Pressure [atm]
+Phi  = np.logspace(np.log10(0.5), np.log10(2.5), 15) #Equivalence ratio
+Fuel = np.logspace(0.1, 0.85, 5) #Fuel mole fraction
+OtO  = np.logspace(np.log10(.21), np.log10(.95), 15) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -36,18 +38,19 @@ Tint = 323 #Temperature [K]
 fuel_name = 'CH3OH' #chemical formula of fuel
 
 #Fuel C(x)H(y)O(z)
-if fuel_name.find('C',0) == -1:
+fuel_index = gas.species(gas.species_index(fuel_name)).composition
+if 'C' in fuel_index:
+    x = fuel_index['C']
+else:
     x = 0
+if 'H' in fuel_index:
+    y = fuel_index['H']
 else:
-    x = int(fuel_name[fuel_name.find('C',0)+1]) #moles of carbon in fuel
-if fuel_name.find('H',0) == -1:
     y = 0
+if 'O' in fuel_index:
+    z = fuel_index['O']
 else:
-    y = int(fuel_name[fuel_name.find('H',0)+1]) #moles of hydrogen in fuel
-if fuel_name.find('O',0) == -1:
     z = 0
-else:
-    z = int(fuel_name[fuel_name.find('O',0)+1]) #moles of oxygen in fuel
     
 a = x+y/4-z/2       #molar oxygen-fuel ratio
 diluent_name = 'N2' #chemical formula of diluent
@@ -56,7 +59,7 @@ diluent_name = 'N2' #chemical formula of diluent
 custom     = False # If true, custom styles used for range and save files
 oxidizer   = True # If true, OtO will be used instead of Fuel Mole Fraction
 debug      = False # If true, print lots of information for debugging.
-save_files = False # If true, save files for plotting script
+save_files = True # If true, save files for plotting script
 
 #Debug Files
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
