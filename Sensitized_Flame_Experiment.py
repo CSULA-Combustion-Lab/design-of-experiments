@@ -25,10 +25,10 @@ gas = ct.Solution(mechanism)
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(.05), np.log10(10), 8) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.5), np.log10(2.5), 15) #Equivalence ratio
+P    = np.logspace(np.log10(.05), np.log10(10), 1) #Pressure [atm]
+Phi  = np.logspace(np.log10(0.2), np.log10(4), 1) #Equivalence ratio
 Fuel = np.logspace(0.1, 0.85, 5) #Fuel mole fraction
-OtO  = np.logspace(np.log10(.21), np.log10(.95), 15) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.logspace(np.log10(.01), np.log10(.95), 1) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -59,7 +59,7 @@ diluent_name = 'N2' #chemical formula of diluent
 custom     = False # If true, custom styles used for range and save files
 oxidizer   = True # If true, OtO will be used instead of Fuel Mole Fraction
 debug      = False # If true, print lots of information for debugging.
-save_files = True # If true, save files for plotting script
+save_files = False # If true, save files for plotting script
 
 #Debug Files
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
@@ -171,9 +171,11 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
             
     else:
         logl = 0
+        ms   = False
+        mg   = 200
         
     f = flame.Flame(Mix, P, Tin, tempfile, chemfile=chem)
-    f.run(mingrid=200, loglevel=logl)
+    f.run(mingrid=mg, loglevel=logl, mult_soret=ms)
     if f.flame_result is None:
         flame_info = {'Flame': None,
                       'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
@@ -188,12 +190,25 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
     return flame_info
 
 
+def duplicate_reactions(gas):
+    dup_rxns = {}
+    eqns = gas.reaction_equations()
+    for i in range(len(eqns)):
+        if gas.reaction(i).duplicate:
+            rxn_eqn = gas.reaction_equation(i)
+            if rxn_eqn not in dup_rxns.keys():
+                dup_rxns[rxn_eqn] = [i]
+            elif rxn_eqn in dup_rxns.keys():
+                dup_rxns[rxn_eqn].append(i)
+            else:
+                print('Something went wrong!')
+                
+    return dup_rxns
 
 if __name__ == "__main__":
     #Start time
     tic = time.time()
     #Initializing
-    iteration = 0
     if custom: 
         totaliterations = len(P)*len(Oxygen)
         paramlist       = []
@@ -207,7 +222,7 @@ if __name__ == "__main__":
         totaliterations = len(P)*len(Phi)*len(Fuel)
         paramlist       = list(it.product(P,Phi,Fuel))
 
-    #Debug loop
+##############################Debug loop#######################################
     if debug:
         print('Debugging in process..')
         print('\nConditions Used:'
@@ -221,7 +236,7 @@ if __name__ == "__main__":
         duration = toc - tic
         print('Dubugging time: '+format(duration, '0.5f')+' seconds\n')
    
-    #Simulation loop
+############################Simulation loop####################################
     else:
         print('Initial number of cases: '+format(len(paramlist)))
         print('\nStart of simulations...')
@@ -240,9 +255,10 @@ if __name__ == "__main__":
         toc = time.time()
         print('Number of cases converged:', len(converged))
         duration = toc-tic
+        duplicate_rxns = duplicate_reactions(gas)
         print('Total time '+format(duration, '0.5f')+' seconds.\n')
-    
-    # Save files
+        
+#################################Save Files####################################   
     if save_files:
         #Save Path/Parent Directory
         parent_dir = 'Flame_Sensitivity_Results'
@@ -252,7 +268,7 @@ if __name__ == "__main__":
             if e.errno != errno.EEXIST:
                 raise
         
-        #Debug directory
+        #######################Debug directory#################################
         if debug:
             print('Start debug file save...')
             debug_dir = 'debug'
@@ -314,7 +330,7 @@ if __name__ == "__main__":
                 pickle.dump(flame_info_debug, f)
             print('End debug file save')
          
-        #Normal directory
+        ########################Normal directory###############################
         else:               
             #Create Directory Name
             print('Creating Directory...')
