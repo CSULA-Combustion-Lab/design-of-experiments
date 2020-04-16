@@ -84,7 +84,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
         Oxygen.append(f['Conditions'][4][1][1])
         
     for n in range(len(Sens_strength)):
-        if Sens_strength[n] >= threshold:
+        if abs(Sens_strength[n]) >= threshold:
             P_threshold.append(f_info[n]['Conditions'][0])
             F_threshold.append(f_info[n]['Conditions'][1])
             Phi_threshold.append(f_info[n]['Conditions'][2])
@@ -365,7 +365,7 @@ if __name__ == "__main__":
     #Plot Functions
     Rxn_interest = numpy.arange(70,81) #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
-    Threshold    = 0 #Threshold for rxn_interst to be above in average strength
+    Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
     Logspace     = True #If true all plots will use logspace
     Spec_Conditions = {'Key': ['P', 'O2'],
                        'O2': [0.25, 0.5],
