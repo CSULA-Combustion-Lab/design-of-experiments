@@ -32,9 +32,9 @@ def rxn_plots(f_info, save_path, log):
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel Mole Fraction [%]'],
+                 'F': [Fuel, 'Fuel Mole Fraction'],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'O2': [Oxygen, 'Oxygen Mole Fraction [%]'],
+                 'O2': [Oxygen, 'Oxygen Mole Fraction'],
                  'T': [Tint, 'Temperature [K]'],
                  'Rxn': [Max_rxn, 'Rxn Number']}
     conditions = ['P', 'F', 'Phi', 'O2']
@@ -93,9 +93,9 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
             
     #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
     cond_dict = {'P': [Pressure, 'Pressure [atm]', P_threshold],
-                 'F': [Fuel, 'Fuel Mole Fraction [%]', F_threshold],
+                 'F': [Fuel, 'Fuel Mole Fraction', F_threshold],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
-                 'O2': [Oxygen, 'Oxygen Mole Fraction [%]', Oxygen_threshold],
+                 'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
                  'T': [Tint, 'Temperature [K]'],
                  'Strength': [Sens_strength, 'Rxn Strength',
                               Sens_str_threshold]}
@@ -181,9 +181,9 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                  'F': [Fuel, 'Fuel Mole Fraction [%]'],
+                  'F': [Fuel, 'Fuel Mole Fraction'],
                   'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                  'O2':[Oxygen, 'Oxygen Fuel Mole Fraction [%]'],
+                  'O2':[Oxygen, 'Oxygen Fuel Mole Fraction'],
                   'T': [Tint, 'Temperature [K]']}
     conditions = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
                   ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
@@ -238,10 +238,10 @@ def flame_speed_plots(f_info, save_path, log):
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel Mole Fraction [%]'],
+                 'F': [Fuel, 'Fuel Mole Fraction'],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'Dil':[Dil_frac, Diluent+' Mole Fraction [%]'],
-                 'O2':[Oxygen, 'Oxygen Mole Fraction [%]'],
+                 'Dil':[Dil_frac, Diluent+' Mole Fraction'],
+                 'O2':[Oxygen, 'Oxygen Mole Fraction'],
                  'T': [Tint, 'Temperature [K]'],
                  'Su': [Su, 'Su [m/s]']}
     conditions = ['P', 'F', 'Phi', 'O2']
@@ -351,7 +351,7 @@ if __name__ == "__main__":
             No_flame.append(x)
         else:
             Flame.append(x)
-            
+    #Creates list that only appends information where flame speed is above min     
     Min_speed          = 0 #Minimum flame speed, lower limit
     Flame_speed_filter = []
     for x in Flame:
@@ -359,8 +359,8 @@ if __name__ == "__main__":
             Flame_speed_filter.append(x)
             
     #Note Flame and No_flame are dictionaries 
-    # {'Flame': [Flame_sens Su Flame_rho, Flame_temp], 
-    #  'Conditions': [P, Fuel, Phi, Tin, Mix]}
+    # {'Flame': [Flame_sens Su Flame_rho, Flame_temp, Mingrid, Mult_sort], 
+    #  'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
     
     #Plot Functions
     Rxn_interest = numpy.arange(70,81) #Reaction number of the reaction of interest
