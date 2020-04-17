@@ -397,7 +397,7 @@ if __name__ == "__main__":
                                 "\n======Flame Simulation Information======"
                                 "\nMingrid = "+format(mingrid)+
                                 "\nMult_Soret = "+format(mul_soret)+
-                                "\n=====================================\n"
+                                "\n========================================\n"
                                 "\n=============Time/Converged=============\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
                                 "Cases Converged: "+format(len(converged))+"\n"
@@ -422,7 +422,7 @@ if __name__ == "__main__":
                                 "\n======Flame Simulation Information======"
                                 "\nMingrid = "+format(mingrid)+
                                 "\nMult_Soret = "+format(mul_soret)+
-                                "\n=====================================\n"
+                                "\n========================================\n"
                                 "\n=============Time/Converged=============\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
                                 "Cases Converged: "+format(len(converged))+"\n"
