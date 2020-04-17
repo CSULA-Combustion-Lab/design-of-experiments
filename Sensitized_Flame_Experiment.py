@@ -25,10 +25,10 @@ gas = ct.Solution(mechanism)
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(.05), np.log10(10), 1) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.2), np.log10(4), 1) #Equivalence ratio
+P    = np.logspace(np.log10(.05), np.log10(10), 4) #Pressure [atm]
+Phi  = np.logspace(np.log10(0.2), np.log10(4), 4) #Equivalence ratio
 Fuel = np.logspace(0.1, 0.85, 5) #Fuel mole fraction
-OtO  = np.logspace(np.log10(.01), np.log10(.95), 1) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.logspace(np.log10(.01), np.log10(.95), 4) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -59,7 +59,7 @@ diluent_name = 'N2' #chemical formula of diluent
 custom     = False # If true, custom styles used for range and save files
 oxidizer   = True # If true, OtO will be used instead of Fuel Mole Fraction
 debug      = False # If true, print lots of information for debugging.
-save_files = False # If true, save files for plotting script
+save_files = True # If true, save files for plotting script
 
 #Debug Files
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
@@ -67,6 +67,9 @@ DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
 Debug_params = [1, 1, 0.21, 300]
 LogLevel     = 1
 
+#Flame Conditions
+mingrid = 200
+mul_soret = False
 
 #Custom loop
 if custom:
@@ -75,6 +78,7 @@ if custom:
     Oxygen = np.linspace(0.05,0.95,50)
     conditions = {'Parameters': [P, Fuel, Oxygen, Tint],
                   'Mixture': [fuel_name, x, y, z, a, diluent_name],
+                  'Flame': [mingrid, mul_soret],
                   'Files': [mechanism, flame_temp],
                   'Debug': [Debug_params, LogLevel],
                   'T/F': [debug, oxidizer, custom]}
@@ -82,6 +86,7 @@ if custom:
 else:
     conditions = {'Parameters': [P, Phi, Fuel, Tint, OtO],
                   'Mixture': [fuel_name, x, y, z, a, diluent_name],
+                  'Flame': [mingrid, mul_soret],
                   'Files': [mechanism, flame_temp],
                   'Debug': [Debug_params, LogLevel],
                   'T/F': [debug, oxidizer, custom]}
@@ -137,6 +142,8 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
     debug        = Cond['T/F'][0]
     oxidizer     = Cond['T/F'][1]
     custom       = Cond['T/F'][2]
+    mg           = Cond['Flame'][0]
+    ms           = Cond['Flame'][1]
     
     if custom:
         Fuel    = Phi
@@ -167,12 +174,9 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
     if debug:
         logl = Cond['Debug'][1]
         print('\nMixture Composition:')
-        print(Mix)
-            
+        print(Mix)     
     else:
         logl = 0
-        ms   = False
-        mg   = 200
         
     f = flame.Flame(Mix, P, Tin, tempfile, chemfile=chem)
     f.run(mingrid=mg, loglevel=logl, mult_soret=ms)
@@ -185,7 +189,7 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
     Su         = f.flame_result.u[0]  #Flame speed at the front
     flame_T    = f.flame_result.T[-1] #Flame temperature at end
     flame_rho  = f.flame_result.density_mass[0] #Flame density at the front
-    flame_info = {'Flame': [flame_sens, Su, flame_rho, flame_T],
+    flame_info = {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
                   'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
     return flame_info
 
@@ -202,8 +206,20 @@ def duplicate_reactions(gas):
                 dup_rxns[rxn_eqn].append(i)
             else:
                 print('Something went wrong!')
-                
     return dup_rxns
+
+
+def flame_info_filter(flame_information, duplicate_reactions):
+    for f in flame_information:
+        if f['Flame'] == None:
+            continue
+        else:
+            for d in duplicate_rxns:
+                sum = 0
+                for n in duplicate_rxns[d]:
+                     sum += f['Flame'][0][n][1]
+                     f['Flame'][0][n][1] = 0
+                f['Flame'][0][duplicate_rxns[d][0]][1] = sum
 
 if __name__ == "__main__":
     #Start time
@@ -232,7 +248,7 @@ if __name__ == "__main__":
               '\nTemperature: '+format(Debug_params[3])+' [K]')
         flame_info_debug = flame_sens(*Debug_params, conditions)
         print('Debuggin complete!')
-        toc = time.time()
+        toc      = time.time()
         duration = toc - tic
         print('Dubugging time: '+format(duration, '0.5f')+' seconds\n')
    
@@ -240,22 +256,29 @@ if __name__ == "__main__":
     else:
         print('Initial number of cases: '+format(len(paramlist)))
         print('\nStart of simulations...')
-        sim_start = time.time()
+        sim_start  = time.time()
         flame_info = parallelize(paramlist, conditions, flame_sens)
         sim_end    = time.time()
         sim_time   = sim_end - sim_start
         print('End of simulations')
         print('Simulations took '+format(sim_time, '0.5f')+' seconds.')
-        converged = []
+        print('\nStart flame information filtering...')
+        filter_start = time.time()
+        converged    = []
         for x in flame_info:
             if x['Flame'] == None:
                 continue
             else:
                 converged.append(1)
-        toc = time.time()
-        print('Number of cases converged:', len(converged))
-        duration = toc-tic
         duplicate_rxns = duplicate_reactions(gas)
+        flame_info_filter(flame_info, duplicate_rxns)
+        filter_end  = time.time()
+        filter_time = filter_end - filter_start
+        print('End of filtering')
+        print('Filtering took '+format(filter_time, '0.5f')+ ' seconds.')
+        print('Number of cases converged:', len(converged))
+        toc      = time.time()
+        duration = toc-tic
         print('Total time '+format(duration, '0.5f')+' seconds.\n')
         
 #################################Save Files####################################   
@@ -303,7 +326,7 @@ if __name__ == "__main__":
                                 "following information are the parameters "
                                 "and cases simulated\n\n"
                                 "==========Properties==========\n"
-                                "Mechanism "+mechanism+"\n"
+                                "Mechanism: "+mechanism+"\n"
                                 "Fuel: "+fuel_name+"\n"
                                 "Diluent: "+diluent_name+"\n"
                                 "==============================\n"
@@ -317,6 +340,8 @@ if __name__ == "__main__":
                                 "\n==========Flame-Information==========\n"
                                 "FLame Speed: "+format(flame_info['Flame'][1])
                                 +" [m/s]"
+                                "\nMingrid = "+format(mingrid)+
+                                "\nMult_Soret = "+format(mul_soret)+
                                 "\n=====================================\n"
                                 "\n==============Time==============\n"
                                 "Run time: "+format(duration, '0.5f')+" [s]\n"
@@ -363,12 +388,16 @@ if __name__ == "__main__":
                                 "Fuel: "+fuel_name+"\n"
                                 "Diluent: "+diluent_name+"\n"
                                 "==============================\n"
-                                "================Parameters================"
+                                "\n================Parameters================"
                                 "\nInitial Temperature: "+format(Tint)
                                 +" [Kelvin]\nPressure Range: "
                                 +format(P)+" [atm]\nEquivalence Ratio Range: "
                                 +format(Phi)+F_O_text+
                                 "==========================================\n"
+                                "\n======Flame Simulation Information======"
+                                "\nMingrid = "+format(mingrid)+
+                                "\nMult_Soret = "+format(mul_soret)+
+                                "\n=====================================\n"
                                 "\n=============Time/Converged=============\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
                                 "Cases Converged: "+format(len(converged))+"\n"
@@ -376,20 +405,24 @@ if __name__ == "__main__":
                                 "========================================")
             if custom:
                 text_description = ("The following simulation was a custom"
-                                " run using the follow properties and "
+                                " run using the following properties and "
                                 " parameters.\n\n"
                                 "==========Properties==========\n"
                                 "Mechanism "+mechanism+"\n"
                                 "Fuel: "+fuel_name+"\n"
                                 "Diluent: "+diluent_name+"\n"
                                 "==============================\n"
-                                "================Parameters================"
-                                "\nInitial Temperature: "+format(Tint)
-                                +" [Kelvin]\nPressure Range: "+format(P)+
+                                "\n================Parameters================"
+                                "\nInitial Temperature: "+format(Tint)+
+                                " [Kelvin]\nPressure Range: "+format(P)+
                                 " [atm]\nFuel Range: "+format(Fuel)+
                                 " [mole fraction]\nOxygen Range: "
                                 +format(Oxygen)+" [mole fraction]\n"
                                 "==========================================\n"
+                                "\n======Flame Simulation Information======"
+                                "\nMingrid = "+format(mingrid)+
+                                "\nMult_Soret = "+format(mul_soret)+
+                                "\n=====================================\n"
                                 "\n=============Time/Converged=============\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
                                 "Cases Converged: "+format(len(converged))+"\n"
