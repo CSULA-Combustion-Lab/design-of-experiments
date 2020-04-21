@@ -6,6 +6,7 @@ Created on Fri Mar 20 09:52:04 2020
 """
 
 import os
+import copy
 import errno
 import pickle
 import time, sys
@@ -25,10 +26,10 @@ gas = ct.Solution(mechanism)
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(.05), np.log10(10), 4) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.2), np.log10(4), 4) #Equivalence ratio
+P    = np.logspace(np.log10(.05), np.log10(10), 1) #Pressure [atm]
+Phi  = np.logspace(np.log10(0.2), np.log10(4), 3) #Equivalence ratio
 Fuel = np.logspace(0.1, 0.85, 5) #Fuel mole fraction
-OtO  = np.logspace(np.log10(.01), np.log10(.95), 4) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.logspace(np.log10(.01), np.log10(.95), 3) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -59,7 +60,7 @@ diluent_name = 'N2' #chemical formula of diluent
 custom     = False # If true, custom styles used for range and save files
 oxidizer   = True # If true, OtO will be used instead of Fuel Mole Fraction
 debug      = False # If true, print lots of information for debugging.
-save_files = True # If true, save files for plotting script
+save_files = False # If true, save files for plotting script
 
 #Debug Files
 DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, phi={:.3g}, fuel={:.3g}'
@@ -131,6 +132,7 @@ def parallelize(param, cond, fun):
         casenum += 1
     outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
     return outlist
+
 
 def flame_sens(P, Phi, F_O, Tin, Cond):
     """[Fill in information]"""
@@ -221,6 +223,7 @@ def flame_info_filter(flame_information, duplicate_reactions):
                      f['Flame'][0][n][1] = 0
                 f['Flame'][0][duplicate_rxns[d][0]][1] = sum
 
+
 if __name__ == "__main__":
     #Start time
     tic = time.time()
@@ -270,6 +273,7 @@ if __name__ == "__main__":
                 continue
             else:
                 converged.append(1)
+        flame_info_unfiltered = copy.deepcopy(flame_info)
         duplicate_rxns = duplicate_reactions(gas)
         flame_info_filter(flame_info, duplicate_rxns)
         filter_end  = time.time()
