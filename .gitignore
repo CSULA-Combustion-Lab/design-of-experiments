@@ -1,3 +1,5 @@
 Flame_Sensitivity_Results
 main2.py
 *.pkl
+*.cti
+DME-air.cti
