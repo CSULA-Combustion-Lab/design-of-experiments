@@ -19,24 +19,24 @@ from utilities import flame
 from datetime import datetime
 
 ####Set experiment parameters
-mechanism = 'Li_model.cti' #Mechanism file
+mechanism = 'Li_Methylnitrite.cti' #Mechanism file
 gas = ct.Solution(mechanism)
 
 #Working directory
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(.05), np.log10(10), 1) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.2), np.log10(4), 3) #Equivalence ratio
+P    = np.logspace(np.log10(.5), np.log10(10), 1) #Pressure [atm]
+Phi  = np.logspace(np.log10(0.8), np.log10(5), 2) #Equivalence ratio
 Fuel = np.logspace(0.1, 0.85, 5) #Fuel mole fraction
-OtO  = np.logspace(np.log10(.01), np.log10(.95), 3) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.logspace(np.log10(.21), np.log10(.95), 2) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
 Tint = 323 #Temperature [K]
 
 #Parameters for mixture
-fuel_name = 'CH3OH' #chemical formula of fuel
+fuel_name = 'CH3ONO' #chemical formula of fuel
 
 #Fuel C(x)H(y)O(z)
 fuel_index = gas.species(gas.species_index(fuel_name)).composition
@@ -53,9 +53,28 @@ if 'O' in fuel_index:
 else:
     z = 0
     
+multifuel = True # if true, additional fuels will be added from fuels list
+if multifuel:
+    # fuel_list should have the fuel name followed by the percentage of the
+    # named fuel relative to the total fuel. Fuel percentages should be less
+    # than 100%
+    fuel_list = ['CH3O', .50]
+    percent_fuels = 0
+    for n in range(1,len(fuel_list),2):
+        percent_fuels += fuel_list[n]
+    if percent_fuels >= 1:
+        sys.exit("Error! Multifuel percentage above/equal to 100%")
+    for n in range(0,len(fuel_list),2):
+        fuel_index = gas.species(gas.species_index(fuel_list[n])).composition
+        if 'C' in fuel_index:
+            x += fuel_index['C']
+        if 'H' in fuel_index:
+            y += fuel_index['H']
+        if 'O' in fuel_index:
+            z += fuel_index['O']
+
 a = x+y/4-z/2       #molar oxygen-fuel ratio
 diluent_name = 'N2' #chemical formula of diluent
-
 
 custom     = False # If true, custom styles used for range and save files
 oxidizer   = True # If true, OtO will be used instead of Fuel Mole Fraction
@@ -82,7 +101,7 @@ if custom:
                   'Flame': [mingrid, mul_soret],
                   'Files': [mechanism, flame_temp],
                   'Debug': [Debug_params, LogLevel],
-                  'T/F': [debug, oxidizer, custom]}
+                  'T/F': [debug, oxidizer, custom, multifuel]}
 #Normal loop
 else:
     conditions = {'Parameters': [P, Phi, Fuel, Tint, OtO],
@@ -90,8 +109,10 @@ else:
                   'Flame': [mingrid, mul_soret],
                   'Files': [mechanism, flame_temp],
                   'Debug': [Debug_params, LogLevel],
-                  'T/F': [debug, oxidizer, custom]}
+                  'T/F': [debug, oxidizer, custom, multifuel]}
 
+if multifuel:
+    conditions.update([('MultiFuels', fuel_list)])
 
 def parallelize(param, cond, fun):
     """[Fill in information]"""
@@ -144,6 +165,7 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
     debug        = Cond['T/F'][0]
     oxidizer     = Cond['T/F'][1]
     custom       = Cond['T/F'][2]
+    multifuel    = Cond['T/F'][3]
     mg           = Cond['Flame'][0]
     ms           = Cond['Flame'][1]
     
@@ -160,13 +182,35 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
         Oxygen  = OtO/(noxy + 1)
         Fuel    = noxy/(noxy + 1)
         Diluent = (1 - OtO)/(noxy + 1)
-        Mix     = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
+        if multifuel:
+            mf  = Cond['MultiFuels']
+            fuel_percent = 0
+            for n in range(1,len(mf),2):
+                fuel_percent += mf[n]
+            Fuel_main = fuel_percent*Fuel
+            Mix       = [[Diluent_name, Diluent], ['O2', Oxygen],
+                         [Fuel_name, Fuel_main]]
+            for n in range(0,len(mf),2):
+                Mix.append([mf[n], mf[n+1]*Fuel])
+        else:
+            Mix  = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
     else:
         Fuel    = F_O
         Oxygen  = a/Phi*Fuel
         Diluent = 1 - Oxygen - Fuel
         OtO     = Oxygen/(Oxygen + Diluent)
-        Mix     = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
+        if multifuel:
+            mf  = Cond['MultiFuels']
+            fuel_percent = 0
+            for n in range(1,len(mf),2):
+                fuel_percent += mf[n]
+            Fuel_main = fuel_percent*Fuel
+            Mix       = [[Diluent_name, Diluent], ['O2', Oxygen],
+                         [Fuel_name, Fuel_main]]
+            for n in range(0,len(mf),2):
+                Mix.append([mf[n], mf[n+1]])
+        else:
+            Mix  = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
         
     if Diluent < 0:
         flame_info = {'Flame': None,
