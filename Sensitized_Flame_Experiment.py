@@ -17,6 +17,7 @@ path = (r'D:\School\Cal State La\Extracurricular\NOx Combustion Research')
 sys.path.insert(0, path)
 from utilities import flame
 from datetime import datetime
+ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
 ####Set experiment parameters
 mechanism = 'Li_Methylnitrite.cti' #Mechanism file
@@ -26,10 +27,10 @@ gas = ct.Solution(mechanism)
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(.5), np.log10(10), 1) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.8), np.log10(5), 2) #Equivalence ratio
+P    = np.logspace(np.log10(1), np.log10(10), 1) #Pressure [atm]
+Phi  = np.logspace(np.log10(0.25), np.log10(0.75), 4) #Equivalence ratio
 Fuel = np.logspace(0.1, 0.85, 5) #Fuel mole fraction
-OtO  = np.logspace(np.log10(.21), np.log10(.95), 2) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.logspace(np.log10(.05), np.log10(.95), 4) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -58,7 +59,7 @@ if multifuel:
     # fuel_list should have the fuel name followed by the percentage of the
     # named fuel relative to the total fuel. Fuel percentages should be less
     # than 100%
-    fuel_list = ['CH3O', .50]
+    fuel_list = ['CH3OH', .50]
     percent_fuels = 0
     for n in range(1,len(fuel_list),2):
         percent_fuels += fuel_list[n]
