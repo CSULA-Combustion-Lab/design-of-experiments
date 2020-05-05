@@ -27,10 +27,10 @@ gas = ct.Solution(mechanism)
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(1), np.log10(10), 1) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.25), np.log10(0.75), 4) #Equivalence ratio
+P    = np.logspace(np.log10(0.5), np.log10(2), 4) #Pressure [atm]
+Phi  = np.logspace(np.log10(0.25), np.log10(0.75), 8) #Equivalence ratio
 Fuel = np.logspace(0.1, 0.85, 5) #Fuel mole fraction
-OtO  = np.logspace(np.log10(.05), np.log10(.95), 4) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.logspace(np.log10(.10), np.log10(.95), 8) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
