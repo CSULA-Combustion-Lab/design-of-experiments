@@ -27,10 +27,10 @@ gas = ct.Solution(mechanism)
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-P    = np.logspace(np.log10(0.5), np.log10(2), 4) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.25), np.log10(0.75), 8) #Equivalence ratio
+P    = np.logspace(np.log10(0.5), np.log10(2), 1) #Pressure [atm]
+Phi  = np.logspace(np.log10(0.25), np.log10(4), 2) #Equivalence ratio
 Fuel = np.logspace(0.1, 0.85, 5) #Fuel mole fraction
-OtO  = np.logspace(np.log10(.10), np.log10(.95), 8) #Oxygen to Oxidizer ratio [Air = .21]
+OtO  = np.logspace(np.log10(.10), np.log10(.95), 2) #Oxygen to Oxidizer ratio [Air = .21]
 
 
 #Initial Temperature
@@ -54,7 +54,7 @@ if 'O' in fuel_index:
 else:
     z = 0
     
-multifuel = True # if true, additional fuels will be added from fuels list
+multifuel = False # if true, additional fuels will be added from fuels list
 if multifuel:
     # fuel_list should have the fuel name followed by the percentage of the
     # named fuel relative to the total fuel. Fuel percentages should be less
@@ -371,6 +371,11 @@ if __name__ == "__main__":
                 F_O_text  = "\nOxygen to Oxidizer Fraction: "
             else:
                 F_O_text  = "\nFuel Mole Fraction: "
+            if multifuel:
+                MF_text = ("Multifuel = "+format(multifuel)+"\n"
+                           "Fuels\Percentages = "+format((fuel_list))+"\n")
+            else:
+                MF_text = "Multifuel = "+format(multifuel)+"\n"    
             text_description = ("This file provides debug information.\n The "
                                 "following information are the parameters "
                                 "and cases simulated\n\n"
@@ -378,6 +383,7 @@ if __name__ == "__main__":
                                 "Mechanism: "+mechanism+"\n"
                                 "Fuel: "+fuel_name+"\n"
                                 "Diluent: "+diluent_name+"\n"
+                                +MF_text+
                                 "==============================\n"
                                 "\n==========Parameters==========\n"
                                 "Initial Temperature: "+format(Debug_params[3])
@@ -429,6 +435,11 @@ if __name__ == "__main__":
                             +format(OtO)+"\n")
             else:
                 F_O_text = "\nFuel Mole Fraction Range: "+format(Fuel)+"\n"
+            if multifuel:
+                MF_text = ("Multifuel = "+format(multifuel)+"\n"
+                           "Fuels\Percentages = "+format((fuel_list))+"\n")
+            else:
+                MF_text = "Multifuel = "+format(multifuel)+"\n"   
             text_description = ("This file provides simulation information.\n"
                                 "The following information are the parameters "
                                 "and cases simulated\n\n"
@@ -436,6 +447,7 @@ if __name__ == "__main__":
                                 "Mechanism: "+mechanism+"\n"
                                 "Fuel: "+fuel_name+"\n"
                                 "Diluent: "+diluent_name+"\n"
+                                +MF_text+
                                 "==============================\n"
                                 "\n================Parameters================"
                                 "\nInitial Temperature: "+format(Tint)
@@ -448,6 +460,7 @@ if __name__ == "__main__":
                                 "\nMult_Soret = "+format(mul_soret)+
                                 "\n========================================\n"
                                 "\n=============Time/Converged=============\n"
+                                "Total Cases: "+format(len(paramlist))+"\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
                                 "Cases Converged: "+format(len(converged))+"\n"
                                 "Run time: "+format(duration, '0.5f')+" [s]\n"
@@ -473,6 +486,7 @@ if __name__ == "__main__":
                                 "\nMult_Soret = "+format(mul_soret)+
                                 "\n========================================\n"
                                 "\n=============Time/Converged=============\n"
+                                "Total Cases: "+format(len(paramlist))+"\n"
                                 "Sim time: "+format(sim_time, '0.5f')+" [s]\n"
                                 "Cases Converged: "+format(len(converged))+"\n"
                                 "Run time: "+format(duration, '0.5f')+" [s]\n"
