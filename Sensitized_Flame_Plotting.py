@@ -262,38 +262,71 @@ def flame_speed_plots(f_info, save_path, log):
         plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
                     ' Initial Temperature '+format(Tint)+'K.png')
     plt.close(fig)
-    
 
-def rxn_sens_bar_plots(flame, nrxns, spec_cond, save_path):
+
+def max_rxn_text(f_info, save_path):
     """[Insert Information]"""
-    fig, ax = plt.subplots()
-    ax.grid(axis='x', which='major', ls='--')
-    ax.grid(axis='y', which='minor', c='k')
-    sens     = []
-    pressure = []
-    oxygen   = []
-    for i in spec_cond['P']:
-        for j in spec_cond['O2']:
-            for f in flame:
-                if f['Condtions'][0] == i and f['Conditions'][4][1][1] == j:
-                    sens.append(f['Flame'][0])
-                    pressure.append()
-                    oxygen.append()
-    sens.sort(key=lambda x: abs(x[1]), reverse=True)
-    sens_plot = sens[:nrxns]
-    ylocs = numpy.arange(nrxns)
-    ax.barh(ylocs, [x[1] for x in sens_plot], align='center')
-    ax.set_yticks(ylocs)
-    ax.set_yticklabels([x[2] for x in sens_plot])
-    ax.set_yticks(ylocs - 0.5, minor=True)
-#    ax.tick_params(axis='y', which='minor', bottom='off')
-    ax.invert_yaxis()
-    ax.axvline(c='k')
-    ax.set_xlabel('Normalized Sensitivity')
-    ax.set_ylim([max(ylocs)+0.5, min(ylocs)-0.5])
-    fig.tight_layout()
-    fig.savefig(os.path.join(save_path, 'Flame Sensitivity Bar Plot.png'))
-    plt.close(fig)
+    Tint     = f_info[0]['Conditions'][3]
+    Pressure = []
+    Fuel     = []
+    Phi      = []
+    Oxygen   = []
+    Max_rxn  = []
+    for f in f_info:
+        max_rxn  = max_sens(f)
+        Max_rxn.append([max_rxn[0], max_rxn[2]])
+        Pressure.append(f['Conditions'][0])
+        Fuel.append(f['Conditions'][1])
+        Phi.append(f['Conditions'][2])
+        Oxygen.append(f['Conditions'][4][1][1])
+    Max_rxn_dict = {}
+    Max_rxn_eq   = {}
+    for n in range(len(Max_rxn)):
+        rxn_num = str(Max_rxn[n][0]+1)
+        if rxn_num not in Max_rxn_dict.keys():
+            Max_rxn_dict[rxn_num] = [[Max_rxn[n][1], Tint],
+                                     [Pressure[n], Fuel[n],
+                                      Phi[n], Oxygen[n]]]
+            Max_rxn_eq[rxn_num]   = [Max_rxn[n][1], 1, Tint]
+        elif rxn_num in Max_rxn_dict.keys():
+            Max_rxn_dict[rxn_num].append([Pressure[n], Fuel[n],
+                                          Phi[n], Oxygen[n]])
+            Max_rxn_eq[rxn_num][1] += 1
+        else:
+            print('Something went wrong!')
+    return Max_rxn_dict, Max_rxn_eq
+
+
+# def rxn_sens_bar_plots(flame, nrxns, spec_cond, save_path):
+#     """[Insert Information]"""
+#     fig, ax = plt.subplots()
+#     ax.grid(axis='x', which='major', ls='--')
+#     ax.grid(axis='y', which='minor', c='k')
+#     sens     = []
+#     pressure = []
+#     oxygen   = []
+#     for i in spec_cond['P']:
+#         for j in spec_cond['O2']:
+#             for f in flame:
+#                 if f['Condtions'][0] == i and f['Conditions'][4][1][1] == j:
+#                     sens.append(f['Flame'][0])
+#                     pressure.append()
+#                     oxygen.append()
+#     sens.sort(key=lambda x: abs(x[1]), reverse=True)
+#     sens_plot = sens[:nrxns]
+#     ylocs = numpy.arange(nrxns)
+#     ax.barh(ylocs, [x[1] for x in sens_plot], align='center')
+#     ax.set_yticks(ylocs)
+#     ax.set_yticklabels([x[2] for x in sens_plot])
+#     ax.set_yticks(ylocs - 0.5, minor=True)
+# #    ax.tick_params(axis='y', which='minor', bottom='off')
+#     ax.invert_yaxis()
+#     ax.axvline(c='k')
+#     ax.set_xlabel('Normalized Sensitivity')
+#     ax.set_ylim([max(ylocs)+0.5, min(ylocs)-0.5])
+#     fig.tight_layout()
+#     fig.savefig(os.path.join(save_path, 'Flame Sensitivity Bar Plot.png'))
+#     plt.close(fig)
 
     
 def rxn_average(flame, nrxns):
@@ -314,7 +347,8 @@ def max_sens(flame):
         if abs(m[1]) > max_rxn_sens:
             max_rxn_num  = m[0]
             max_rxn_sens = m[1]
-    max_rxn = [max_rxn_num, max_rxn_sens]
+            max_rxn_eq   = m[2]
+    max_rxn = [max_rxn_num, max_rxn_sens, max_rxn_eq]
     return max_rxn
 
     
@@ -363,17 +397,18 @@ if __name__ == "__main__":
     #  'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
     
     #Plot Functions
-    Rxn_interest = numpy.arange(70,81) #Reaction number of the reaction of interest
+    Rxn_interest = numpy.arange(69,81) #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
     Logspace     = True #If true all plots will use logspace
     Spec_Conditions = {'Key': ['P', 'O2'],
                        'O2': [0.25, 0.5],
                        'P': [0.5, 1]}
+    Max_rxn_cond, Max_rxn_count = max_rxn_text(Flame_speed_filter, Plot_path)  
     rxn_plots(Flame_speed_filter, Plot_path, Logspace)
     flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
     for Rxns in Rxn_interest:
         rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-                           Threshold, Plot_path, Logspace)
+                            Threshold, Plot_path, Logspace)
         rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
     # rxn_sens_bar_plots(Flame_speed_filter, Nrxns, Spec_Conditions, Plot_path)
