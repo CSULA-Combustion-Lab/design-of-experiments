@@ -6,6 +6,7 @@ Created on Mon Apr  6 14:20:01 2020
 """
 
 import os
+import csv
 import numpy
 import pickle
 import matplotlib.pyplot as plt
@@ -264,7 +265,7 @@ def flame_speed_plots(f_info, save_path, log):
     plt.close(fig)
 
 
-def max_rxn_text(f_info, save_path):
+def max_rxn_csv(f_info, save_path):
     """[Insert Information]"""
     Tint     = f_info[0]['Conditions'][3]
     Pressure = []
@@ -279,22 +280,49 @@ def max_rxn_text(f_info, save_path):
         Fuel.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
         Oxygen.append(f['Conditions'][4][1][1])
-    Max_rxn_dict = {}
-    Max_rxn_eq   = {}
+    Max_rxn_params = {}
+    Max_rxns   = {}
     for n in range(len(Max_rxn)):
         rxn_num = str(Max_rxn[n][0]+1)
-        if rxn_num not in Max_rxn_dict.keys():
-            Max_rxn_dict[rxn_num] = [[Max_rxn[n][1], Tint],
+        if rxn_num not in Max_rxn_params.keys():
+            Max_rxn_params[rxn_num] = [[Max_rxn[n][1], Tint],
                                      [Pressure[n], Fuel[n],
                                       Phi[n], Oxygen[n]]]
-            Max_rxn_eq[rxn_num]   = [Max_rxn[n][1], 1, Tint]
-        elif rxn_num in Max_rxn_dict.keys():
-            Max_rxn_dict[rxn_num].append([Pressure[n], Fuel[n],
+            Max_rxns[rxn_num]   = [Max_rxn[n][1], 1, Tint]
+        elif rxn_num in Max_rxn_params.keys():
+            Max_rxn_params[rxn_num].append([Pressure[n], Fuel[n],
                                           Phi[n], Oxygen[n]])
-            Max_rxn_eq[rxn_num][1] += 1
+            Max_rxns[rxn_num][1] += 1
         else:
             print('Something went wrong!')
-    return Max_rxn_dict, Max_rxn_eq
+    csv_file_max = os.path.join(save_path, 'Maximum Rxns.csv')
+    csv_file_params = os.path.join(save_path, 'Maximum Rxns Parameters.csv')
+    with open(csv_file_max, mode='w') as max_rxns:
+        mr_writer = csv.writer(max_rxns, delimiter=',',
+                                quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        mr_writer.writerow(['Rxn Number', 'Rxn Equation',
+                            'Max Count', 'Initial Temperature [K]'])
+        for keys in Max_rxns:
+            mr_writer.writerow([keys, Max_rxns[keys][0],
+                                Max_rxns[keys][1], Max_rxns[keys][2]])
+    with open(csv_file_params, mode='w') as rxn_params:
+        rp_writer = csv.writer(rxn_params, delimiter=',',
+                               quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        rp_writer.writerow(['Rxn Number', 'Rxn Equation',
+                            'Initial Temperature [K]'])
+        for keys in Max_rxn_params:
+            rp_writer.writerow([keys, Max_rxn_params[keys][0][0],
+                                Max_rxn_params[keys][0][1]])
+            rp_writer.writerow(['', 'Parameters:','Pressure [atm]',
+                                'Fuel Mole Fraction', 'Equivalence Ratio',
+                                'Oxygen Mole Fraction'])
+            for p in range(1,len(Max_rxn_params[keys])):
+                rp_writer.writerow(['', '', Max_rxn_params[keys][p][0],
+                                    Max_rxn_params[keys][p][1], 
+                                    Max_rxn_params[keys][p][2],
+                                    Max_rxn_params[keys][p][3]])
+        
+    return Max_rxn_params, Max_rxns
 
 
 # def rxn_sens_bar_plots(flame, nrxns, spec_cond, save_path):
@@ -404,11 +432,11 @@ if __name__ == "__main__":
     Spec_Conditions = {'Key': ['P', 'O2'],
                        'O2': [0.25, 0.5],
                        'P': [0.5, 1]}
-    Max_rxn_cond, Max_rxn_count = max_rxn_text(Flame_speed_filter, Plot_path)  
-    rxn_plots(Flame_speed_filter, Plot_path, Logspace)
-    flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    for Rxns in Rxn_interest:
-        rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-                            Threshold, Plot_path, Logspace)
-        rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
+    Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)  
+    # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
+    # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
+    # for Rxns in Rxn_interest:
+    #     rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+    #                         Threshold, Plot_path, Logspace)
+    #     rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
     # rxn_sens_bar_plots(Flame_speed_filter, Nrxns, Spec_Conditions, Plot_path)
