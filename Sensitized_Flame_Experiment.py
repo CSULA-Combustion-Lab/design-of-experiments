@@ -54,7 +54,7 @@ if 'O' in fuel_index:
 else:
     z = 0
     
-multifuel = True # if true, additional fuels will be added from fuels list
+multifuel = False # if true, additional fuels will be added from fuels list
 if multifuel:
     # fuel_list should have the fuel name followed by the percentage of the
     # named fuel relative to the total fuel. Fuel percentages should be less
@@ -227,12 +227,11 @@ def flame_sens(P, Phi, F_O, Tin, Cond):
         else:
             Mix = [[Diluent_name, Diluent], ['O2', Oxygen], [Fuel_name, Fuel]]
     
-    try:
-        assert np.isclose(Phi, Phi_check)
-    except AssertionError:
-        flame_info = {'Flame': None,
-                      'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
-        return flame_info
+    if multifuel:
+        if not np.isclose(Phi, Phi_check):
+            flame_info = {'Flame': None,
+                          'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
+            return flame_info
     
     if Diluent < 0:
         flame_info = {'Flame': None,
