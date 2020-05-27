@@ -433,10 +433,10 @@ if __name__ == "__main__":
                        'O2': [0.25, 0.5],
                        'P': [0.5, 1]}
     Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)  
-    # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
-    # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    # for Rxns in Rxn_interest:
-    #     rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-    #                         Threshold, Plot_path, Logspace)
-    #     rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
+    rxn_plots(Flame_speed_filter, Plot_path, Logspace)
+    flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
+    for Rxns in Rxn_interest:
+        rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+                            Threshold, Plot_path, Logspace)
+        rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
     # rxn_sens_bar_plots(Flame_speed_filter, Nrxns, Spec_Conditions, Plot_path)
