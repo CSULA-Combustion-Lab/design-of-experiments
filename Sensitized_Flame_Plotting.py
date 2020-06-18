@@ -9,6 +9,7 @@ import os
 import csv
 import numpy
 import pickle
+from operator import itemgetter
 import matplotlib.pyplot as plt
 #from tkinter import filedialog
 
@@ -324,37 +325,28 @@ def max_rxn_csv(f_info, save_path):
         
     return Max_rxn_params, Max_rxns
 
-
-# def rxn_sens_bar_plots(flame, nrxns, spec_cond, save_path):
-#     """[Insert Information]"""
-#     fig, ax = plt.subplots()
-#     ax.grid(axis='x', which='major', ls='--')
-#     ax.grid(axis='y', which='minor', c='k')
-#     sens     = []
-#     pressure = []
-#     oxygen   = []
-#     for i in spec_cond['P']:
-#         for j in spec_cond['O2']:
-#             for f in flame:
-#                 if f['Condtions'][0] == i and f['Conditions'][4][1][1] == j:
-#                     sens.append(f['Flame'][0])
-#                     pressure.append()
-#                     oxygen.append()
-#     sens.sort(key=lambda x: abs(x[1]), reverse=True)
-#     sens_plot = sens[:nrxns]
-#     ylocs = numpy.arange(nrxns)
-#     ax.barh(ylocs, [x[1] for x in sens_plot], align='center')
-#     ax.set_yticks(ylocs)
-#     ax.set_yticklabels([x[2] for x in sens_plot])
-#     ax.set_yticks(ylocs - 0.5, minor=True)
-# #    ax.tick_params(axis='y', which='minor', bottom='off')
-#     ax.invert_yaxis()
-#     ax.axvline(c='k')
-#     ax.set_xlabel('Normalized Sensitivity')
-#     ax.set_ylim([max(ylocs)+0.5, min(ylocs)-0.5])
-#     fig.tight_layout()
-#     fig.savefig(os.path.join(save_path, 'Flame Sensitivity Bar Plot.png'))
-#     plt.close(fig)
+def top_nrxns_csv(f_info, nrxns, save_path):
+    """[Insert Information]"""
+    Tint          = f_info[0]['Conditions'][3]
+    Top_Rxns_List = []
+    for f in f_info:
+        Top_Rxns_List.append([f['Conditions'][0], f['Conditions'][1],
+                              f['Conditions'][2], f['Conditions'][4][1][1],
+                              top_rxns(f, nrxns)])
+    csv_file_top_nrxns = os.path.join(save_path, 'Top Rxns per Case.csv')
+    with open(csv_file_top_nrxns, mode='w') as top_nrxns:
+        tr_writer = csv.writer(top_nrxns, delimiter=',',
+                                quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for i in Top_Rxns_List:
+            tr_writer.writerow(['Initial Temperature [K]', 'Pressure [atm]',
+                                'Fuel Mole Fraction', 'Equivalence Ratio',
+                                'Oxygen Mole Fraction'])
+            tr_writer.writerow([Tint, i[0], i[1], i[2], i[3]])
+            tr_writer.writerow(['', 'Rxns:', 'Rxn #',
+                                'Sensitivity Strength', 'Rxn Equation'])
+            for j in i[4]:
+                tr_writer.writerow(['', '', j[0], j[1], j[2]])
+    return Top_Rxns_List
 
     
 def rxn_average(flame, nrxns):
@@ -369,6 +361,7 @@ def rxn_average(flame, nrxns):
 
 
 def max_sens(flame):
+    """[Insert Information]"""
     max_rxn_num  = 0
     max_rxn_sens = 0
     for m in flame['Flame'][0]:
@@ -378,6 +371,26 @@ def max_sens(flame):
             max_rxn_eq   = m[2]
     max_rxn = [max_rxn_num, max_rxn_sens, max_rxn_eq]
     return max_rxn
+
+def top_rxns(flame, nrxns):
+    """[Insert Information]"""
+    f = flame['Flame'][0]
+    f_sort = []
+    for i in f:
+        f_sort.append(i)
+    for j in range(len(f_sort)):
+        f_sort[j][1] = abs(f_sort[j][1])
+    f_sort = sorted(f_sort, key=itemgetter(1))
+    top_rxns_list = f_sort[-nrxns:]
+    sens_sum = 0
+    for k in top_rxns_list:
+        sens_sum += k[1]
+    rxn_str = sens_sum/nrxns
+    for n in top_rxns_list:
+        for m in f:
+            if m[0] == n[0]:
+                n[1] = m[1]/rxn_str
+    return top_rxns_list
 
     
 if __name__ == "__main__":
@@ -432,11 +445,11 @@ if __name__ == "__main__":
     Spec_Conditions = {'Key': ['P', 'O2'],
                        'O2': [0.25, 0.5],
                        'P': [0.5, 1]}
-    Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)  
-    rxn_plots(Flame_speed_filter, Plot_path, Logspace)
-    flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    for Rxns in Rxn_interest:
-        rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-                            Threshold, Plot_path, Logspace)
-        rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
-    # rxn_sens_bar_plots(Flame_speed_filter, Nrxns, Spec_Conditions, Plot_path)
+    # Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
+    T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
+    # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
+    # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
+    # for Rxns in Rxn_interest:
+    #     rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+    #                         Threshold, Plot_path, Logspace)
+    #     rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
