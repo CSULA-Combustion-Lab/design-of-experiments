@@ -219,21 +219,23 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
 
 def flame_speed_plots(f_info, save_path, log):
     """[Insert Information]"""
+    Tint     = f_info[0]['Conditions'][0]
     Pressure = []
-    Fuel     = []
     Phi      = []
-    Dil_frac = []
+    Fuel     = []
     Oxygen   = []
+    Diluent  = f_info[0]['Conditions'][5]
+    Dil_frac = []
     Su       = []
-    Diluent  = f_info[0]['Conditions'][4][0][0]
-    Tint     = f_info[0]['Conditions'][3]
+    Flame_T  = []
     for s in f_info:
-        Pressure.append(s['Conditions'][0])
-        Fuel.append(s['Conditions'][1])
+        Pressure.append(s['Conditions'][1])
         Phi.append(s['Conditions'][2])
+        Fuel.append(s['Conditions'][3])
+        Oxygen.append(s['Conditions'][4])
         Dil_frac.append(s['Conditions'][4][0][1])
-        Oxygen.append(s['Conditions'][4][1][1])
         Su.append(s['Flame'][1])
+        Flame_T.append(s['Flame'][3])
         
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10), sharey=True)
     ax        = axes.flatten()
@@ -245,7 +247,8 @@ def flame_speed_plots(f_info, save_path, log):
                  'Dil':[Dil_frac, Diluent+' Mole Fraction'],
                  'O2':[Oxygen, 'Oxygen Mole Fraction'],
                  'T': [Tint, 'Temperature [K]'],
-                 'Su': [Su, 'Su [m/s]']}
+                 'Su': [Su, 'Su [m/s]'],
+                 'Flame_T': [Flame_T, 'Flame Temperature [K]']}
     conditions = ['P', 'F', 'Phi', 'O2']
     for a, condition in zip(ax, conditions):
         x_key = condition
@@ -348,7 +351,6 @@ def top_nrxns_csv(f_info, nrxns, save_path):
                 tr_writer.writerow(['', '', j[0], j[1], j[2]])
     return Top_Rxns_List
 
-    
 def rxn_average(flame, nrxns):
     """[Insert Information]"""
     rxn_sens = []
@@ -434,11 +436,13 @@ if __name__ == "__main__":
             Flame_speed_filter.append(x)
             
     #Note Flame and No_flame are dictionaries 
-    # {'Flame': [Flame_sens Su Flame_rho, Flame_temp, Mingrid, Mult_sort], 
-    #  'Conditions': [P, Fuel, Phi, Tin, Mix, OtO]}
+    # {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
+    #  'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
+    #                 Fuel_name, Oxidizer_name, Diluent_name,
+    #                 Fue_Percent, Oxi_Percent, Dil_Percent]}
     
     #Plot Functions
-    Rxn_interest = numpy.arange(69,81) #Reaction number of the reaction of interest
+    Rxn_interest = [17,63,64,65,66,67,103,170] #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
     Logspace     = True #If true all plots will use logspace
@@ -446,7 +450,7 @@ if __name__ == "__main__":
                        'O2': [0.25, 0.5],
                        'P': [0.5, 1]}
     # Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
-    T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
+    # T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
     # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
     # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
     # for Rxns in Rxn_interest:
