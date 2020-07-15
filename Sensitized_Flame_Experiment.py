@@ -28,9 +28,9 @@ flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
 P    = np.logspace(np.log10(1), np.log10(2), 1) #Pressure [atm]
-Phi  = np.logspace(np.log10(0.25), np.log10(4), 4) #Equivalence ratio
+Phi  = np.logspace(np.log10(0.25), np.log10(4), 5) #Equivalence ratio
 FtD  = np.logspace(0.06, 0.85, 1) #Fuel to Diluent ratio
-OtO  = np.logspace(np.log10(0.1), np.log10(0.95), 4) #Oxygen to Diluent ratio
+OtO  = np.logspace(np.log10(0.1), np.log10(0.95), 5) #Oxygen to Diluent ratio
 
 #Initial Temperature
 Tint = 323 #Temperature [K]
@@ -100,7 +100,6 @@ else:
                   'T/F': [debug, oxi_fuel, custom, multifuel, multioxidizer]}
 
 
-
 def parallelize(param, cond, fun):
     """[Fill in information]"""
     from multiprocessing import cpu_count, Pool
@@ -141,29 +140,30 @@ def parallelize(param, cond, fun):
     return outlist
 
 
-def flame_sens(P, Phi, F_O, Cond):
+def flame_sens(p, phi, f_o, cond):
     """[Fill in information]"""
-    Tin           = Cond ['Parameters'][3]
-    chem          = Cond['Files'][0]
-    tempfile      = Cond['Files'][1]
-    Fuel_name     = Cond['Mixture'][0]
-    Diluent_name  = Cond['Mixture'][1]
-    Oxidizer_name = Cond['Mixture'][2]
-    debug         = Cond['T/F'][0]
-    o_f           = Cond['T/F'][1]
-    custom        = Cond['T/F'][2]
-    multif        = Cond['T/F'][3]
-    multio        = Cond['T/F'][4]
-    mg            = Cond['Flame'][0]
-    ms            = Cond['Flame'][1]
+    Tin           = cond ['Parameters'][3]
+    chem          = cond['Files'][0]
+    tempfile      = cond['Files'][1]
+    Fuel_name     = cond['Mixture'][0]
+    Diluent_name  = cond['Mixture'][1]
+    Oxidizer_name = cond['Mixture'][2]
+    debug         = cond['T/F'][0]
+    o_f           = cond['T/F'][1]
+    custom        = cond['T/F'][2]
+    multif        = cond['T/F'][3]
+    multio        = cond['T/F'][4]
+    mg            = cond['Flame'][0]
+    ms            = cond['Flame'][1]
     
 # =============================================================================
 # Test Section
+    Diluent = 1 - f_o
     if custom:
-       Mix = mixture_maker(Phi, Phi, F_O)
+       Fuel = f_o[0]
+       Oxidizer = f_o[1]
        
     elif o_f:
-       Diluent = 1 - F_O
        if multif:
            Fuel = ''
            for fl in range(0,len(Fuel_name),2):
@@ -173,34 +173,34 @@ def flame_sens(P, Phi, F_O, Cond):
        if multio:
            Oxidizer = ''
            for ol in range(0,len(Oxidizer_name),2):
-               Oxidizer += Oxidizer_name[ol]+':'+str(Oxidizer_name[ol+1]*F_O)+' '
+               Oxidizer += Oxidizer_name[ol]+':'+str(Oxidizer_name[ol+1]*f_o)+' '
            Oxidizer += Diluent_name+':'+str(Diluent)
        else: 
-           Oxidizer = Oxidizer_name+':'+str(F_O)+' '+Diluent_name+':'+str(Diluent)
-       Mix = mixture_maker(Phi, Fuel, Oxidizer)
+           Oxidizer = Oxidizer_name+':'+str(f_o)+' '+Diluent_name+':'+str(Diluent)
+
        
     elif not o_f:
-       Diluent = 1 - F_O
        if multif:
            Fuel = ''
            for fl in range(0,len(Fuel_name),2):
-                Fuel += Fuel_name[fl]+':'+str(Fuel_name[fl+1]*F_O)+' '
+                Fuel += Fuel_name[fl]+':'+str(Fuel_name[fl+1]*f_o)+' '
            Fuel += Diluent_name+':'+str(Diluent) 
        else:
-           Fuel = Fuel_name+':'+str(F_O)+' '+Diluent_name+':'+str(Diluent)
+           Fuel = Fuel_name+':'+str(f_o)+' '+Diluent_name+':'+str(Diluent)
        if multio:
            Oxidizer = ''
            for ol in range(0,len(Oxidizer_name),2):
                Oxidizer += Oxidizer_name[ol]+':'+str(Oxidizer_name[ol+1])+' '
        else:
            Oxidizer = Oxidizer_name
-       Mix = mixture_maker(Phi, Fuel, Oxidizer)
-       Fue_Percent = mixture_percentage(Fuel_name, Mix)
-       Oxi_Percent = mixture_percentage(Oxidizer_name, Mix)
            
     else:
         print('Error. Check T/F Statments for Incorrect Values.')
         sys.exit()
+        
+    Mix = mixture_maker(phi, Fuel, Oxidizer)
+    Fue_Percent = mixture_percentage(Fuel_name, Mix, multif)
+    Oxi_Percent = mixture_percentage(Oxidizer_name, Mix, multio)
 # =============================================================================
 
     # if custom:
@@ -263,7 +263,7 @@ def flame_sens(P, Phi, F_O, Cond):
     if Diluent < 0:
         Dil_Percent = 0
         flame_info = {'Flame': [None, 'Diluent < 0'],
-                      'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
+                      'Conditions': [Tin, p, phi, Fuel, Oxidizer, Mix,
                                      Fuel_name, Oxidizer_name, Diluent_name,
                                      Fue_Percent, Oxi_Percent, Dil_Percent]}
         return flame_info
@@ -276,27 +276,27 @@ def flame_sens(P, Phi, F_O, Cond):
                 continue
    
     if debug:
-        logl = Cond['Debug'][1]
+        logl = cond['Debug'][1]
         print('\nMixture Composition:')
         print(Mix)     
     else:
         logl = 0
         
-    f = flame.Flame(Mix, P, Tin, tempfile, chemfile=chem)
+    f = flame.Flame(Mix, p, Tin, tempfile, chemfile=chem)
     f.run(mingrid=mg, loglevel=logl, mult_soret=ms)
     if f.flame_result is None:
         flame_info = {'Flame': [None, 'Flame did not converge'],
-                      'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
+                      'Conditions': [Tin, p, phi, Fuel, Oxidizer, Mix,
                                      Fuel_name, Oxidizer_name, Diluent_name,
                                      Fue_Percent, Oxi_Percent, Dil_Percent]}
         return flame_info
     f.sensitivity()
-    flame_sens = f.sens #Rxn sensitivities 
+    f_sens = f.sens #Rxn sensitivities 
     Su         = f.flame_result.u[0]  #Flame speed at the front
     flame_T    = f.flame_result.T[-1] #Flame temperature at end
     flame_rho  = f.flame_result.density_mass[0] #Flame density at the front
-    flame_info = {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
-                  'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
+    flame_info = {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+                  'Conditions': [Tin, p, phi, Fuel, Oxidizer, Mix,
                                  Fuel_name, Oxidizer_name, Diluent_name,
                                  Fue_Percent, Oxi_Percent, Dil_Percent]}
     return flame_info
@@ -342,19 +342,28 @@ def mixture_maker(phi, fuel, oxidizer):
         Mixture.append(temp)
     return Mixture
 
-def mixture_percentage(fo_list, mix):
+
+def mixture_percentage(fo_list, mix, tf):
     Percentage = 0
-    for n in range(0, len(fo_list), 2):
+    if not tf:
         for m in mix:
-            if m[0] == fo_list[x]:
+            if m[0] == fo_list:
                 Percentage += m[1]
             else:
                 continue
+    else:          
+        for n in range(0, len(fo_list), 2):
+            for m in mix:
+                if m[0] == fo_list[n]:
+                    Percentage += m[1]
+                else:
+                    continue
     return Percentage
 
 
 if __name__ == "__main__":
 #############################Initializing######################################
+    """[Fill in information]"""
     tic = time.time() #Main Code Time Start
     if custom: 
         totaliterations = len(P)*len(OtO)
@@ -374,6 +383,7 @@ if __name__ == "__main__":
 
 ##############################Debug loop#######################################
     if debug:
+        """[Fill in information]"""
         print('Debugging in process..')
         print('\nConditions Used:'
               '\nPressure: '+format(Debug_params[0])+' [atm]'
@@ -388,6 +398,7 @@ if __name__ == "__main__":
    
 ############################Simulation loop####################################
     else:
+        """[Fill in information]"""
         print('Initial number of cases: '+format(len(paramlist)))
         print('\nStart of simulations...')
         sim_start  = time.time()
@@ -417,6 +428,7 @@ if __name__ == "__main__":
         print('Total time '+format(duration, '0.5f')+' seconds.\n')
         
 #################################Save Files####################################   
+    """[Fill in information]"""
     if save_files:
         #Save Path/Parent Directory
         parent_dir = 'Flame_Sensitivity_Results'
@@ -428,6 +440,7 @@ if __name__ == "__main__":
         
         #######################Debug directory#################################
         if debug:
+            """[Fill in information]"""
             print('Start debug file save...')
             debug_dir = 'debug'
             debug_path = os.path.join(parent_dir, debug_dir)
@@ -503,7 +516,8 @@ if __name__ == "__main__":
             print('End debug file save')
          
         ########################Normal directory###############################
-        else:               
+        else:
+            """[Fill in information]"""               
             #Create Directory Name
             print('Creating Directory...')
             now = datetime.now()
@@ -524,10 +538,10 @@ if __name__ == "__main__":
             f         = open(filename, "w")
             if oxi_fuel:
                 F_O_text = ("\nOxygen to Oxidizer Mole Fraction Range: "
-                            +format(OtO, '0.3f')+"\n")
+                            +format(OtO)+"\n")
             else:
                 F_O_text = ("\nFuel Mole Fraction Range: "
-                            +format(FtD, '0.3f')+"\n")
+                            +format(FtD)+"\n")
             if multifuel:
                 MF_text = ("Multifuel = "+format(multifuel)+"\n"
                            "Fuels\Percentages = "+format((fuel))+"\n")
@@ -551,8 +565,8 @@ if __name__ == "__main__":
                                 "\n================Parameters================"
                                 "\nInitial Temperature: "+format(Tint)
                                 +" [Kelvin]\nPressure Range: "
-                                +format(P, '0.3f')+" [atm]\nEquivalence "
-                                +"Ratio Range: "+format(Phi, '0.3f')+F_O_text+
+                                +format(P)+" [atm]\nEquivalence "
+                                +"Ratio Range: "+format(Phi)+F_O_text+
                                 "==========================================\n"
                                 "\n======Flame Simulation Information======"
                                 "\nMingrid = "+format(mingrid)+
@@ -565,6 +579,7 @@ if __name__ == "__main__":
                                 "Run time: "+format(duration, '0.5f')+" [s]\n"
                                 "========================================")
             if custom:
+                """[Fill in information]"""
                 text_description = ("The following simulation was a custom"
                                 " run using the following properties and "
                                 " parameters.\n\n"
@@ -593,7 +608,7 @@ if __name__ == "__main__":
                                 "========================================")
             f.write(text_description)
             f.close()
-            print('\nText file created')
+            print('Text file created')
             
             print('\nStart file saving...')
             save_time_start = time.time()
