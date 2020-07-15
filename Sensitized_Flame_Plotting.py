@@ -165,7 +165,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
         plt.close(figb)
     else:
         print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
-              ' shows no cases where the sensitiviy is above threshold'+
+              ' shows no cases where the sensitiviy is above threshold '+
               str(threshold))
 
       
