@@ -15,31 +15,34 @@ import matplotlib.pyplot as plt
 
 def rxn_plots(f_info, save_path, log):
     """[Insert Information]"""
-    Tint     = f_info[0]['Conditions'][3]
+    Tint     = f_info[0]['Conditions'][0]
+    Fue      = f_info[0]['Conditions'][6]
+    Oxi      = f_info[0]['Conditions'][7]
     Pressure = []
-    Fuel     = []
     Phi      = []
-    Oxygen   = []
+    Fuel     = []
+    Oxidizer = []
     Max_rxn  = []
     for f in f_info:
         max_rxn  = max_sens(f)
         max_num  = max_rxn[0]
         Max_rxn.append(max_num)
-        Pressure.append(f['Conditions'][0])
-        Fuel.append(f['Conditions'][1])
+        Pressure.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
-        Oxygen.append(f['Conditions'][4][1][1])
+        Fuel.append(f['Conditions'][9])
+        Oxidizer.append(f['Conditions'][10])
+        
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10), sharey=True)
     ax        = axes.flatten()
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel Mole Fraction'],
+                 'F': [Fuel, 'Fuel Mole Fraction '+str(Fue)],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'O2': [Oxygen, 'Oxygen Mole Fraction'],
+                 'Oxi': [Oxidizer, 'Oxygen Mole Fraction '+str(Oxi)],
                  'T': [Tint, 'Temperature [K]'],
                  'Rxn': [Max_rxn, 'Rxn Number']}
-    conditions = ['P', 'F', 'Phi', 'O2']
+    conditions = ['P', 'F', 'Phi', 'Oxi']
     #Three subplots of max rxn number against independent variables
     for a, condition in zip(ax, conditions):
         x_key = condition
@@ -66,31 +69,31 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
     Tint = f_info[0]['Conditions'][3]
     #List for strengths
     Pressure      = []
-    Fuel          = []
     Phi           = []
+    Fuel          = []
     Oxygen        = []
     Sens_strength = []
     #Lists for above threshold
     P_threshold        = []
-    F_threshold        = []
     Phi_threshold      = []
+    F_threshold        = []
     Oxygen_threshold   = []
     Sens_str_threshold = []
     for f in f_info:
         average_nrxns = rxn_average(f, nrxns)
         strength = f['Flame'][0][rxn_int][1]/average_nrxns
         Sens_strength.append(strength)
-        Pressure.append(f['Conditions'][0])
-        Fuel.append(f['Conditions'][1])
+        Pressure.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
-        Oxygen.append(f['Conditions'][4][1][1])
+        Fuel.append(f['Conditions'][9])
+        Oxygen.append(f['Conditions'][10])
         
     for n in range(len(Sens_strength)):
         if abs(Sens_strength[n]) >= threshold:
-            P_threshold.append(f_info[n]['Conditions'][0])
-            F_threshold.append(f_info[n]['Conditions'][1])
+            P_threshold.append(f_info[n]['Conditions'][1])
             Phi_threshold.append(f_info[n]['Conditions'][2])
-            Oxygen_threshold.append(f_info[n]['Conditions'][4][1][1])
+            F_threshold.append(f_info[n]['Conditions'][9])
+            Oxygen_threshold.append(f_info[n]['Conditions'][10])
             Sens_str_threshold.append(Sens_strength[n])
             
     #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
@@ -127,66 +130,68 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
                     ' Average Strength against top '+format(nrxns)+' rxns'
                     ' with Initial Temperature '+format(Tint)+'K.png')
     plt.close(figa)
-                
-    figb, axesb  = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
-    axb          = axesb.flatten()
-    conditions_b = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
-                    ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
-    for a, condition in zip(axb, conditions_b):
-        x_key = condition[0]
-        y_key = condition[1]
-        a.plot(cond_dict[x_key][2], cond_dict[y_key][2], ls='none',
-               marker='o', mfc='none', mec='k')
-        a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
-        a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
-        if log:
-            a.set_xscale('log')
-        elif x_key == 'P':
-            a.set_xscale('log')
-        if log:
-            a.set_yscale('log')
-        elif y_key == 'P':
-            a.set_yscale('log')
-        a.grid(True)
-
-        figb.suptitle('Reaction '+format(f_info[0]['Flame'][0][rxn_int][2])+
-                      '\n Threshold >= '+format(threshold)+
-                      ' Initial Temperature: '+format(Tint)+' [K]')
-        figb.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(save_path+'\\Reaction '
-                    +format(f_info[0]['Flame'][0][rxn_int][0])+
-                    ' Average Strength above_equal to '+format(threshold)+
-                    ' with Initial Temperature '+format(Tint)+'K.png')
-    plt.close(figb)
+    
+    if not len(Sens_str_threshold) == 0:
+        figb, axesb  = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
+        axb          = axesb.flatten()
+        conditions_b = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
+                        ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
+        for a, condition in zip(axb, conditions_b):
+            x_key = condition[0]
+            y_key = condition[1]
+            a.plot(cond_dict[x_key][2], cond_dict[y_key][2], ls='none',
+                   marker='o', mfc='none', mec='k')
+            a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
+            a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+            if log:
+                a.set_xscale('log')
+            elif x_key == 'P':
+                a.set_xscale('log')
+            if log:
+                a.set_yscale('log')
+            elif y_key == 'P':
+                a.set_yscale('log')
+            a.grid(True)
+    
+            figb.suptitle('Reaction '+
+                          format(f_info[0]['Flame'][0][rxn_int][2])+
+                          '\n Threshold >= '+format(threshold)+
+                          ' Initial Temperature: '+format(Tint)+' [K]')
+            figb.tight_layout(rect=[0, 0.03, 1, 0.95])
+            plt.savefig(save_path+'\\Reaction '
+                        +format(f_info[0]['Flame'][0][rxn_int][0])+
+                        ' Average Strength above_equal to '+format(threshold)+
+                        ' with Initial Temperature '+format(Tint)+'K.png')
+        plt.close(figb)
 
       
 def rxn_interest_plots(f_info, rxn_int, save_path, log):
     """[Insert Information]"""
     Pressure = []
-    Fuel     = []
     Phi      = []
+    Fuel     = []
     Oxygen   = []
-    Tint     = f_info[0]['Conditions'][3]
+    Tint     = f_info[0]['Conditions'][0]
     Rxn_name = f_info[0]['Flame'][0][rxn_int][2]
     Rxn_num  = f_info[0]['Flame'][0][rxn_int][0]
     for f in f_info:
         Rxn_sens = f['Flame'][0][rxn_int][1]
         Max_rxn_sens = max_sens(f)
         if Rxn_sens == Max_rxn_sens[1]:
-            Pressure.append(f['Conditions'][0])
-            Fuel.append(f['Conditions'][1])
+            Pressure.append(f['Conditions'][1])
             Phi.append(f['Conditions'][2])
-            Oxygen.append(f['Conditions'][4][1][1])
+            Fuel.append(f['Conditions'][9])
+            Oxygen.append(f['Conditions'][10])
             
     fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
     ax        = axes.flatten()
     fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                  'F': [Fuel, 'Fuel Mole Fraction'],
-                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                  'O2':[Oxygen, 'Oxygen Fuel Mole Fraction'],
-                  'T': [Tint, 'Temperature [K]']}
+                 'F': [Fuel, 'Fuel Mole Fraction'],
+                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
+                 'O2':[Oxygen, 'Oxygen Fuel Mole Fraction'],
+                 'T': [Tint, 'Temperature [K]']}
     conditions = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
                   ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
     
@@ -223,17 +228,14 @@ def flame_speed_plots(f_info, save_path, log):
     Pressure = []
     Phi      = []
     Fuel     = []
-    Oxygen   = []
-    Diluent  = f_info[0]['Conditions'][5]
-    Dil_frac = []
+    Oxidizer = []
     Su       = []
     Flame_T  = []
     for s in f_info:
         Pressure.append(s['Conditions'][1])
         Phi.append(s['Conditions'][2])
-        Fuel.append(s['Conditions'][3])
-        Oxygen.append(s['Conditions'][4])
-        Dil_frac.append(s['Conditions'][4][0][1])
+        Fuel.append(s['Conditions'][9])
+        Oxidizer.append(s['Conditions'][10])
         Su.append(s['Flame'][1])
         Flame_T.append(s['Flame'][3])
         
@@ -244,12 +246,11 @@ def flame_speed_plots(f_info, save_path, log):
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
                  'F': [Fuel, 'Fuel Mole Fraction'],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'Dil':[Dil_frac, Diluent+' Mole Fraction'],
-                 'O2':[Oxygen, 'Oxygen Mole Fraction'],
+                 'Oxi':[Oxidizer, 'Oxygen Mole Fraction'],
                  'T': [Tint, 'Temperature [K]'],
                  'Su': [Su, 'Su [m/s]'],
                  'Flame_T': [Flame_T, 'Flame Temperature [K]']}
-    conditions = ['P', 'F', 'Phi', 'O2']
+    conditions = ['P', 'F', 'Phi', 'Oxi']
     for a, condition in zip(ax, conditions):
         x_key = condition
         y_key = 'Su'
@@ -271,31 +272,31 @@ def flame_speed_plots(f_info, save_path, log):
 
 def max_rxn_csv(f_info, save_path):
     """[Insert Information]"""
-    Tint     = f_info[0]['Conditions'][3]
+    Tint     = f_info[0]['Conditions'][0]
     Pressure = []
-    Fuel     = []
     Phi      = []
+    Fuel     = []
     Oxygen   = []
     Max_rxn  = []
     for f in f_info:
         max_rxn  = max_sens(f)
         Max_rxn.append([max_rxn[0], max_rxn[2]])
-        Pressure.append(f['Conditions'][0])
-        Fuel.append(f['Conditions'][1])
+        Pressure.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
-        Oxygen.append(f['Conditions'][4][1][1])
+        Fuel.append(f['Conditions'][9])
+        Oxygen.append(f['Conditions'][10])
     Max_rxn_params = {}
     Max_rxns   = {}
     for n in range(len(Max_rxn)):
         rxn_num = str(Max_rxn[n][0]+1)
         if rxn_num not in Max_rxn_params.keys():
             Max_rxn_params[rxn_num] = [[Max_rxn[n][1], Tint],
-                                     [Pressure[n], Fuel[n],
-                                      Phi[n], Oxygen[n]]]
-            Max_rxns[rxn_num]   = [Max_rxn[n][1], 1, Tint]
+                                       [Pressure[n], Phi[n],
+                                        Fuel[n], Oxygen[n]]]
+            Max_rxns[rxn_num]       = [Max_rxn[n][1], 1, Tint]
         elif rxn_num in Max_rxn_params.keys():
-            Max_rxn_params[rxn_num].append([Pressure[n], Fuel[n],
-                                          Phi[n], Oxygen[n]])
+            Max_rxn_params[rxn_num].append([Pressure[n], Phi[n],
+                                            Fuel[n], Oxygen[n]])
             Max_rxns[rxn_num][1] += 1
         else:
             print('Something went wrong!')
@@ -318,7 +319,7 @@ def max_rxn_csv(f_info, save_path):
             rp_writer.writerow([keys, Max_rxn_params[keys][0][0],
                                 Max_rxn_params[keys][0][1]])
             rp_writer.writerow(['', 'Parameters:','Pressure [atm]',
-                                'Fuel Mole Fraction', 'Equivalence Ratio',
+                                'Equivalence Ratio','Fuel Mole Fraction',
                                 'Oxygen Mole Fraction'])
             for p in range(1,len(Max_rxn_params[keys])):
                 rp_writer.writerow(['', '', Max_rxn_params[keys][p][0],
@@ -330,23 +331,23 @@ def max_rxn_csv(f_info, save_path):
 
 def top_nrxns_csv(f_info, nrxns, save_path):
     """[Insert Information]"""
-    Tint          = f_info[0]['Conditions'][3]
+    Tint          = f_info[0]['Conditions'][0]
     Top_Rxns_List = []
     for f in f_info:
-        Top_Rxns_List.append([f['Conditions'][0], f['Conditions'][1],
-                              f['Conditions'][2], f['Conditions'][4][1][1],
+        Top_Rxns_List.append([f['Conditions'][1], f['Conditions'][2],
+                              f['Conditions'][9], f['Conditions'][10],
                               top_rxns(f, nrxns)])
     csv_file_top_nrxns = os.path.join(save_path, 'Top Rxns per Case.csv')
     with open(csv_file_top_nrxns, mode='w') as top_nrxns:
         tr_writer = csv.writer(top_nrxns, delimiter=',',
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for i in Top_Rxns_List:
-            tr_writer.writerow(['Initial Temperature [K]', 'Pressure [atm]',
-                                'Fuel Mole Fraction', 'Equivalence Ratio',
+            tr_writer.writerow(['Initial Temperature [K]','Pressure [atm]',
+                                'Equivalence Ratio','Fuel Mole Fraction',
                                 'Oxygen Mole Fraction'])
             tr_writer.writerow([Tint, i[0], i[1], i[2], i[3]])
-            tr_writer.writerow(['', 'Rxns:', 'Rxn #',
-                                'Sensitivity Strength', 'Rxn Equation'])
+            tr_writer.writerow(['','Rxns:','Rxn #',
+                                'Sensitivity Strength','Rxn Equation'])
             for j in i[4]:
                 tr_writer.writerow(['', '', j[0], j[1], j[2]])
     return Top_Rxns_List
@@ -424,7 +425,7 @@ if __name__ == "__main__":
     Flame = []
     No_flame = []
     for x in Flame_info:
-        if x['Flame'] == None:
+        if x['Flame'][0] is None:
             No_flame.append(x)
         else:
             Flame.append(x)
@@ -442,18 +443,18 @@ if __name__ == "__main__":
     #                 Fue_Percent, Oxi_Percent, Dil_Percent]}
     
     #Plot Functions
-    Rxn_interest = [17,63,64,65,66,67,103,170] #Reaction number of the reaction of interest
+    Rxn_interest = numpy.arange(70,72) #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
     Logspace     = True #If true all plots will use logspace
     Spec_Conditions = {'Key': ['P', 'O2'],
                        'O2': [0.25, 0.5],
                        'P': [0.5, 1]}
-    # Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
-    # T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
-    # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
-    # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    # for Rxns in Rxn_interest:
-    #     rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-    #                         Threshold, Plot_path, Logspace)
-    #     rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
+    Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
+    T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
+    rxn_plots(Flame_speed_filter, Plot_path, Logspace)
+    flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
+    for Rxns in Rxn_interest:
+        rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+                            Threshold, Plot_path, Logspace)
+        rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
