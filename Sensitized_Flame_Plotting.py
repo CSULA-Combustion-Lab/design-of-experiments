@@ -163,6 +163,10 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
                         ' Average Strength above_equal to '+format(threshold)+
                         ' with Initial Temperature '+format(Tint)+'K.png')
         plt.close(figb)
+    else:
+        print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
+              ' shows no cases where the sensitiviy is above threshold'+
+              str(threshold))
 
       
 def rxn_interest_plots(f_info, rxn_int, save_path, log):
@@ -182,44 +186,47 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
             Phi.append(f['Conditions'][2])
             Fuel.append(f['Conditions'][9])
             Oxygen.append(f['Conditions'][10])
-            
-    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
-    ax        = axes.flatten()
-    fs        = 15
-    #Dictionary organized as follow 'Key': [Data, axis-label]
-    cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel Mole Fraction'],
-                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'O2':[Oxygen, 'Oxygen Fuel Mole Fraction'],
-                 'T': [Tint, 'Temperature [K]']}
-    conditions = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
-                  ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
-    
-    #Three subplots of unique paired independent variables
-    for a, condition in zip(ax, conditions):
-        x_key = condition[0]
-        y_key = condition[1]
-        a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
-                marker='o', mfc='none', mec='k')
-        a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
-        a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
-        if log:
-            a.set_xscale('log')
-        elif x_key == 'P':
-            a.set_xscale('log')
-        if log:
-            a.set_yscale('log')
-        elif y_key == 'P':
-            a.set_yscale('log')
-        a.grid(True)
-        fig.suptitle('Reaction Number: '+format(Rxn_num)+
-                      ' Reaction Name: '+Rxn_name+
-                      '\nInitial Temperature: '+format(Tint)+' [K]')
-        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(save_path+'\\Reaction Number '+format(Rxn_num)+
-                    ' Max Sensitivity for Parameters with'
-                    ' Initial Temperature '+format(Tint)+'K.png')
-    plt.close(fig)
+    if not len(Phi) == 0:       
+        fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
+        ax        = axes.flatten()
+        fs        = 15
+        #Dictionary organized as follow 'Key': [Data, axis-label]
+        cond_dict = {'P': [Pressure, 'Pressure [atm]'],
+                     'F': [Fuel, 'Fuel Mole Fraction'],
+                     'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
+                     'O2':[Oxygen, 'Oxygen Fuel Mole Fraction'],
+                     'T': [Tint, 'Temperature [K]']}
+        conditions = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
+                      ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
+        
+        #Three subplots of unique paired independent variables
+        for a, condition in zip(ax, conditions):
+            x_key = condition[0]
+            y_key = condition[1]
+            a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
+                    marker='o', mfc='none', mec='k')
+            a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
+            a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+            if log:
+                a.set_xscale('log')
+            elif x_key == 'P':
+                a.set_xscale('log')
+            if log:
+                a.set_yscale('log')
+            elif y_key == 'P':
+                a.set_yscale('log')
+            a.grid(True)
+            fig.suptitle('Reaction Number: '+format(Rxn_num)+
+                          ' Reaction Name: '+Rxn_name+
+                          '\nInitial Temperature: '+format(Tint)+' [K]')
+            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+            plt.savefig(save_path+'\\Reaction Number '+format(Rxn_num)+
+                        ' Max Sensitivity for Parameters with'
+                        ' Initial Temperature '+format(Tint)+'K.png')
+        plt.close(fig)
+    else:
+        print('Reaction Number '+str(Rxn_num)+', Reaction: '+str(Rxn_name)+
+              ' shows no cases where it is most sensitive reaction')
     
 
 def flame_speed_plots(f_info, save_path, log):
