@@ -6,6 +6,7 @@ Created on Mon Apr  6 14:20:01 2020
 """
 
 import os
+import sys
 import csv
 import numpy
 import pickle
@@ -436,6 +437,12 @@ if __name__ == "__main__":
             No_flame.append(x)
         else:
             Flame.append(x)
+     
+    #If Flame list is empty plotting script will not occur
+    if len(Flame) == 0:
+        print('No Conditions Produced a Flame!')
+        sys.exit()
+        
     #Creates list that only appends information where flame speed is above min     
     Min_speed          = 0 #Minimum flame speed, lower limit
     Flame_speed_filter = []
@@ -457,6 +464,7 @@ if __name__ == "__main__":
     Spec_Conditions = {'Key': ['P', 'O2'],
                        'O2': [0.25, 0.5],
                        'P': [0.5, 1]}
+    
     Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
     T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
     rxn_plots(Flame_speed_filter, Plot_path, Logspace)
