@@ -440,7 +440,7 @@ if __name__ == "__main__":
      
     #If Flame list is empty plotting script will not occur
     if len(Flame) == 0:
-        print('No Conditions Produced a Flame!')
+        print('\nNo Conditions Produced a Flame!')
         sys.exit()
         
     #Creates list that only appends information where flame speed is above min     
@@ -454,16 +454,19 @@ if __name__ == "__main__":
     # {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
     #  'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
     #                 Fuel_name, Oxidizer_name, Diluent_name,
-    #                 Fue_Percent, Oxi_Percent, Dil_Percent]}
+    #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
     
     #Plot Functions
     Rxn_interest = numpy.arange(70,72) #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
-    Logspace     = True #If true all plots will use logspace
-    Spec_Conditions = {'Key': ['P', 'O2'],
-                       'O2': [0.25, 0.5],
-                       'P': [0.5, 1]}
+    array_type   = Flame[0]['Conditions'][12]
+    if array_type == 'log':
+        Logspace = True #If True all plots will use logspace
+    elif array_type == 'lin':
+        Logspace = False #If False all plots will use linspace
+    else:
+        print('Error! invalid string for array_type.')
     
     Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
     T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
