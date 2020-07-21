@@ -27,7 +27,7 @@ gas = ct.Solution(mechanism)
 flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
 #Parameters for main loop
-# P and Phi are used in all cases. 
+# P and Phi are used in all cases.
 # Whether FTD or OtD is used depends on mixture type.
 # Each list should follow patter [First Point, Last Point, Number of Points]
 # Array_type's (log, lin)
@@ -36,8 +36,8 @@ flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 array_type = 'log'
 Press      = [1, 2, 1]  #Pressure [atm]
 E_Ratio    = [0.85, 1, 2] #Equivalence ratio
-F_to_D     = [0.75, 0.95, 2] #Fuel to Diluent ratio
-O_to_D     = [0.21, 0.95, 2] #Oxidizer to Diluent ratio
+F_to_D     = [0.75, 0.95, 2] #Fuel/(Fuel + Diluent)
+O_to_D     = [0.21, 0.95, 2] #Oxidizer/(Oxidizer + Diluent)
 if array_type == 'log':
     P    = np.logspace(np.log10(Press[0]), np.log10(Press[1]), Press[2])
     Phi  = np.logspace(np.log10(E_Ratio[0]), np.log10(E_Ratio[1]), E_Ratio[2])
@@ -56,8 +56,10 @@ else:
 Tint = 323 #Temperature [K]
 
 #Parameters for mixture (Fuel, Oxidizer, Diluent)
-fuel     = 'CH4' #chemical formula of fuel
-oxidizer = 'O2' #chemical formula of oxidizer
+# fuel     = 'CH4' #chemical formula of fuel
+fuel  = ['CH4', .50 , 'CH3OH', .50]
+# oxidizer = 'O2' #chemical formula of oxidizer
+oxidizer = ['O2', .35 , 'NO2', .65]
 diluent  = 'N2' #chemical formula of diluent
 air      = 'O2:1, N2:3.76' #chemical components for air as an oxidizer
 
@@ -67,12 +69,20 @@ mul_soret = False
 loglevel  = 0
 
 #True/False statements
-multifuel     = True # if true, additional fuels will be added from fuels list       
-multioxidizer = True # if true, additional fuels will be added from fuels list
 save_files    = False # If true, save files for plotting script
 
+if type(oxidizer) is list:
+    multioxidizer = True
+elif type(oxidizer) is str:
+    multioxidizer = False
+
+if type(fuel) is list:
+    multifuel = True
+elif type(fuel) is str:
+    multifuel = False
+
 #Mixture Type (Debug, Custom, Oxi_Dil, Fue_Dil)
-#Provide one of the four types of mixtures into 
+#Provide one of the four types of mixtures into
 # variable mixture_type as a string
 #  Debug is used for simulating a single flame to check code
 #  Custom is under construction
@@ -86,11 +96,10 @@ mixture_type = 'Fue_Dil'
 #  evens are percetage of previous fuel name in total fuel
 # percentages should sum to 1 or script will not run
 if multifuel:
-    fuel  = ['CH4', .50 , 'CH3OH', .50]
     check = 0
     for c in range(1, len(fuel), 2):
         check += fuel[c]
-    if check != 1:
+    if not np.isclose(check, 1):
         print('Error in Multifuel.'+
               'Sum of individual fuel percentage must add up to 1!')
         sys.exit()
@@ -101,11 +110,10 @@ if multifuel:
 #  evens are percetage of previous fuel name in total fuel
 # percentages should sum to 1 or script will not run
 if multioxidizer:
-    oxidizer = ['O2', .35 , 'NO2', .65]
     check    = 0
     for c in range(1, len(oxidizer), 2):
         check += oxidizer[c]
-    if check != 1:
+    if not np.isclose(check, 1):
         print('Error in Multioxidizer.'+
               'Sum of individual fuel percentage must add up to 1!')
         sys.exit()
@@ -205,27 +213,27 @@ def flame_sens(p, phi, f_o, cond):
     mg            = cond['Flame'][0]
     ms            = cond['Flame'][1]
     logl          = cond['Flame'][2]
- 
-    if not mt == 'Debug':    
-        Diluent = 1 - f_o #Define Diluent Percentage in Fuel/Oxidizer        
-    
+
+    if not mt == 'Debug':
+        Diluent = 1 - f_o #Define Diluent Percentage in Fuel/Oxidizer
+
     #Four Mixture Types (Debug, Custom, Oxidizer to Diluent, Fuel to Diluent)
     #Debug Mixture is a single mixture to test for errors in code
     #Custom Mixture is under construction
     #o_f True Mixture uses a ratio of Oxidizer to Diluent
     #o_f False Mixture uses a ratio of Fuel to Diluent
-    
+
     if mt == 'Debug':
         Fuel     = f_o[0]
         Oxidizer = f_o[1]
         Diluent  = 0
-        
+
     elif mt == 'Custom':
        #Under Construction#
        Fuel = f_o[0]
        Oxidizer = f_o[1]
        #Under Construction#
-       
+
     elif mt == 'Oxi_Dil':
        if multif:
            Fuel = ''
@@ -238,7 +246,7 @@ def flame_sens(p, phi, f_o, cond):
            for ol in range(0,len(Oxidizer_name),2):
                Oxidizer += Oxidizer_name[ol]+':'+str(Oxidizer_name[ol+1]*f_o)+' '
            Oxidizer += Diluent_name+':'+str(Diluent)
-       else: 
+       else:
            Oxidizer = Oxidizer_name+':'+str(f_o)+' '+Diluent_name+':'+str(Diluent)
 
     elif mt == 'Fue_Dil':
@@ -246,7 +254,7 @@ def flame_sens(p, phi, f_o, cond):
            Fuel = ''
            for fl in range(0,len(Fuel_name),2):
                 Fuel += Fuel_name[fl]+':'+str(Fuel_name[fl+1]*f_o)+' '
-           Fuel += Diluent_name+':'+str(Diluent) 
+           Fuel += Diluent_name+':'+str(Diluent)
        else:
            Fuel = Fuel_name+':'+str(f_o)+' '+Diluent_name+':'+str(Diluent)
        if multio:
@@ -255,18 +263,18 @@ def flame_sens(p, phi, f_o, cond):
                Oxidizer += Oxidizer_name[ol]+':'+str(Oxidizer_name[ol+1])+' '
        else:
            Oxidizer = Oxidizer_name
-           
+
     else:
         print('Error. Check mixture_type variable for invalid string input.')
         sys.exit()
-        
+
     Mix = mixture_maker(phi, Fuel, Oxidizer)
     Fue_Percent = mixture_percentage(Fuel_name, Mix, multif)
-    Oxi_Percent = mixture_percentage(Oxidizer_name, Mix, multio)    
+    Oxi_Percent = mixture_percentage(Oxidizer_name, Mix, multio)
 
     if mt == 'Debug':
         print('\nMixture Composition:')
-        print(Mix) 
+        print(Mix)
 
     if Diluent < 0:
         Dil_Percent = 0
@@ -282,8 +290,8 @@ def flame_sens(p, phi, f_o, cond):
             if n[0] == Diluent_name:
                 Dil_Percent = n[1]
             else:
-                continue    
-        
+                continue
+
     f = flame.Flame(Mix, p, Tin, tempfile, chemfile=chem)
     f.run(mingrid=mg, loglevel=logl, mult_soret=ms)
     if f.flame_result is None:
@@ -294,7 +302,7 @@ def flame_sens(p, phi, f_o, cond):
                                      at]}
         return flame_info
     f.sensitivity()
-    f_sens = f.sens #Rxn sensitivities 
+    f_sens = f.sens #Rxn sensitivities
     Su         = f.flame_result.u[0]  #Flame speed at the front
     flame_T    = f.flame_result.T[-1] #Flame temperature at end
     flame_rho  = f.flame_result.density_mass[0] #Flame density at the front
@@ -355,7 +363,7 @@ def mixture_percentage(fo_list, mix, tf):
                 Percentage += m[1]
             else:
                 continue
-    else:          
+    else:
         for n in range(0, len(fo_list), 2):
             for m in mix:
                 if m[0] == fo_list[n]:
@@ -407,7 +415,7 @@ if __name__ == "__main__":
         toc      = time.time()
         duration = toc - tic
         print('Dubugging time: '+format(duration, '0.5f')+' seconds\n')
-   
+
 ############################Simulation loop####################################
     else:
         """[Fill in information]"""
@@ -438,8 +446,8 @@ if __name__ == "__main__":
         toc      = time.time() #Main Code Time End
         duration = toc-tic
         print('Total time '+format(duration, '0.5f')+' seconds.\n')
-        
-#################################Save Files####################################   
+
+#################################Save Files####################################
     """[Fill in information]"""
     if save_files:
         #Save Path/Parent Directory
@@ -449,7 +457,7 @@ if __name__ == "__main__":
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-        
+
         #######################Debug directory#################################
         if mixture_type == 'Debug':
             """[Fill in information]"""
@@ -462,7 +470,7 @@ if __name__ == "__main__":
                 except OSError as e:
                     if e.errno != errno.EEXIST:
                         raise
-                        
+
             figures_dir = 'Flame_Sensitivity_Plots'
             save_path   = os.path.join(parent_dir, debug_dir)
             figure_path = os.path.join(save_path, figures_dir)
@@ -472,7 +480,7 @@ if __name__ == "__main__":
                 except OSError as e:
                     if e.errno != errno.EEXIST:
                         raise
-            
+
             print('\nCreating text file...')
             #Text Description
             filename  = 'Case Description.txt'
@@ -488,7 +496,7 @@ if __name__ == "__main__":
                 MF_text = ("Multifuel = "+format(multifuel)+"\n"
                            "Fuels\Percentages = "+format((fuel))+"\n")
             else:
-                MF_text = "Multifuel = "+format(multifuel)+"\n"    
+                MF_text = "Multifuel = "+format(multifuel)+"\n"
             if multioxidizer:
                 MO_text = ("Multioxidizer = "+format(multioxidizer)+"\n"
                            "Oxidizer\Percentages = "+format((oxidizer))+"\n")
@@ -523,15 +531,15 @@ if __name__ == "__main__":
             f.write(text_description)
             f.close()
             print('\nText file created')
-            
+
             debug_file = os.path.join(debug_path, 'flame_info_debug.pkl')
             with open(debug_file, 'wb') as f:
                 pickle.dump(flame_info_debug, f)
             print('End debug file save')
-         
+
         ########################Normal directory###############################
         else:
-            """[Fill in information]"""               
+            """[Fill in information]"""
             #Create Directory Name
             print('Creating Directory...')
             now = datetime.now()
@@ -539,12 +547,12 @@ if __name__ == "__main__":
             directory = dt_string
             save_path = os.path.join(parent_dir, directory)
             os.makedirs(save_path)
-    
+
             figures_dir = 'Flame_Sensitivity_Plots'
             figure_path = os.path.join(save_path, figures_dir)
             os.makedirs(figure_path)
             print('Directory Created')
-            
+
             print('\nCreating text file...')
             #Text Description
             filename  = 'Case Description.txt'
@@ -625,10 +633,10 @@ if __name__ == "__main__":
             f.write(text_description)
             f.close()
             print('Text file created')
-            
+
             print('\nStart file saving...')
             save_time_start = time.time()
-    
+
             file = os.path.join(save_path, 'Flame Information.pkl')
             with open(file, 'wb') as f:
                 pickle.dump(flame_info, f)
