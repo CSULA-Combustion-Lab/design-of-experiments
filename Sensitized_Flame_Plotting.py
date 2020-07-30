@@ -67,7 +67,7 @@ def rxn_plots(f_info, save_path, log):
     
 def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
     """[Insert Information]"""
-    Tint = f_info[0]['Conditions'][3]
+    Tint = f_info[0]['Conditions'][0]
     #List for strengths
     Pressure      = []
     Phi           = []
@@ -457,7 +457,7 @@ if __name__ == "__main__":
     #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
     
     #Plot Functions
-    Rxn_interest = numpy.arange(70,72) #Reaction number of the reaction of interest
+    Rxn_interest = [16, 62 ,63, 64, 65, 66, 102, 170] #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
     array_type   = Flame[0]['Conditions'][12]
