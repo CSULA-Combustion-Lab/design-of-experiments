@@ -73,12 +73,14 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
     Phi           = []
     Fuel          = []
     Oxygen        = []
+    Su            = []
     Sens_strength = []
     #Lists for above threshold
     P_threshold        = []
     Phi_threshold      = []
     F_threshold        = []
     Oxygen_threshold   = []
+    Su_threshold       = []
     Sens_str_threshold = []
     for f in f_info:
         average_nrxns = rxn_average(f, nrxns)
@@ -88,6 +90,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
         Phi.append(f['Conditions'][2])
         Fuel.append(f['Conditions'][9])
         Oxygen.append(f['Conditions'][10])
+        Su.append(f['Flame'][1])
         
     for n in range(len(Sens_strength)):
         if abs(Sens_strength[n]) >= threshold:
@@ -95,6 +98,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
             Phi_threshold.append(f_info[n]['Conditions'][2])
             F_threshold.append(f_info[n]['Conditions'][9])
             Oxygen_threshold.append(f_info[n]['Conditions'][10])
+            Su_threshold.append(f['Flame'][1])
             Sens_str_threshold.append(Sens_strength[n])
             
     #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
@@ -103,6 +107,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
                  'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
                  'T': [Tint, 'Temperature [K]'],
+                 'Su': [Su, 'Flame Speed [m/s]', Su_threshold], 
                  'Strength': [Sens_strength, 'Rxn Strength',
                               Sens_str_threshold]}
     
@@ -168,6 +173,20 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
         print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
               ' shows no cases where the sensitiviy is above threshold '+
               str(threshold))
+    figc, axc = plt.subplots(nrows=1, ncols=1, figsize=(15,10))
+    x_key = 'Su'
+    y_key = 'Strength'
+    axc.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none', 
+             marker='o', mfc='none', mec='k')
+    axc.set(xlabel=cond_dict[x_key][1], ylabel=cond_dict[y_key][1],
+            title='Normalized Sensitivity of Reaction '
+            +format(f_info[0]['Flame'][0][rxn_int][2])+' vs. Flame Speed')
+    axc.grid(True)
+    figc.savefig(save_path+'\\Reaction '
+                 +format(f_info[0]['Flame'][0][rxn_int][0])+
+                 ' Normalized Sensitivity vs Flame Speed '+
+                 ' with Initial Temperature '+format(Tint)+'K.png')
+    plt.close(figc)
 
       
 def rxn_interest_plots(f_info, rxn_int, save_path, log):
@@ -276,7 +295,6 @@ def flame_speed_plots(f_info, save_path, log):
         plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
                     ' Initial Temperature '+format(Tint)+'K.png')
     plt.close(fig)
-
 
 def max_rxn_csv(f_info, save_path):
     """[Insert Information]"""
@@ -457,7 +475,7 @@ if __name__ == "__main__":
     #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
     
     #Plot Functions
-    Rxn_interest = [16, 62 ,63, 64, 65, 66, 102, 170] #Reaction number of the reaction of interest
+    Rxn_interest = [29, 30] #Reaction number of the reaction of interest
     Nrxns        = 5 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
     array_type   = Flame[0]['Conditions'][12]
@@ -468,10 +486,10 @@ if __name__ == "__main__":
     else:
         print('Error! invalid string for array_type.')
     
-    Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
-    T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
-    rxn_plots(Flame_speed_filter, Plot_path, Logspace)
-    flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
+    # Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
+    # T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
+    # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
+    # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
     for Rxns in Rxn_interest:
         rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
                             Threshold, Plot_path, Logspace)
