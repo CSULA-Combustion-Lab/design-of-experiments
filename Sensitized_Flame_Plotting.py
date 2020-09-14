@@ -421,6 +421,36 @@ def top_rxns(flame, nrxns):
                 n[1] = m[1]/rxn_str
     return top_rxns_list
 
+def total_average_sens(flame, nrxns, save_path):
+    """Under Construction"""
+    values = []
+    for f in flame[0]['Flame'][0]:
+        values.append((f[0], 0.0, f[2]))
+    dtype = [('Rxn Number', int), ('ANSens', float), ('Rxn Equation', object)]
+    sens_average = numpy.array(values, dtype=dtype)
+    for i in flame:
+        for j in range(len(sens_average)):
+            sens_average[j][1] += abs(i['Flame'][0][j][1])/rxn_average(i, nrxns)        
+    for m in sens_average:
+        m[1] = m[1]/len(flame)
+    sens_average = numpy.sort(sens_average, order='ANSens')
+    sens_average = sens_average[::-1]
+    topnrxnssens = sens_average[1:nrxns]
+    all_sp = os.path.join(save_path,
+                                 "All Rxns Total Average Sensitivities.csv")
+    topn_sp = os.path.join(save_path,
+                           "Top "+str(nrxns)+" Rxn Total Average Sensitivities.csv")
+    csvformat = ['%d', '%f', '%s']
+    csvheader = 'Rxn Number, Average Normalized Sensitivity, Rxn Equation'
+    numpy.savetxt(all_sp, sens_average, delimiter=',', fmt=csvformat, 
+                  header=csvheader, comments='')
+    numpy.savetxt(topn_sp, topnrxnssens, delimiter=',', fmt=csvformat, 
+                  header=csvheader, comments='')
+    topnrxnnumbers = []
+    for n in range(nrxns):
+        topnrxnnumbers.append(sens_average[n][0])
+    return sens_average, values, topnrxnnumbers
+
     
 if __name__ == "__main__":
     Folder_name = input('Please type name of folder.'
@@ -476,7 +506,7 @@ if __name__ == "__main__":
     
     #Plot Functions
     Rxn_interest = [29, 30] #Reaction number of the reaction of interest
-    Nrxns        = 5 #Top n-reactions
+    Nrxns        = 7 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
     array_type   = Flame[0]['Conditions'][12]
     if array_type == 'log':
@@ -490,7 +520,12 @@ if __name__ == "__main__":
     # T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
     # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
     # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    for Rxns in Rxn_interest:
-        rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-                            Threshold, Plot_path, Logspace)
-        rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
+    Average_Sensitivities, Values, Topnrxns = total_average_sens(Flame_speed_filter, Nrxns, Load_path)
+    # for Rxns in Rxn_interest:
+    #     rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+    #                         Threshold, Plot_path, Logspace)
+    # #     # rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
+    # for Trxns in Topnrxns:
+    #     rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
+    #                         Threshold, Plot_path, Logspace)
+    #     rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
