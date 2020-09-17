@@ -27,7 +27,7 @@ def rxn_plots(f_info, save_path, log):
     for f in f_info:
         max_rxn  = max_sens(f)
         max_num  = max_rxn[0]
-        Max_rxn.append(max_num)
+        Max_rxn.append(max_num+1)
         Pressure.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
         Fuel.append(f['Conditions'][9])
@@ -44,7 +44,7 @@ def rxn_plots(f_info, save_path, log):
                  'T': [Tint, 'Temperature [K]'],
                  'Rxn': [Max_rxn, 'Rxn Number']}
     conditions = ['P', 'F', 'Phi', 'Oxi']
-    #Three subplots of max rxn number against independent variables
+    #Four subplots of max rxn number against independent variables
     for a, condition in zip(ax, conditions):
         x_key = condition
         y_key = 'Rxn'
@@ -132,7 +132,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
                       '\nInitial Temperature: '+format(Tint)+' [K]')
         figa.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.savefig(save_path+'\\Reaction '
-                    +format(f_info[0]['Flame'][0][rxn_int][0])+
+                    +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
                     ' Average Strength against top '+format(nrxns)+' rxns'
                     ' with Initial Temperature '+format(Tint)+'K.png')
     plt.close(figa)
@@ -165,7 +165,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
                           ' Initial Temperature: '+format(Tint)+' [K]')
             figb.tight_layout(rect=[0, 0.03, 1, 0.95])
             plt.savefig(save_path+'\\Reaction '
-                        +format(f_info[0]['Flame'][0][rxn_int][0])+
+                        +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
                         ' Average Strength above_equal to '+format(threshold)+
                         ' with Initial Temperature '+format(Tint)+'K.png')
         plt.close(figb)
@@ -183,7 +183,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
             +format(f_info[0]['Flame'][0][rxn_int][2])+' vs. Flame Speed')
     axc.grid(True)
     figc.savefig(save_path+'\\Reaction '
-                 +format(f_info[0]['Flame'][0][rxn_int][0])+
+                 +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
                  ' Normalized Sensitivity vs Flame Speed '+
                  ' with Initial Temperature '+format(Tint)+'K.png')
     plt.close(figc)
@@ -197,7 +197,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
     Oxygen   = []
     Tint     = f_info[0]['Conditions'][0]
     Rxn_name = f_info[0]['Flame'][0][rxn_int][2]
-    Rxn_num  = f_info[0]['Flame'][0][rxn_int][0]
+    Rxn_num  = f_info[0]['Flame'][0][rxn_int][0]+1
     for f in f_info:
         Rxn_sens = f['Flame'][0][rxn_int][1]
         Max_rxn_sens = max_sens(f)
@@ -248,7 +248,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
         print('Reaction Number '+str(Rxn_num)+', Reaction: '+str(Rxn_name)+
               ' shows no cases where it is most sensitive reaction')
     
-
+    
 def flame_speed_plots(f_info, save_path, log):
     """[Insert Information]"""
     Tint     = f_info[0]['Conditions'][0]
@@ -295,6 +295,7 @@ def flame_speed_plots(f_info, save_path, log):
         plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
                     ' Initial Temperature '+format(Tint)+'K.png')
     plt.close(fig)
+
 
 def max_rxn_csv(f_info, save_path):
     """[Insert Information]"""
@@ -355,6 +356,7 @@ def max_rxn_csv(f_info, save_path):
         
     return Max_rxn_params, Max_rxns
 
+
 def top_nrxns_csv(f_info, nrxns, save_path):
     """[Insert Information]"""
     Tint          = f_info[0]['Conditions'][0]
@@ -375,8 +377,42 @@ def top_nrxns_csv(f_info, nrxns, save_path):
             tr_writer.writerow(['','Rxns:','Rxn #',
                                 'Sensitivity Strength','Rxn Equation'])
             for j in i[4]:
-                tr_writer.writerow(['', '', j[0], j[1], j[2]])
+                tr_writer.writerow(['', '', j[0]+1, j[1], j[2]])
     return Top_Rxns_List
+
+
+def average_sens_csv(flame, nrxns, save_path):
+    """[Insert Information]"""
+    values = []
+    topnrxnnumbers = []
+    for f in flame[0]['Flame'][0]:
+        values.append((f[0], 0.0, f[2]))
+    dtype = [('Rxn Number', int), ('ANSens', float), ('Rxn Equation', object)]
+    sens_average = numpy.array(values, dtype=dtype)
+    for i in flame:
+        for j in range(len(sens_average)):
+            sens_average[j][1] += abs(i['Flame'][0][j][1])/rxn_average(i, nrxns)        
+    for m in sens_average:
+        m[1] = m[1]/len(flame)
+    sens_average = numpy.sort(sens_average, order='ANSens')
+    sens_average = sens_average[::-1]
+    for n in range(nrxns):
+        topnrxnnumbers.append(sens_average[n][0])
+    for k in range(len(sens_average)):
+        sens_average[k][0] += 1
+    topnrxnssens = sens_average[0:nrxns]
+    all_sp = os.path.join(save_path,
+                                 "All Rxns Total Average Sensitivities.csv")
+    topn_sp = os.path.join(save_path,
+                           "Top "+str(nrxns)+" Rxn Total Average Sensitivities.csv")
+    csvformat = ['%d', '%f', '%s']
+    csvheader = 'Rxn Number, Average Normalized Sensitivity, Rxn Equation'
+    numpy.savetxt(all_sp, sens_average, delimiter=',', fmt=csvformat, 
+                  header=csvheader, comments='')
+    numpy.savetxt(topn_sp, topnrxnssens, delimiter=',', fmt=csvformat, 
+                  header=csvheader, comments='')
+    return sens_average, topnrxnnumbers
+
 
 def rxn_average(flame, nrxns):
     """[Insert Information]"""
@@ -401,6 +437,7 @@ def max_sens(flame):
     max_rxn = [max_rxn_num, max_rxn_sens, max_rxn_eq]
     return max_rxn
 
+
 def top_rxns(flame, nrxns):
     """[Insert Information]"""
     f = flame['Flame'][0]
@@ -420,38 +457,8 @@ def top_rxns(flame, nrxns):
             if m[0] == n[0]:
                 n[1] = m[1]/rxn_str
     return top_rxns_list
-
-def total_average_sens(flame, nrxns, save_path):
-    """Under Construction"""
-    values = []
-    for f in flame[0]['Flame'][0]:
-        values.append((f[0], 0.0, f[2]))
-    dtype = [('Rxn Number', int), ('ANSens', float), ('Rxn Equation', object)]
-    sens_average = numpy.array(values, dtype=dtype)
-    for i in flame:
-        for j in range(len(sens_average)):
-            sens_average[j][1] += abs(i['Flame'][0][j][1])/rxn_average(i, nrxns)        
-    for m in sens_average:
-        m[1] = m[1]/len(flame)
-    sens_average = numpy.sort(sens_average, order='ANSens')
-    sens_average = sens_average[::-1]
-    topnrxnssens = sens_average[1:nrxns]
-    all_sp = os.path.join(save_path,
-                                 "All Rxns Total Average Sensitivities.csv")
-    topn_sp = os.path.join(save_path,
-                           "Top "+str(nrxns)+" Rxn Total Average Sensitivities.csv")
-    csvformat = ['%d', '%f', '%s']
-    csvheader = 'Rxn Number, Average Normalized Sensitivity, Rxn Equation'
-    numpy.savetxt(all_sp, sens_average, delimiter=',', fmt=csvformat, 
-                  header=csvheader, comments='')
-    numpy.savetxt(topn_sp, topnrxnssens, delimiter=',', fmt=csvformat, 
-                  header=csvheader, comments='')
-    topnrxnnumbers = []
-    for n in range(nrxns):
-        topnrxnnumbers.append(sens_average[n][0])
-    return sens_average, values, topnrxnnumbers
-
-    
+  
+  
 if __name__ == "__main__":
     Folder_name = input('Please type name of folder.'
                         '\n If blank, use last folder:\n')
@@ -505,10 +512,11 @@ if __name__ == "__main__":
     #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
     
     #Plot Functions
-    Rxn_interest = [29, 30] #Reaction number of the reaction of interest
-    Nrxns        = 7 #Top n-reactions
+    Rxn_interest = [70, 71] #Reaction number of the reaction of interest
+    Nrxns        = 5 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
     array_type   = Flame[0]['Conditions'][12]
+    # array_type = 'Log'
     if array_type == 'log':
         Logspace = True #If True all plots will use logspace
     elif array_type == 'lin':
@@ -516,16 +524,17 @@ if __name__ == "__main__":
     else:
         print('Error! invalid string for array_type.')
     
-    # Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
-    # T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
-    # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
-    # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    Average_Sensitivities, Values, Topnrxns = total_average_sens(Flame_speed_filter, Nrxns, Load_path)
+    Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
+    T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
+    rxn_plots(Flame_speed_filter, Plot_path, Logspace)
+    flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
+    Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter, 
+                                                        Nrxns, Load_path)
     # for Rxns in Rxn_interest:
     #     rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
     #                         Threshold, Plot_path, Logspace)
-    # #     # rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
-    # for Trxns in Topnrxns:
-    #     rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
-    #                         Threshold, Plot_path, Logspace)
-    #     rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
+    #     rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
+    for Trxns in Topnrxns:
+        rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
+                            Threshold, Plot_path, Logspace)
+        rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
