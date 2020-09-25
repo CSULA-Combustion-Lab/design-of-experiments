@@ -20,7 +20,7 @@ from datetime import datetime
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
 #Set experiment parameters
-mechanism = 'gri30.cti' #Mechanism file
+mechanism = 'Li_model_modified_trioxane.cti' #Mechanism file
 gas = ct.Solution(mechanism)
 
 #Working directory
@@ -33,11 +33,11 @@ flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 # Array_type's (log, lin)
 #  log creates a logspace array of parameters
 #  lin creates a linspace array of parameters
-array_type = 'log'
-Press      = [1, 2, 1]  #Pressure [atm]
-E_Ratio    = [0.85, 1, 2] #Equivalence ratio
+array_type = 'lin'
+Press      = [0.25, 2, 8]  #Pressure [atm]
+E_Ratio    = [0.1, 1, 12] #Equivalence ratio
 F_to_D     = [0.75, 0.95, 2] #Fuel/(Fuel + Diluent)
-O_to_D     = [0.21, 0.95, 2] #Oxidizer/(Oxidizer + Diluent)
+O_to_D     = [0.05, 0.95, 12] #Oxidizer/(Oxidizer + Diluent)
 if array_type == 'log':
     P    = np.logspace(np.log10(Press[0]), np.log10(Press[1]), Press[2])
     Phi  = np.logspace(np.log10(E_Ratio[0]), np.log10(E_Ratio[1]), E_Ratio[2])
@@ -53,13 +53,13 @@ else:
     sys.exit()
 
 #Initial temperature of unburned mixture
-Tint = 323 #Temperature [K]
+Tint = 373 #Temperature [K]
 
 #Parameters for mixture (Fuel, Oxidizer, Diluent)
-# fuel     = 'CH4' #chemical formula of fuel
-fuel  = ['CH4', .50 , 'CH3OH', .50]
-# oxidizer = 'O2' #chemical formula of oxidizer
-oxidizer = ['O2', .35 , 'NO2', .65]
+fuel     = 'C3H6O3' #chemical formula of fuel
+# fuel  = ['CH4', .65 , 'CO2', .35]
+oxidizer = 'O2' #chemical formula of oxidizer
+# oxidizer = ['O2', .35 , 'NO2', .65]
 diluent  = 'N2' #chemical formula of diluent
 air      = 'O2:1, N2:3.76' #chemical components for air as an oxidizer
 
@@ -69,7 +69,7 @@ mul_soret = False
 loglevel  = 0
 
 #True/False statements
-save_files    = False # If true, save files for plotting script
+save_files    = True # If true, save files for plotting script
 
 if type(oxidizer) is list:
     multioxidizer = True
@@ -88,7 +88,7 @@ elif type(fuel) is str:
 #  Custom is under construction
 #  Oxi_Dil creates a mixture where the Diluent is a ratio of the Oxidizer used
 #  Fue_Dil creates a mixture where the Diluent is a ratio of the Fuel used
-mixture_type = 'Fue_Dil'
+mixture_type = 'Oxi_Dil'
 
 #Multifuel mixture percentage of total fuel
 # fuel is a list of fuels and their percentages in the total fuel
@@ -139,7 +139,7 @@ if mixture_type == 'Debug':
 
 #Custom loop
 elif mixture_type == 'Custom':
-    P   = [1] #Pressure [atm]
+    P   = [0.5, 1] #Pressure [atm]
     Phi = [0.25] #Equivalence Ratio
     FtD = [0.05] #Fuel to Diluent Mole Fraction
     OtD = [0.25] #Oxygen to Diluent Mole Fraction
@@ -382,11 +382,13 @@ if __name__ == "__main__":
     elif mixture_type == 'Custom':
         print('Custom Loop Enabled')
         #Under Construction
-        totaliterations = len(P)*len(OtD)
-        paramlist       = []
-        for i in P:
-            for k in OtD:
-                paramlist.append((i, FtD, k))
+        print('Error! Custom is under construction! Choose another mixture!')
+        sys.exit()
+        # totaliterations = len(P)*len(OtD)
+        # paramlist       = []
+        # for i in P:
+        #     for k in OtD:
+        #         paramlist.append((i, FtD, k))
         #Under Construction
     elif mixture_type == 'Oxi_Dil':
         print('Oxidizer to Diluent Loop Enabled')
