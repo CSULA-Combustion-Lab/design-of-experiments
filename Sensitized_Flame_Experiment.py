@@ -246,7 +246,6 @@ def parallelize(param, cond, fun):
 
     results = []
     for x in param:
-        print(*x)
         results.append(pool.apply_async(fun, args=(*x, cond)))
     pool.close()
     pool.join()
@@ -269,7 +268,6 @@ def parallelize(param, cond, fun):
 
 def flame_sens(p, phi, f_o, cond):
     """[Fill in information]"""
-        #Cantera Gas Object
     Tin           = cond['Parameters'][3]
     at            = cond['Parameters'][5]
     chem          = cond['Files'][0]
