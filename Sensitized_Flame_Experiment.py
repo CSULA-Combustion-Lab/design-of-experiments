@@ -184,13 +184,13 @@ def run_simulations(conditions, paramlist, mt):
                 converged += 1
         flame_info_unfiltered = copy.deepcopy(flame_info_debug)
         duplicate_rxns = duplicate_reactions(gas)
-        flame_info_filter(flame_info_debug, duplicate_rxns)
+        flame_info_filtered = flame_info_filter(flame_info_debug, duplicate_rxns)
         print('\nDebuggin complete!')
         toc      = time.time()
         duration = toc - tic
         print('Dubugging time: '+format(duration, '0.5f')+' seconds\n')
         sim_info = [sim_time, converged, duration]
-        return flame_info_filter, flame_info_unfiltered, sim_info
+        return flame_info_filtered, flame_info_unfiltered, sim_info
 
     ########################Simulation loop####################################
     elif mt == 'Oxi_Dil' or mt == 'Fue_Dil' or mt == 'Custom':
@@ -213,7 +213,7 @@ def run_simulations(conditions, paramlist, mt):
                 converged += 1
         flame_info_unfiltered = copy.deepcopy(flame_info)
         duplicate_rxns = duplicate_reactions(gas)
-        flame_info_filter(flame_info, duplicate_rxns)
+        flame_info_filtered = flame_info_filter(flame_info, duplicate_rxns)
         filter_end  = time.time()
         filter_time = filter_end - filter_start
         print('End of filtering')
@@ -223,7 +223,7 @@ def run_simulations(conditions, paramlist, mt):
         duration = toc-tic
         print('Total time '+format(duration, '0.5f')+' seconds.\n')
         sim_info = [sim_time, converged, duration]
-        return flame_info_filter, flame_info_unfiltered, sim_info
+        return flame_info_filtered, flame_info_unfiltered, sim_info
     else:
         sys.exit()
 
@@ -411,6 +411,7 @@ def flame_info_filter(flame_information, duplicate_reactions):
                      sum += f['Flame'][0][n][1]
                      f['Flame'][0][n][1] = 0
                 f['Flame'][0][duplicate_reactions[d][0]][1] = sum
+    return flame_information
 
 
 def mixture_maker(gas, phi, fuel, oxidizer):
