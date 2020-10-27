@@ -159,7 +159,8 @@ def case_maker(cond):
 def run_simulations(conditions, paramlist, mt):
     """[Insert Information]"""
     tic = time.time()
-    gas = conditions['Mixture'][4]
+    chem = conditions['Files'][0]
+    gas = ct.Solution(chem)
     ##########################Debug loop#######################################
     if mt == 'Debug':
         Debug_params = conditions['Debug'][1]
@@ -660,7 +661,7 @@ if __name__ == "__main__":
     ###########################Initializing####################################
     """[Fill in information]"""
     #Set experiment parameters
-    Mechanism = 'gri30.cti' #Mechanism file
+    Mechanism = 'Li_model_modified_trioxane.cti' #Mechanism file
 
     #Parameters for main loop
     # P and Phi are used in all cases.
@@ -670,16 +671,16 @@ if __name__ == "__main__":
     #  log creates a logspace array of parameters
     #  lin creates a linspace array of parameters
     Array_type = 'lin'
-    Press      = [1, 2, 1]  #Pressure [atm]
-    E_Ratio    = [0.5, 1.2, 2] #Equivalence ratio
+    Press      = [0.25, 2, 8]  #Pressure [atm]
+    E_Ratio    = [0.01, 1.2, 14] #Equivalence ratio
     F_to_D     = [0.75, 0.95, 2] #Fuel/(Fuel + Diluent)
-    O_to_D     = [0.5, 0.95, 2] #Oxidizer/(Oxidizer + Diluent)
+    O_to_D     = [0.05, 0.95, 14] #Oxidizer/(Oxidizer + Diluent)
 
     #Initial temperature of unburned mixture
     Tint = 373 #Temperature [K]
 
     #Parameters for mixture (Fuel, Oxidizer, Diluent)
-    Fuel     = 'CH4' #chemical formula of fuel
+    Fuel     = 'C3H6O3' #chemical formula of fuel
     # Fuel  = ['CH4', .50 , 'CH3OH', .50]
     Oxidizer = 'O2' #chemical formula of oxidizer
     # Oxidizer = ['O2', .35 , 'NO2', .65]
@@ -692,7 +693,7 @@ if __name__ == "__main__":
     Loglevel  = 0
 
     #True/False statements
-    Save_files = False # If true, save files for plotting script
+    Save_files = True # If true, save files for plotting script
 
     #Mixture Type (Debug, Custom, Oxi_Dil, Fue_Dil)
     #Provide one of the four types of mixtures into
@@ -707,13 +708,9 @@ if __name__ == "__main__":
     Conditions = initialization(Mechanism, Array_type, Press, E_Ratio, F_to_D,
                                 O_to_D, Tint, Fuel, Oxidizer, Diluent, Air,
                                 Mingrid, Mul_soret, Loglevel, Mixture_type)
-    print(Conditions)
     Totaliterations, Paramlist = case_maker(Conditions)
-    print(Paramlist)
-    Flame_info = parallelize(Paramlist, Conditions, flame_sens)
-    # Flame_info = []
-    # for x in Paramlist:
-    #     Flame_info.append(flame_sens(*x,Conditions))
-    # Flame_info, flame_info_unfiltered, sim_info = run_simulations(Conditions, paramlist, mixture_type)
-    # if Save_files:
-    #     file_saving(Conditions, flame_info, paramlist, sim_info)
+    Flame_info, Flame_info_unfiltered, Sim_info = run_simulations(Conditions, 
+                                                                  Paramlist,
+                                                                  Mixture_type)
+    if Save_files:
+        file_saving(Conditions, Flame_info, Paramlist, Sim_info)
