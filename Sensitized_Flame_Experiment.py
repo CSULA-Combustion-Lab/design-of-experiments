@@ -21,11 +21,9 @@ ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
 
 def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D, 
-                   Tint, fuel, oxidizer, diluent, mingrid, mul_soret,
+                   Tint, fuel, oxidizer, diluent, air, mingrid, mul_soret,
                    loglevel, mixture_type):
     """[Fill in information]"""
-    #Cantera Gas Object
-    gas = ct.Solution(mechanism)
     #Working directory
     flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
@@ -95,7 +93,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
         loglevel     = 1
         Debug_params = [P, Phi, [fuel, oxidizer]]
         conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
-                      'Mixture': [fuel, diluent, oxidizer, mixture_type, gas],
+                      'Mixture': [fuel, diluent, oxidizer, mixture_type],
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer],
@@ -108,7 +106,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
         FtD = [0.05] #Fuel to Diluent Mole Fraction
         OtD = [0.25] #Oxygen to Diluent Mole Fraction
         conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
-                      'Mixture': [fuel, diluent, oxidizer, mixture_type, gas],
+                      'Mixture': [fuel, diluent, oxidizer, mixture_type],
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer]}
@@ -116,11 +114,11 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
     #Multifuel loop
     elif mixture_type == 'Oxi_Dil' or mixture_type == 'Fue_Dil':
         conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
-                      'Mixture': [fuel, diluent, oxidizer, mixture_type, gas],
+                      'Mixture': [fuel, diluent, oxidizer, mixture_type],
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer]}
-    return conditions, flame_temp
+    return conditions
 
 
 def case_maker(cond):
@@ -245,6 +243,7 @@ def parallelize(param, cond, fun):
 
     results = []
     for x in param:
+        print(*x)
         results.append(pool.apply_async(fun, args=(*x, cond)))
     pool.close()
     pool.join()
@@ -267,6 +266,7 @@ def parallelize(param, cond, fun):
 
 def flame_sens(p, phi, f_o, cond):
     """[Fill in information]"""
+        #Cantera Gas Object
     Tin           = cond['Parameters'][3]
     at            = cond['Parameters'][5]
     chem          = cond['Files'][0]
@@ -275,12 +275,12 @@ def flame_sens(p, phi, f_o, cond):
     Diluent_name  = cond['Mixture'][1]
     Oxidizer_name = cond['Mixture'][2]
     mt            = cond['Mixture'][3]
-    gas           = cond['Mixture'][4]
     multif        = cond['T/F'][0]
     multio        = cond['T/F'][1]
     mg            = cond['Flame'][0]
     ms            = cond['Flame'][1]
     logl          = cond['Flame'][2]
+    gas = ct.Solution(chem)
 
     if not mt == 'Debug':
         Diluent = 1 - f_o #Define Diluent Percentage in Fuel/Oxidizer
@@ -658,11 +658,8 @@ if __name__ == "__main__":
     ###########################Initializing####################################
     """[Fill in information]"""
     #Set experiment parameters
-    mechanism = 'Li_model_modified_trioxane.cti' #Mechanism file
-    
-    # #Working directory
-    # flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
-    
+    Mechanism = 'gri30.cti' #Mechanism file
+        
     #Parameters for main loop
     # P and Phi are used in all cases.
     # Whether FTD or OtD is used depends on mixture type.
@@ -670,30 +667,30 @@ if __name__ == "__main__":
     # Array_type's (log, lin)
     #  log creates a logspace array of parameters
     #  lin creates a linspace array of parameters
-    array_type = 'lin'
-    Press      = [0.25, 2, 8]  #Pressure [atm]
-    E_Ratio    = [0.01, 1.2, 14] #Equivalence ratio
+    Array_type = 'lin'
+    Press      = [1, 2, 1]  #Pressure [atm]
+    E_Ratio    = [0.5, 1.2, 2] #Equivalence ratio
     F_to_D     = [0.75, 0.95, 2] #Fuel/(Fuel + Diluent)
-    O_to_D     = [0.05, 0.95, 14] #Oxidizer/(Oxidizer + Diluent)
+    O_to_D     = [0.5, 0.95, 2] #Oxidizer/(Oxidizer + Diluent)
 
     #Initial temperature of unburned mixture
     Tint = 373 #Temperature [K]
     
     #Parameters for mixture (Fuel, Oxidizer, Diluent)
-    fuel     = 'C3H6O3' #chemical formula of fuel
-    # fuel  = ['CH4', .50 , 'CH3OH', .50]
-    oxidizer = 'O2' #chemical formula of oxidizer
-    # oxidizer = ['O2', .35 , 'NO2', .65]
-    diluent  = 'N2' #chemical formula of diluent
-    air      = 'O2:1, N2:3.76' #chemical components for air as an oxidizer
+    Fuel     = 'CH4' #chemical formula of fuel
+    # Fuel  = ['CH4', .50 , 'CH3OH', .50]
+    Oxidizer = 'O2' #chemical formula of oxidizer
+    # Oxidizer = ['O2', .35 , 'NO2', .65]
+    Diluent  = 'N2' #chemical formula of diluent
+    Air      = 'O2:1, N2:3.76' #chemical components for air as an oxidizer
     
     #Flame Conditions
-    mingrid   = 200
-    mul_soret = False
-    loglevel  = 0
+    Mingrid   = 200
+    Mul_soret = False
+    Loglevel  = 0
     
     #True/False statements
-    save_files = False # If true, save files for plotting script
+    Save_files = False # If true, save files for plotting script
     
     #Mixture Type (Debug, Custom, Oxi_Dil, Fue_Dil)
     #Provide one of the four types of mixtures into
@@ -702,14 +699,19 @@ if __name__ == "__main__":
     #  Custom is under construction
     #  Oxi_Dil creates a mixture where the Diluent is a ratio of the Oxidizer used
     #  Fue_Dil creates a mixture where the Diluent is a ratio of the Fuel used
-    mixture_type = 'Oxi_Dil'
+    Mixture_type = 'Oxi_Dil'
     
     #Run Code
-    Conditions = initialization(mechanism, array_type, Press, E_Ratio, F_to_D, 
-                                O_to_D, Tint, fuel, oxidizer, diluent,
-                                mingrid, mul_soret, loglevel, mixture_type)
-    totaliterations, paramlist = case_maker(Conditions[0])
-    flame_info = parallelize(paramlist, Conditions[0], flame_sens)
-    # flame_info, flame_info_unfiltered, sim_info = run_simulations(Conditions, paramlist, mixture_type)
-    # if save_files:    
+    Conditions = initialization(Mechanism, Array_type, Press, E_Ratio, F_to_D, 
+                                O_to_D, Tint, Fuel, Oxidizer, Diluent, Air,
+                                Mingrid, Mul_soret, Loglevel, Mixture_type)
+    print(Conditions)
+    Totaliterations, Paramlist = case_maker(Conditions)
+    print(Paramlist)
+    Flame_info = parallelize(Paramlist, Conditions, flame_sens)
+    # Flame_info = []
+    # for x in Paramlist:
+    #     Flame_info.append(flame_sens(*x,Conditions))
+    # Flame_info, flame_info_unfiltered, sim_info = run_simulations(Conditions, paramlist, mixture_type)
+    # if Save_files:    
     #     file_saving(Conditions, flame_info, paramlist, sim_info)
