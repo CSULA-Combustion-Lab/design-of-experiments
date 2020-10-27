@@ -13,14 +13,17 @@ import time, sys
 import numpy as np
 import cantera as ct
 import itertools as it
-path = (r'D:\School\Cal State La\Extracurricular\NOx Combustion Research')
-sys.path.insert(0, path)
-from utilities import flame
+from multiprocessing import cpu_count, Pool
 from datetime import datetime
+
+dirname = os.path.normpath(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(dirname))
+from utilities import flame
+
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
 
-def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D, 
+def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
                    Tint, fuel, oxidizer, diluent, air, mingrid, mul_soret,
                    loglevel, mixture_type):
     """[Fill in information]"""
@@ -40,17 +43,17 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
     else:
         print('Error! Check array_type variable for invalid string input')
         sys.exit()
-        
+
     if type(oxidizer) is list:
         multioxidizer = True
     elif type(oxidizer) is str:
         multioxidizer = False
-    
+
     if type(fuel) is list:
         multifuel = True
     elif type(fuel) is str:
         multifuel = False
-  
+
     #Multifuel mixture percentage of total fuel
     # fuel is a list of fuels and their percentages in the total fuel
     #  odds are fuel name as a string
@@ -64,7 +67,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
             print('Error in Multifuel.'+
                   'Sum of individual fuel percentage must add up to 1!')
             sys.exit()
-    
+
     #Multioxidizer mixture percentage of total oxidizer
     # fuel is a list of fuels and their percentages in the total fuel
     #  odds are fuel name as a string
@@ -78,7 +81,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
             print('Error in Multioxidizer.'+
                   'Sum of individual fuel percentage must add up to 1!')
             sys.exit()
-    
+
     #Debug loop parameters
     if mixture_type == 'Debug':
         DEBUG_FMT = ('Removing condition: T={:.0f}, P={:.0f}, Phi={:.3g}, '+
@@ -98,7 +101,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer],
                       'Debug': [DEBUG_FMT, Debug_params]}
-    
+
     #Custom loop
     elif mixture_type == 'Custom':
         P   = [1] #Pressure [atm]
@@ -110,7 +113,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer]}
-    
+
     #Multifuel loop
     elif mixture_type == 'Oxi_Dil' or mixture_type == 'Fue_Dil':
         conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
@@ -128,7 +131,7 @@ def case_maker(cond):
     phi      = cond['Parameters'][1]
     otd      = cond['Parameters'][4]
     ftd      = cond['Parameters'][2]
-    
+
     if mix_type == 'Debug':
         print('Debug Loop Enabled')
     elif mix_type == 'Custom':
@@ -150,7 +153,7 @@ def case_maker(cond):
         paramlist       = list(it.product(p,phi,ftd))
     else:
         print('Error in Initializing. Check mixture_type variable.')
-        sys.exit()        
+        sys.exit()
     return totaliterations, paramlist
 
 def run_simulations(conditions, paramlist, mt):
@@ -225,7 +228,6 @@ def run_simulations(conditions, paramlist, mt):
 
 def parallelize(param, cond, fun):
     """[Fill in information]"""
-    from multiprocessing import cpu_count, Pool
     #Find optimal number of cpus to use
     numcases = len(param) #Number of cases to run
     if cpu_count() == 2 or cpu_count() == 1:
@@ -459,7 +461,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     s_time        = s_info[0]
     conv          = s_info[1]
     dur           = s_info[2]
-    
+
     #Save Path/Parent Directory
     parent_dir = 'Flame_Sensitivity_Results'
     try:
@@ -652,14 +654,14 @@ def file_saving(cond, fla_inf, p_list, s_info):
         save_time = save_time_end - save_time_start
         print('Total File Save Time: '+format(save_time, '0.5f')+' seconds.\n')
         print('End file saving')
-            
-            
+
+
 if __name__ == "__main__":
     ###########################Initializing####################################
     """[Fill in information]"""
     #Set experiment parameters
     Mechanism = 'gri30.cti' #Mechanism file
-        
+
     #Parameters for main loop
     # P and Phi are used in all cases.
     # Whether FTD or OtD is used depends on mixture type.
@@ -675,7 +677,7 @@ if __name__ == "__main__":
 
     #Initial temperature of unburned mixture
     Tint = 373 #Temperature [K]
-    
+
     #Parameters for mixture (Fuel, Oxidizer, Diluent)
     Fuel     = 'CH4' #chemical formula of fuel
     # Fuel  = ['CH4', .50 , 'CH3OH', .50]
@@ -683,15 +685,15 @@ if __name__ == "__main__":
     # Oxidizer = ['O2', .35 , 'NO2', .65]
     Diluent  = 'N2' #chemical formula of diluent
     Air      = 'O2:1, N2:3.76' #chemical components for air as an oxidizer
-    
+
     #Flame Conditions
     Mingrid   = 200
     Mul_soret = False
     Loglevel  = 0
-    
+
     #True/False statements
     Save_files = False # If true, save files for plotting script
-    
+
     #Mixture Type (Debug, Custom, Oxi_Dil, Fue_Dil)
     #Provide one of the four types of mixtures into
     # variable mixture_type as a string
@@ -700,9 +702,9 @@ if __name__ == "__main__":
     #  Oxi_Dil creates a mixture where the Diluent is a ratio of the Oxidizer used
     #  Fue_Dil creates a mixture where the Diluent is a ratio of the Fuel used
     Mixture_type = 'Oxi_Dil'
-    
+
     #Run Code
-    Conditions = initialization(Mechanism, Array_type, Press, E_Ratio, F_to_D, 
+    Conditions = initialization(Mechanism, Array_type, Press, E_Ratio, F_to_D,
                                 O_to_D, Tint, Fuel, Oxidizer, Diluent, Air,
                                 Mingrid, Mul_soret, Loglevel, Mixture_type)
     print(Conditions)
@@ -713,5 +715,5 @@ if __name__ == "__main__":
     # for x in Paramlist:
     #     Flame_info.append(flame_sens(*x,Conditions))
     # Flame_info, flame_info_unfiltered, sim_info = run_simulations(Conditions, paramlist, mixture_type)
-    # if Save_files:    
+    # if Save_files:
     #     file_saving(Conditions, flame_info, paramlist, sim_info)
