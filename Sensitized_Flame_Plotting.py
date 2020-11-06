@@ -104,7 +104,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                  'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
                  'T': [Tint, 'Temperature [K]'],
                  'Su': [Su, 'Flame Speed [m/s]', Su_threshold], 
-                 'Strength': [Sens_strength, r'$\bar S_{'+Rxn_Eq+'}$',
+                 'Strength': [Sens_strength, r'$\hat S_{'+Rxn_Eq+'}$',
                               Sens_str_threshold]}
     
     figa, axesa = plt.subplots(nrows=2, ncols=2, sharey=True)
@@ -494,17 +494,17 @@ if __name__ == "__main__":
         print('Error! invalid string for array_type.')
     
     Max_rxn_cond, Max_rxns_dict, M = max_rxn_csv(Flame_speed_filter, Load_path)
-    # T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
-    # rxn_plots(Flame_speed_filter, Plot_path, Logspace)
-    # flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    # Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter, 
-    #                                                     Nrxns, Load_path)
-    # if not len(Rxn_interest) == 0:
-    #     for Rxns in Rxn_interest:
-    #         rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-    #                             Threshold, Plot_path, Logspace)
-    #         rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
-    # for Trxns in Topnrxns:
-    #     rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
-    #                         Threshold, Plot_path, Logspace, Four_Plot)
-    #     rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
+    T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
+    rxn_plots(Flame_speed_filter, Plot_path, Logspace)
+    flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
+    Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter, 
+                                                        Nrxns, Load_path)
+    if not len(Rxn_interest) == 0:
+        for Rxns in Rxn_interest:
+            rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+                                Threshold, Plot_path, Logspace)
+            rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
+    for Trxns in Topnrxns:
+        rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
+                            Threshold, Plot_path, Logspace, Four_Plot)
+        rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
