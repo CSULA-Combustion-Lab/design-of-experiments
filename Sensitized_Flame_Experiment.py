@@ -22,6 +22,19 @@ from utilities import flame
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
+def run_flame_simulation(mechan, arrtype, pres, eratio, ftod,
+                         otod, tin, fue, oxi, dilu, air, mgrid,
+                         msoret, loglev, mixtype, safi):
+    
+    condi = initialization(mechan, arrtype, pres, eratio, ftod, otod, tin,
+                           fue, oxi, dilu, air, mgrid, msoret, loglev, mixtype)
+    totiter, paralist = case_maker(condi)
+    flame_info, flame_info_unfiltered, siminfo = run_simulations(condi, 
+                                                                  paralist,
+                                                                  Mixture_type)
+    if safi:
+        file_saving(condi, flame_info, paralist, siminfo)
+    
 
 def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
                    Tint, fuel, oxidizer, diluent, air, mingrid, mul_soret,
@@ -704,12 +717,15 @@ if __name__ == "__main__":
     Mixture_type = 'Oxi_Dil'
 
     #Run Code
-    Conditions = initialization(Mechanism, Array_type, Press, E_Ratio, F_to_D,
-                                O_to_D, Tint, Fuel, Oxidizer, Diluent, Air,
-                                Mingrid, Mul_soret, Loglevel, Mixture_type)
-    Totaliterations, Paramlist = case_maker(Conditions)
-    Flame_info, Flame_info_unfiltered, Sim_info = run_simulations(Conditions, 
-                                                                  Paramlist,
-                                                                  Mixture_type)
-    if Save_files:
-        file_saving(Conditions, Flame_info, Paramlist, Sim_info)
+    run_flame_simulation(Mechanism, Array_type, Press, E_Ratio, F_to_D,
+                         O_to_D, Tint, Fuel, Oxidizer, Diluent, Air, Mingrid,
+                         Mul_soret, Loglevel, Mixture_type, Save_files)
+    # Conditions = initialization(Mechanism, Array_type, Press, E_Ratio, F_to_D,
+    #                             O_to_D, Tint, Fuel, Oxidizer, Diluent, Air,
+    #                             Mingrid, Mul_soret, Loglevel, Mixture_type)
+    # Totaliterations, Paramlist = case_maker(Conditions)
+    # Flame_info, Flame_info_unfiltered, Sim_info = run_simulations(Conditions, 
+    #                                                               Paramlist,
+    #                                                               Mixture_type)
+    # if Save_files:
+    #     file_saving(Conditions, Flame_info, Paramlist, Sim_info)
