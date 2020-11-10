@@ -142,6 +142,7 @@ def case_maker(cond):
     mix_type = cond['Mixture'][3]
     p        = cond['Parameters'][0]
     phi      = cond['Parameters'][1]
+    # fod      = cond['Parameters'][2]
     otd      = cond['Parameters'][4]
     ftd      = cond['Parameters'][2]
 
@@ -164,6 +165,13 @@ def case_maker(cond):
         print('Fuel to Diluent Loop Enabled')
         totaliterations = len(p)*len(phi)*len(ftd)
         paramlist       = list(it.product(p,phi,ftd))
+    # elif mix_type == 'Oxi_Dil' or mix_type == 'Fue_Dil':
+    #     if mix_type == 'Oxi_Dil':
+    #         print('Oxidizer to Diluent Loop Enabled')
+    #     elif mix_type == 'Fue_Dil':
+    #         print('Fuel to Diluent Loop Enabled')
+    #     totaliterations = len(p)*len(phi)*len(fod)
+    #     paramlist       = list(it.product(p,phi,fod))
     else:
         print('Error in Initializing. Check mixture_type variable.')
         sys.exit()
@@ -459,6 +467,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     save_time_start = time.time()
     p             = cond['Parameters'][0]
     phi           = cond['Parameters'][1]
+    # fod           = cond['Parameters'][2]
     ftd           = cond['Parameters'][2]
     Tin           = cond['Parameters'][3]
     otd           = cond['Parameters'][4]
@@ -586,9 +595,13 @@ def file_saving(cond, fla_inf, p_list, s_info):
         if mt == 'Oxi_Dil':
             F_O_text = ("\nOxidizer to Diluent Mole Fraction Range: "
                         +format(otd)+"\n")
+            # F_O_text = ("\nOxidizer to Diluent Mole Fraction Range: "
+            #             +format(fod)+"\n")
         elif mt == 'Fue_Dil':
             F_O_text = ("\nFuel Mole Fraction Range: "
                         +format(ftd)+"\n")
+            # F_O_text = ("\nFuel Mole Fraction Range: "
+            #             +format(fod)+"\n")
         else:
             print('Error, strings in text description')
         if multif:
@@ -685,6 +698,7 @@ if __name__ == "__main__":
     Array_type = 'lin'
     Press      = [0.25, 2, 8]  #Pressure [atm]
     E_Ratio    = [0.01, 1.2, 14] #Equivalence ratio
+    FO_to_D    = [0.05, 0.95, 14] #Amount of Fuel/Oxidizer to Diluent
     F_to_D     = [0.75, 0.95, 2] #Fuel/(Fuel + Diluent)
     O_to_D     = [0.05, 0.95, 14] #Oxidizer/(Oxidizer + Diluent)
 
