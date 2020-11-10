@@ -12,6 +12,7 @@ import numpy
 import pickle
 from operator import itemgetter
 import matplotlib.pyplot as plt
+plt.style.use('CSULA_Combustion')
 #from tkinter import filedialog
 
 def rxn_plots(f_info, save_path, log):
@@ -33,10 +34,8 @@ def rxn_plots(f_info, save_path, log):
         Fuel.append(f['Conditions'][9])
         Oxidizer.append(f['Conditions'][10])
         
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10), sharey=True)
+    fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
     ax        = axes.flatten()
-    fs        = 15
-    #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
                  'F': [Fuel, 'Fuel Mole Fraction '+str(Fue)],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
@@ -44,30 +43,27 @@ def rxn_plots(f_info, save_path, log):
                  'T': [Tint, 'Temperature [K]'],
                  'Rxn': [Max_rxn, 'Rxn Number']}
     conditions = ['P', 'F', 'Phi', 'Oxi']
-    #Four subplots of max rxn number against independent variables
     for a, condition in zip(ax, conditions):
         x_key = condition
         y_key = 'Rxn'
-        a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
-               marker='o', mfc='none', mec='k')
-        a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
-        a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+        a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
+        a.set_xlabel(cond_dict[x_key][1])
+        a.set_ylabel(cond_dict[y_key][1])
         if log:
             a.set_xscale('log')
-        elif x_key == 'P':
-            a.set_xscale('log')
-        a.grid(True)
 
         fig.suptitle('Initial Temperature: '+format(Tint)+' [K]')
-        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.savefig(save_path+'\\Max Reactions with Initial Temperature '
                     +format(Tint)+'K.png')
     plt.close(fig)
+
     
-    
-def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
+def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
+                       conditions_a=['P', 'F', 'Phi', 'O2']):
     """[Insert Information]"""
-    Tint = f_info[0]['Conditions'][0]
+    Tint       = f_info[0]['Conditions'][0]
+    Rxn_Eq     = format(f_info[0]['Flame'][0][rxn_int][2])
+    Rxn_Number = format(f_info[0]['Flame'][0][rxn_int][0]+1)
     #List for strengths
     Pressure      = []
     Phi           = []
@@ -108,62 +104,48 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
                  'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
                  'T': [Tint, 'Temperature [K]'],
                  'Su': [Su, 'Flame Speed [m/s]', Su_threshold], 
-                 'Strength': [Sens_strength, 'Rxn Strength',
+                 'Strength': [Sens_strength, r'$\hat S_{'+Rxn_Eq+'}$',
                               Sens_str_threshold]}
     
-    figa, axesa = plt.subplots(nrows=2, ncols=2, figsize=(15, 10), sharey=True)
+    figa, axesa = plt.subplots(nrows=2, ncols=2, sharey=True)
     axa         = axesa.flatten()
-    fs          = 15
-    conditions_a = ['P', 'F', 'Phi', 'O2']
-    for a, condition in zip(axa, conditions_a):
+    for a, condition, string in zip(axa, conditions_a,
+                                    ['(a)', '(b)', '(c)', '(d)']):
         x_key = condition
         y_key = 'Strength'
-        a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
-               marker='o', mfc='none', mec='k')
-        a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
-        a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+        a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
+        a.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
+        a.set_xlabel(cond_dict[x_key][1])
+        a.set_ylabel(cond_dict[y_key][1])
         if log:
             a.set_xscale('log')
-        elif x_key == 'P':
-            a.set_xscale('log')
-        a.grid(True)
 
-        figa.suptitle('Reaction '+format(f_info[0]['Flame'][0][rxn_int][2])+
-                      '\nInitial Temperature: '+format(Tint)+' [K]')
-        figa.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(save_path+'\\Reaction '
-                    +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
+        figa.suptitle('Reaction '+Rxn_Eq+'\nInitial Temperature: '
+                      +format(Tint)+' [K]')
+        plt.savefig(save_path+'\\Reaction '+Rxn_Number+
                     ' Average Strength against top '+format(nrxns)+' rxns'
                     ' with Initial Temperature '+format(Tint)+'K.png')
     plt.close(figa)
     
     if not len(Sens_str_threshold) == 0:
-        figb, axesb  = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
+        figb, axesb  = plt.subplots(nrows=2, ncols=3)
         axb          = axesb.flatten()
         conditions_b = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
                         ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
         for a, condition in zip(axb, conditions_b):
             x_key = condition[0]
             y_key = condition[1]
-            a.plot(cond_dict[x_key][2], cond_dict[y_key][2], ls='none',
-                   marker='o', mfc='none', mec='k')
-            a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
-            a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+            a.plot(cond_dict[x_key][2], cond_dict[y_key][2])
+            a.set_xlabel(cond_dict[x_key][1])
+            a.set_ylabel(cond_dict[y_key][1])
             if log:
-                a.set_xscale('log')
-            elif x_key == 'P':
                 a.set_xscale('log')
             if log:
                 a.set_yscale('log')
-            elif y_key == 'P':
-                a.set_yscale('log')
-            a.grid(True)
     
-            figb.suptitle('Reaction '+
-                          format(f_info[0]['Flame'][0][rxn_int][2])+
+            figb.suptitle('Reaction '+Rxn_Eq+
                           '\n Threshold >= '+format(threshold)+
                           ' Initial Temperature: '+format(Tint)+' [K]')
-            figb.tight_layout(rect=[0, 0.03, 1, 0.95])
             plt.savefig(save_path+'\\Reaction '
                         +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
                         ' Average Strength above_equal to '+format(threshold)+
@@ -173,15 +155,14 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log):
         print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
               ' shows no cases where the sensitiviy is above threshold '+
               str(threshold))
-    figc, axc = plt.subplots(nrows=1, ncols=1, figsize=(15,10))
+        
+    figc, axc = plt.subplots(nrows=1, ncols=1)
     x_key = 'Su'
     y_key = 'Strength'
-    axc.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none', 
-             marker='o', mfc='none', mec='k')
+    axc.plot(cond_dict[x_key][0], cond_dict[y_key][0])
     axc.set(xlabel=cond_dict[x_key][1], ylabel=cond_dict[y_key][1],
-            title='Normalized Sensitivity of Reaction '
-            +format(f_info[0]['Flame'][0][rxn_int][2])+' vs. Flame Speed')
-    axc.grid(True)
+            title='Normalized Sensitivity of Reaction '+Rxn_Eq+
+            ' vs. Flame Speed')
     figc.savefig(save_path+'\\Reaction '
                  +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
                  ' Normalized Sensitivity vs Flame Speed '+
@@ -207,9 +188,8 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
             Fuel.append(f['Conditions'][9])
             Oxygen.append(f['Conditions'][10])
     if not len(Phi) == 0:       
-        fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
+        fig, axes = plt.subplots(nrows=2, ncols=3)
         ax        = axes.flatten()
-        fs        = 15
         #Dictionary organized as follow 'Key': [Data, axis-label]
         cond_dict = {'P': [Pressure, 'Pressure [atm]'],
                      'F': [Fuel, 'Fuel Mole Fraction'],
@@ -223,23 +203,16 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
         for a, condition in zip(ax, conditions):
             x_key = condition[0]
             y_key = condition[1]
-            a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
-                    marker='o', mfc='none', mec='k')
-            a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
-            a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+            a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
+            a.set_xlabel(cond_dict[x_key][1])
+            a.set_ylabel(cond_dict[y_key][1])
             if log:
-                a.set_xscale('log')
-            elif x_key == 'P':
                 a.set_xscale('log')
             if log:
                 a.set_yscale('log')
-            elif y_key == 'P':
-                a.set_yscale('log')
-            a.grid(True)
             fig.suptitle('Reaction Number: '+format(Rxn_num)+
                           ' Reaction Name: '+Rxn_name+
                           '\nInitial Temperature: '+format(Tint)+' [K]')
-            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
             plt.savefig(save_path+'\\Reaction Number '+format(Rxn_num)+
                         ' Max Sensitivity for Parameters with'
                         ' Initial Temperature '+format(Tint)+'K.png')
@@ -266,9 +239,8 @@ def flame_speed_plots(f_info, save_path, log):
         Su.append(s['Flame'][1])
         Flame_T.append(s['Flame'][3])
         
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10), sharey=True)
+    fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
     ax        = axes.flatten()
-    fs        = 15
     #Dictionary organized as follow 'Key': [Data, axis-label]
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
                  'F': [Fuel, 'Fuel Mole Fraction'],
@@ -283,15 +255,12 @@ def flame_speed_plots(f_info, save_path, log):
         y_key = 'Su'
         a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
                 marker='o', mfc='none', mec='k')
-        a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
-        a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
+        a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
+        a.set_xlabel(cond_dict[x_key][1])
+        a.set_ylabel(cond_dict[y_key][1])
         if log:
             a.set_xscale('log')
-        elif x_key == 'P':
-            a.set_xscale('log')
-        a.grid(True)
         fig.suptitle('Initial Temperature: '+format(Tint)+' [K]')
-        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
                     ' Initial Temperature '+format(Tint)+'K.png')
     plt.close(fig)
@@ -307,7 +276,7 @@ def max_rxn_csv(f_info, save_path):
     Max_rxn  = []
     for f in f_info:
         max_rxn  = max_sens(f)
-        Max_rxn.append([max_rxn[0], max_rxn[2]])
+        Max_rxn.append([max_rxn[0], max_rxn[2], max_rxn[1]])
         Pressure.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
         Fuel.append(f['Conditions'][9])
@@ -354,7 +323,7 @@ def max_rxn_csv(f_info, save_path):
                                     Max_rxn_params[keys][p][2],
                                     Max_rxn_params[keys][p][3]])
         
-    return Max_rxn_params, Max_rxns
+    return Max_rxn_params, Max_rxns, Max_rxn
 
 
 def top_nrxns_csv(f_info, nrxns, save_path):
@@ -430,7 +399,7 @@ def max_sens(flame):
     max_rxn_num  = 0
     max_rxn_sens = 0
     for m in flame['Flame'][0]:
-        if abs(m[1]) > max_rxn_sens:
+        if abs(m[1]) > abs(max_rxn_sens):
             max_rxn_num  = m[0]
             max_rxn_sens = m[1]
             max_rxn_eq   = m[2]
@@ -512,11 +481,11 @@ if __name__ == "__main__":
     #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
     
     #Plot Functions
-    Rxn_interest = [70, 71] #Reaction number of the reaction of interest
-    Nrxns        = 5 #Top n-reactions
+    Rxn_interest = [] #Reaction number of the reaction of interest
+    Nrxns        = 7 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
+    Four_Plot = ['P', 'F', 'Su', 'O2']
     array_type   = Flame[0]['Conditions'][12]
-    # array_type = 'Log'
     if array_type == 'log':
         Logspace = True #If True all plots will use logspace
     elif array_type == 'lin':
@@ -524,17 +493,18 @@ if __name__ == "__main__":
     else:
         print('Error! invalid string for array_type.')
     
-    Max_rxn_cond, Max_rxns_dict = max_rxn_csv(Flame_speed_filter, Load_path)
+    Max_rxn_cond, Max_rxns_dict, M = max_rxn_csv(Flame_speed_filter, Load_path)
     T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
     rxn_plots(Flame_speed_filter, Plot_path, Logspace)
     flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
     Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter, 
                                                         Nrxns, Load_path)
-    # for Rxns in Rxn_interest:
-    #     rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-    #                         Threshold, Plot_path, Logspace)
-    #     rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
+    if not len(Rxn_interest) == 0:
+        for Rxns in Rxn_interest:
+            rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+                                Threshold, Plot_path, Logspace)
+            rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
     for Trxns in Topnrxns:
         rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
-                            Threshold, Plot_path, Logspace)
+                            Threshold, Plot_path, Logspace, Four_Plot)
         rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
