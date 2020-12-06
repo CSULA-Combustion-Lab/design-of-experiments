@@ -25,6 +25,7 @@ ct.suppress_thermo_warnings() #Suppress cantera warnings!
 def run_flame_simulation(mechan, arrtype, pres, eratio, ftod,
                          otod, tin, fue, oxi, dilu, air, mgrid,
                          msoret, loglev, mixtype, safi):
+    """[Fill in information]"""
     
     condi = initialization(mechan, arrtype, pres, eratio, ftod, otod, tin,
                            fue, oxi, dilu, air, mgrid, msoret, loglev, mixtype)
