@@ -18,7 +18,7 @@ from datetime import datetime
 
 dirname = os.path.normpath(os.path.dirname(__file__))
 sys.path.append(os.path.dirname(dirname))
-from utilities import flame
+from utilities import flame_skeleton
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
@@ -383,7 +383,7 @@ def flame_sens(p, phi, f_o, cond):
             else:
                 continue
 
-    f = flame.Flame(Mix, p, Tin, tempfile, chemfile=chem)
+    f = flame_skeleton.Flame(Mix, p, Tin, tempfile, chemfile=chem)
     f.run(mingrid=mg, loglevel=logl, mult_soret=ms)
     if f.flame_result is None:
         flame_info = {'Flame': [None, 'Flame did not converge'],
@@ -697,11 +697,11 @@ if __name__ == "__main__":
     #  log creates a logspace array of parameters
     #  lin creates a linspace array of parameters
     Array_type = 'lin'
-    Press      = [0.25, 2, 8]  #Pressure [atm]
-    E_Ratio    = [0.01, 1.2, 14] #Equivalence ratio
-    FO_to_D    = [0.05, 0.95, 14] #Amount of Fuel/Oxidizer to Diluent
-    F_to_D     = [0.75, 0.95, 2] #Fuel/(Fuel + Diluent)
-    O_to_D     = [0.05, 0.95, 14] #Oxidizer/(Oxidizer + Diluent)
+    Press      = [0.5, 1, 2]  #Pressure [atm]
+    E_Ratio    = [0.25, 1.2, 4] #Equivalence ratio
+    FO_to_D    = [0.05, 0.95, 4] #Amount of Fuel/Oxidizer to Diluent
+    F_to_D     = [0.75, 0.95, 4] #Fuel/(Fuel + Diluent)
+    O_to_D     = [0.05, 0.95, 4] #Oxidizer/(Oxidizer + Diluent)
 
     #Initial temperature of unburned mixture
     Tint = 373 #Temperature [K]
