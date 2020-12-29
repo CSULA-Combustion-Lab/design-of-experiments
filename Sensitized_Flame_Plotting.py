@@ -41,12 +41,14 @@ def rxn_plots(f_info, save_path, log):
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
                  'Oxi': [Oxidizer, 'Oxygen Mole Fraction '+str(Oxi)],
                  'T': [Tint, 'Temperature [K]'],
-                 'Rxn': [Max_rxn, 'Rxn Number']}
+                 'Rxn': [Max_rxn, 'Reaction #']}
     conditions = ['P', 'F', 'Phi', 'Oxi']
-    for a, condition in zip(ax, conditions):
+    for a, condition, string in zip(ax, conditions,
+                                    ['(a)', '(b)', '(c)', '(d)']):
         x_key = condition
         y_key = 'Rxn'
         a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
+        a.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
         a.set_xlabel(cond_dict[x_key][1])
         a.set_ylabel(cond_dict[y_key][1])
         if log:
