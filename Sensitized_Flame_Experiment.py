@@ -15,10 +15,10 @@ import cantera as ct
 import itertools as it
 from multiprocessing import cpu_count, Pool
 from datetime import datetime
-
-dirname = os.path.normpath(os.path.dirname(__file__))
-sys.path.append(os.path.dirname(dirname))
-from utilities import flame_skeleton
+import flame_skeleton
+# dirname = os.path.normpath(os.path.dirname(__file__))
+# sys.path.append(os.path.dirname(dirname))
+# from utilities import flame_skeleton
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
