@@ -12,7 +12,6 @@ import os
 import matplotlib.patches as mpl_patches
 dirname = os.path.normpath(os.path.dirname(__file__))
 plt.style.use(os.path.join(dirname, 'CSULA_Combustion_test.mplstyle'))
-# plt.style.use('CSULA_Combustion')
 #from tkinter import filedialog
 
 
@@ -313,11 +312,11 @@ def create_csv(int_strength, out_path, rxn_num, spec=0):
 if __name__ == "__main__":
     Folder_name = input('Please type name of folder. if blank, use last folder:\n')
     if Folder_name == '':
-        with open('last run.pkl', 'rb') as f:
+        with open('last run 0d.pkl', 'rb') as f:
             Folder_name = pickle.load(f)
         print('Loading ' + Folder_name)
     Load_folder = '\\'+Folder_name
-    with open('last run.pkl', 'wb') as f:
+    with open('last run 0d.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
     Load_path   = 'Outputs'+Load_folder
