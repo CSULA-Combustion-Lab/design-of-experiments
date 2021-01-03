@@ -12,7 +12,8 @@ import numpy
 import pickle
 from operator import itemgetter
 import matplotlib.pyplot as plt
-plt.style.use('CSULA_Combustion')
+dirname = os.path.normpath(os.path.dirname(__file__))
+plt.style.use(os.path.join(dirname, 'CSULA_Combustion_test.mplstyle'))
 #from tkinter import filedialog
 
 def rxn_plots(f_info, save_path, log):
@@ -434,11 +435,11 @@ if __name__ == "__main__":
     Folder_name = input('Please type name of folder.'
                         '\n If blank, use last folder:\n')
     if Folder_name == '':
-        with open('last run.pkl', 'rb') as f:
+        with open('last run 1d.pkl', 'rb') as f:
             Folder_name = pickle.load(f)
         print('Loading ' + Folder_name)
     Load_folder = '\\'+Folder_name
-    with open('last run.pkl', 'wb') as f:
+    with open('last run 1d.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
     #Paths for loading and saving files
