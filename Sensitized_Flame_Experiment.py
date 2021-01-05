@@ -15,11 +15,11 @@ import cantera as ct
 import itertools as it
 from multiprocessing import cpu_count, Pool
 from datetime import datetime
-import flame_skeleton
+# import flame_skeleton
 import common_functions as cf
-# dirname = os.path.normpath(os.path.dirname(__file__))
-# sys.path.append(os.path.dirname(dirname))
-# from utilities import flame_skeleton
+dirname = os.path.normpath(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(dirname))
+from utilities import flame as flame_skeleton
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
@@ -690,6 +690,8 @@ if __name__ == "__main__":
     #Set experiment parameters
     mech_name = 'Li_model_modified_trioxane.cti' #Mechanism file
     Mechanism = cf.model_folder(mech_name)
+    
+    # Mechanism = os.path.join('Models', mech_name)
 
     #Parameters for main loop
     # P and Phi are used in all cases.
