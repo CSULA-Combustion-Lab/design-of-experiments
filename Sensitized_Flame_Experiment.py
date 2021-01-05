@@ -16,6 +16,7 @@ import itertools as it
 from multiprocessing import cpu_count, Pool
 from datetime import datetime
 import flame_skeleton
+import common_functions as cf
 # dirname = os.path.normpath(os.path.dirname(__file__))
 # sys.path.append(os.path.dirname(dirname))
 # from utilities import flame_skeleton
@@ -687,7 +688,8 @@ if __name__ == "__main__":
     ###########################Initializing####################################
     """[Fill in information]"""
     #Set experiment parameters
-    Mechanism = 'Li_model_modified_trioxane.cti' #Mechanism file
+    mech_name = 'Li_model_modified_trioxane.cti' #Mechanism file
+    Mechanism = cf.model_folder(mech_name)
 
     #Parameters for main loop
     # P and Phi are used in all cases.
