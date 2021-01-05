@@ -10,11 +10,11 @@ Modified by Cody Ising
 import os
 import cantera
 import numpy
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import gc
 from . import Classes  # File with custom classes and functions
-MOD_PATH = os.path.dirname(Classes.__file__)
-plt.style.use(os.path.join(MOD_PATH, 'custom_styles'))
+# MOD_PATH = os.path.dirname(Classes.__file__)
+# plt.style.use(os.path.join(MOD_PATH, 'custom_styles'))
 
 
 def time_out(signum, frame):
@@ -299,39 +299,39 @@ class Flame(object):
             self.sens.append([m, sens[m],
                               self.flame_result.gas.reaction_equation(m)])
 
-    def plot(self, variables, save=False):
-        """ Plot the profile of the inputted variables"""
-        if self.flame_result is None:
-            print('Flame cannot be plotted. It did not converge')
-            return
-        if type(variables) is not list:
-            variables = [variables]
-        fig, ax = plt.subplots()
-        f = self.flame_result
-        x = f.grid
-        for var in variables:
-            if var == 'T':
-                ax.plot(x, f.T, '.', label='T [K]')
-                if len(variables) == 1:
-                    ax.set_ylabel('T [K]')
-            elif var == 'u':
-                ax.plot(x, f.u, '.', label='Velocity [m/s]')
-                if len(variables) == 1:
-                    ax.set_ylabel('Velocity [m/s]')
-            else:
-                ind = f.gas.species_index(var)
-                ax.plot(x, f.X[ind], '.', label=var)
-                if len(variables) == 1:
-                    ax.set_ylabel(var)
-        if len(variables) > 1:
-            ax.legend()
-        ax.set_xlabel('Position [m]')
-        fig.tight_layout()
-        if save:
-            plt.savefig(os.path.join(self.workingdir, 'flame profile.png'))
-            plt.close(fig)
-        else:
-            plt.show()
+    # def plot(self, variables, save=False):
+    #     """ Plot the profile of the inputted variables"""
+    #     if self.flame_result is None:
+    #         print('Flame cannot be plotted. It did not converge')
+    #         return
+    #     if type(variables) is not list:
+    #         variables = [variables]
+    #     fig, ax = plt.subplots()
+    #     f = self.flame_result
+    #     x = f.grid
+    #     for var in variables:
+    #         if var == 'T':
+    #             ax.plot(x, f.T, '.', label='T [K]')
+    #             if len(variables) == 1:
+    #                 ax.set_ylabel('T [K]')
+    #         elif var == 'u':
+    #             ax.plot(x, f.u, '.', label='Velocity [m/s]')
+    #             if len(variables) == 1:
+    #                 ax.set_ylabel('Velocity [m/s]')
+    #         else:
+    #             ind = f.gas.species_index(var)
+    #             ax.plot(x, f.X[ind], '.', label=var)
+    #             if len(variables) == 1:
+    #                 ax.set_ylabel(var)
+    #     if len(variables) > 1:
+    #         ax.legend()
+    #     ax.set_xlabel('Position [m]')
+    #     fig.tight_layout()
+    #     if save:
+    #         plt.savefig(os.path.join(self.workingdir, 'flame profile.png'))
+    #         plt.close(fig)
+    #     else:
+    #         plt.show()
 
     def _check_too_close(self, fl):
         "Check that flame isn't too close to front boundary."
