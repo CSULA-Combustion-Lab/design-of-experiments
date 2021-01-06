@@ -5,7 +5,7 @@ Created on Wed Sep 16 13:32:37 2020
 @author: Kodo Bear
 """
 # import code_2_5
-import Sensitized_Flame_Experiment as 1D
+import Sensitized_Flame_Experiment as oneD
 # import BurnerSimulation
 
 #Initializer
@@ -35,10 +35,13 @@ Mixture_type = 'Oxi_Dil'
 ### Equivalence: Dimensionless (<1:Fuel Lean, 1:Unity, >1:Fuel Rich)
 ### Temperature: Kelvin [K]
 ### Diluent_Percentage: Percent [%]
+### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
+###             variables should vary in log- or linear- space
 Pressure           = [0.5, 1, 2]
 Equivalence        = [0.05, 1, 12]
 Temperature        = [300, 400, 2]
 Diluent_Percentage = [0.05, 0.95, 12]
+Array_type = 'log'
 
 #Set experiment parameters
 Mechanism = 'Li_model_modified_trioxane.cti' #Mechanism file
@@ -58,6 +61,10 @@ Oxidizer = 'O2' #chemical formula of oxidizer
 Diluent  = 'N2' #chemical formula of diluent
 Air      = 'O2:1, N2:3.76' #chemical components for air as an oxidizer
 
+#################### Missing code here #########################
+#   Add code to define F_to_D and O_to_D. Or, are these necessary?
+#################################################################
+
 #Flame Conditions
 Mingrid   = 200
 Mul_soret = False
@@ -67,12 +74,12 @@ Loglevel  = 0
 Save_files = True # If true, save files for plotting script
 
 if __name__ == "__main__":
-    
+
     if Simulation_Type == '0D':
         # 0D = 0DSimulation(Parameter_List, Mechanism_List)
         print('Under-Construction!')
     elif Simulation_Type =='1D':
-        1D.run_flame_simulation(Mechanism, Array_type, Pressure, Equivalence,
+        oneD.run_flame_simulation(Mechanism, Array_type, Pressure, Equivalence,
                                 F_to_D, O_to_D, Tint, Fuel, Oxidizer, Diluent,
                                 Air, Mingrid, Mul_soret, Loglevel,
                                 Mixture_type, Save_files)

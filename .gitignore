@@ -3,3 +3,4 @@ Outputs
 main2.py
 *.pkl
 *.txt
+*.pyc
