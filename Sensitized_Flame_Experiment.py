@@ -15,11 +15,11 @@ import cantera as ct
 import itertools as it
 from multiprocessing import cpu_count, Pool
 from datetime import datetime
-# import flame_skeleton
+from tqdm import tqdm
+
+import flames
 import common_functions as cf
-dirname = os.path.normpath(os.path.dirname(__file__))
-sys.path.append(os.path.dirname(dirname))
-from utilities import flame as flame_skeleton
+
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
@@ -271,12 +271,12 @@ def parallelize(param, cond, fun):
     for x in param:
         results.append(pool.apply_async(fun, args=(*x, cond)))
     pool.close()
-    pool.join()
+    # pool.join()
 
     # Get the results
     datadict = dict()
     casenum  = 0
-    for p in results:
+    for p in tqdm(results):
         try:
             # Assign it to datadict. This is ordered by the time when each
             # simulation starts, not when they end
@@ -384,7 +384,7 @@ def flame_sens(p, phi, f_o, cond):
             else:
                 continue
 
-    f = flame_skeleton.Flame(Mix, p, Tin, tempfile, chemfile=chem)
+    f = flames.Flame(Mix, p, Tin, tempfile, chemfile=chem)
     f.run(mingrid=mg, loglevel=logl, mult_soret=ms)
     if f.flame_result is None:
         flame_info = {'Flame': [None, 'Flame did not converge'],
