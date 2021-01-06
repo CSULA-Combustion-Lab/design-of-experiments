@@ -27,16 +27,16 @@ def run_flame_simulation(mechan, arrtype, pres, eratio, ftod,
                          otod, tin, fue, oxi, dilu, air, mgrid,
                          msoret, loglev, mixtype, safi):
     """[Fill in information]"""
-    
+
     condi = initialization(mechan, arrtype, pres, eratio, ftod, otod, tin,
                            fue, oxi, dilu, air, mgrid, msoret, loglev, mixtype)
     totiter, paralist = case_maker(condi)
-    flame_info, flame_info_unfiltered, siminfo = run_simulations(condi, 
+    flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
                                                                   paralist,
                                                                   Mixture_type)
     if safi:
         file_saving(condi, flame_info, paralist, siminfo)
-    
+
 
 def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
                    Tint, fuel, oxidizer, diluent, air, mingrid, mul_soret,
@@ -690,7 +690,7 @@ if __name__ == "__main__":
     #Set experiment parameters
     mech_name = 'Li_model_modified_trioxane.cti' #Mechanism file
     Mechanism = cf.model_folder(mech_name)
-    
+
     # Mechanism = os.path.join('Models', mech_name)
 
     #Parameters for main loop
@@ -702,10 +702,10 @@ if __name__ == "__main__":
     #  lin creates a linspace array of parameters
     Array_type = 'lin'
     Press      = [0.5, 1, 2]  #Pressure [atm]
-    E_Ratio    = [0.25, 1.2, 4] #Equivalence ratio
-    FO_to_D    = [0.05, 0.95, 4] #Amount of Fuel/Oxidizer to Diluent
-    F_to_D     = [0.75, 0.95, 4] #Fuel/(Fuel + Diluent)
-    O_to_D     = [0.05, 0.95, 4] #Oxidizer/(Oxidizer + Diluent)
+    E_Ratio    = [0.25, 1.2, 2] #Equivalence ratio
+    FO_to_D    = [0.05, 0.95, 2] #Amount of Fuel/Oxidizer to Diluent........This isn't used?
+    F_to_D     = [0.75, 0.95, 2] #Fuel/(Fuel + Diluent)
+    O_to_D     = [0.05, 0.95, 2] #Oxidizer/(Oxidizer + Diluent)
 
     #Initial temperature of unburned mixture
     Tint = 373 #Temperature [K]
@@ -743,7 +743,7 @@ if __name__ == "__main__":
     #                             O_to_D, Tint, Fuel, Oxidizer, Diluent, Air,
     #                             Mingrid, Mul_soret, Loglevel, Mixture_type)
     # Totaliterations, Paramlist = case_maker(Conditions)
-    # Flame_info, Flame_info_unfiltered, Sim_info = run_simulations(Conditions, 
+    # Flame_info, Flame_info_unfiltered, Sim_info = run_simulations(Conditions,
     #                                                               Paramlist,
     #                                                               Mixture_type)
     # if Save_files:
