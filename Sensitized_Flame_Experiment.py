@@ -324,7 +324,8 @@ def flame_sens(p, phi, f_o, cond):
     # Then, it would find run the simulations, find sensitivity, and return
     # flame_info for that combination of p, T, Mix, cond. I know that all the
     # temperatures are the same, but using temperature as an argument makes it
-    # more compatible with the 0D simulations
+    # more compatible with the 0D simulations.
+    # I already started this process, see the case_maker function in common_functions.
     if mt == 'Debug':
         Fuel     = f_o[0]
         Oxidizer = f_o[1]
