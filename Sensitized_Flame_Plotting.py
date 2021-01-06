@@ -34,7 +34,7 @@ def rxn_plots(f_info, save_path, log):
         Phi.append(f['Conditions'][2])
         Fuel.append(f['Conditions'][9])
         Oxidizer.append(f['Conditions'][10])
-        
+
     fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
     ax        = axes.flatten()
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
@@ -60,7 +60,7 @@ def rxn_plots(f_info, save_path, log):
                     +format(Tint)+'K.png')
     plt.close(fig)
 
-    
+
 def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                        conditions_a=['P', 'F', 'Phi', 'O2']):
     """[Insert Information]"""
@@ -90,7 +90,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
         Fuel.append(f['Conditions'][9])
         Oxygen.append(f['Conditions'][10])
         Su.append(f['Flame'][1])
-        
+
     for n in range(len(Sens_strength)):
         if abs(Sens_strength[n]) >= threshold:
             P_threshold.append(f_info[n]['Conditions'][1])
@@ -99,17 +99,17 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
             Oxygen_threshold.append(f_info[n]['Conditions'][10])
             Su_threshold.append(f['Flame'][1])
             Sens_str_threshold.append(Sens_strength[n])
-            
+
     #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
     cond_dict = {'P': [Pressure, 'Pressure [atm]', P_threshold],
                  'F': [Fuel, 'Fuel Mole Fraction', F_threshold],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
                  'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
                  'T': [Tint, 'Temperature [K]'],
-                 'Su': [Su, 'Flame Speed [m/s]', Su_threshold], 
+                 'Su': [Su, 'Flame Speed [m/s]', Su_threshold],
                  'Strength': [Sens_strength, r'$\hat S_{'+Rxn_Eq+'}$',
                               Sens_str_threshold]}
-    
+
     figa, axesa = plt.subplots(nrows=2, ncols=2, sharey=True)
     axa         = axesa.flatten()
     for a, condition, string in zip(axa, conditions_a,
@@ -129,7 +129,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                     ' Average Strength against top '+format(nrxns)+' rxns'
                     ' with Initial Temperature '+format(Tint)+'K.png')
     plt.close(figa)
-    
+
     if not len(Sens_str_threshold) == 0:
         figb, axesb  = plt.subplots(nrows=2, ncols=3)
         axb          = axesb.flatten()
@@ -145,7 +145,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                 a.set_xscale('log')
             if log:
                 a.set_yscale('log')
-    
+
             figb.suptitle('Reaction '+Rxn_Eq+
                           '\n Threshold >= '+format(threshold)+
                           ' Initial Temperature: '+format(Tint)+' [K]')
@@ -158,7 +158,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
         print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
               ' shows no cases where the sensitiviy is above threshold '+
               str(threshold))
-        
+
     figc, axc = plt.subplots(nrows=1, ncols=1)
     x_key = 'Su'
     y_key = 'Strength'
@@ -172,7 +172,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                  ' with Initial Temperature '+format(Tint)+'K.png')
     plt.close(figc)
 
-      
+
 def rxn_interest_plots(f_info, rxn_int, save_path, log):
     """[Insert Information]"""
     Pressure = []
@@ -190,7 +190,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
             Phi.append(f['Conditions'][2])
             Fuel.append(f['Conditions'][9])
             Oxygen.append(f['Conditions'][10])
-    if not len(Phi) == 0:       
+    if not len(Phi) == 0:
         fig, axes = plt.subplots(nrows=2, ncols=3)
         ax        = axes.flatten()
         #Dictionary organized as follow 'Key': [Data, axis-label]
@@ -201,7 +201,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
                      'T': [Tint, 'Temperature [K]']}
         conditions = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
                       ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
-        
+
         #Three subplots of unique paired independent variables
         for a, condition in zip(ax, conditions):
             x_key = condition[0]
@@ -223,8 +223,8 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
     else:
         print('Reaction Number '+str(Rxn_num)+', Reaction: '+str(Rxn_name)+
               ' shows no cases where it is most sensitive reaction')
-    
-    
+
+
 def flame_speed_plots(f_info, save_path, log):
     """[Insert Information]"""
     Tint     = f_info[0]['Conditions'][0]
@@ -241,7 +241,7 @@ def flame_speed_plots(f_info, save_path, log):
         Oxidizer.append(s['Conditions'][10])
         Su.append(s['Flame'][1])
         Flame_T.append(s['Flame'][3])
-        
+
     fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
     ax        = axes.flatten()
     #Dictionary organized as follow 'Key': [Data, axis-label]
@@ -322,10 +322,10 @@ def max_rxn_csv(f_info, save_path):
                                 'Oxygen Mole Fraction'])
             for p in range(1,len(Max_rxn_params[keys])):
                 rp_writer.writerow(['', '', Max_rxn_params[keys][p][0],
-                                    Max_rxn_params[keys][p][1], 
+                                    Max_rxn_params[keys][p][1],
                                     Max_rxn_params[keys][p][2],
                                     Max_rxn_params[keys][p][3]])
-        
+
     return Max_rxn_params, Max_rxns, Max_rxn
 
 
@@ -363,7 +363,7 @@ def average_sens_csv(flame, nrxns, save_path):
     sens_average = numpy.array(values, dtype=dtype)
     for i in flame:
         for j in range(len(sens_average)):
-            sens_average[j][1] += abs(i['Flame'][0][j][1])/rxn_average(i, nrxns)        
+            sens_average[j][1] += abs(i['Flame'][0][j][1])/rxn_average(i, nrxns)
     for m in sens_average:
         m[1] = m[1]/len(flame)
     sens_average = numpy.sort(sens_average, order='ANSens')
@@ -379,9 +379,9 @@ def average_sens_csv(flame, nrxns, save_path):
                            "Top "+str(nrxns)+" Rxn Total Average Sensitivities.csv")
     csvformat = ['%d', '%f', '%s']
     csvheader = 'Rxn Number, Average Normalized Sensitivity, Rxn Equation'
-    numpy.savetxt(all_sp, sens_average, delimiter=',', fmt=csvformat, 
+    numpy.savetxt(all_sp, sens_average, delimiter=',', fmt=csvformat,
                   header=csvheader, comments='')
-    numpy.savetxt(topn_sp, topnrxnssens, delimiter=',', fmt=csvformat, 
+    numpy.savetxt(topn_sp, topnrxnssens, delimiter=',', fmt=csvformat,
                   header=csvheader, comments='')
     return sens_average, topnrxnnumbers
 
@@ -429,21 +429,33 @@ def top_rxns(flame, nrxns):
             if m[0] == n[0]:
                 n[1] = m[1]/rxn_str
     return top_rxns_list
-  
-  
+
+
 if __name__ == "__main__":
-    Folder_name = input('Please type name of folder.'
-                        '\n If blank, use last folder:\n')
-    if Folder_name == '':
-        with open('last run 1d.pkl', 'rb') as f:
-            Folder_name = pickle.load(f)
-        print('Loading ' + Folder_name)
-    Load_folder = '\\'+Folder_name
+    Folder_name = input('Please type name of folder, 1, or 2.\n'
+                        ' 1 or blank: Use the last folder that was analyzed.\n'
+                        ' 2: Use the last folder that was simulated:')
+
+    if Folder_name == '' or Folder_name == '1':
+        try:
+            with open('last run 1d.pkl', 'rb') as f:
+                Folder_name = pickle.load(f)
+        except FileNotFoundError:
+            print('last run 1d.pkl is missing - I do not know which folder was analyzed most recently.')
+            Folder_name = '2'
+    if Folder_name == '2':
+        print('Plotting the most recent simulations.')
+        folders = os.listdir('Flame_Sensitivity_Results')
+        # Assuming this is always sorted in ascending order...
+        Folder_name = folders[-1]
+    print('Loading ' + Folder_name)
+
+    # Save the loaded folder name
     with open('last run 1d.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
-    #Paths for loading and saving files
-    Load_path = 'Flame_Sensitivity_Results'+Load_folder
+    # Paths for loading and saving files
+    Load_path = 'Flame_Sensitivity_Results\\' + Folder_name
     Plot_path = Load_path+'\\Flame_Sensitivity_Plots'
 
     #Open up text file with description of simulation
@@ -455,8 +467,8 @@ if __name__ == "__main__":
     #Import flame file found in corresponding folder
     with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
         Flame_info = pickle.load(f)
-        
-    #Create two lists of flame and no_flame created from flame_info    
+
+    #Create two lists of flame and no_flame created from flame_info
     Flame = []
     No_flame = []
     for x in Flame_info:
@@ -464,25 +476,25 @@ if __name__ == "__main__":
             No_flame.append(x)
         else:
             Flame.append(x)
-     
+
     #If Flame list is empty plotting script will not occur
     if len(Flame) == 0:
         print('\nNo Conditions Produced a Flame!')
         sys.exit()
-        
-    #Creates list that only appends information where flame speed is above min     
+
+    #Creates list that only appends information where flame speed is above min
     Min_speed          = 0 #Minimum flame speed, lower limit
     Flame_speed_filter = []
     for x in Flame:
         if x['Flame'][1] >= Min_speed:
             Flame_speed_filter.append(x)
-            
-    #Note Flame and No_flame are dictionaries 
+
+    #Note Flame and No_flame are dictionaries
     # {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
     #  'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
     #                 Fuel_name, Oxidizer_name, Diluent_name,
     #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
-    
+
     #Plot Functions
     Rxn_interest = [] #Reaction number of the reaction of interest
     Nrxns        = 7 #Top n-reactions
@@ -495,12 +507,12 @@ if __name__ == "__main__":
         Logspace = False #If False all plots will use linspace
     else:
         print('Error! invalid string for array_type.')
-    
+
     Max_rxn_cond, Max_rxns_dict, M = max_rxn_csv(Flame_speed_filter, Load_path)
     T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
     rxn_plots(Flame_speed_filter, Plot_path, Logspace)
     flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter, 
+    Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter,
                                                         Nrxns, Load_path)
     if not len(Rxn_interest) == 0:
         for Rxns in Rxn_interest:
