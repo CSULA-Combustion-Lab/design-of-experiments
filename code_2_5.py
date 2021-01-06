@@ -19,6 +19,8 @@ import pickle
 import os
 # import copy
 from datetime import datetime
+import common_functions as cf
+
 cantera.suppress_thermo_warnings()
 
 
@@ -67,7 +69,7 @@ def reac_sens_parallel(a, pack, temp, pressure, phi, fuel):
         or set of initial conditions.
 
     """
-    
+
     starttime       = pack['Time'][0]
     endtime         = pack['Time'][1]
     fuel_name       = pack['Names'][0]
@@ -79,7 +81,7 @@ def reac_sens_parallel(a, pack, temp, pressure, phi, fuel):
     starttime       = pack['Time_Info'][0]
     endtime         = pack['Time_Info'][1]
     SCORE3_TIME     = pack['Time_Info'][2]
-    
+
 
     # oxygen   = a/phi*fuel
     # diluent  = 1 - oxygen - fuel
@@ -122,7 +124,7 @@ def reac_sens_parallel(a, pack, temp, pressure, phi, fuel):
 
     package = [t_T_P_AMol, t_SMol, t_AllSpecieSens, All_time_Sens_test,
                All_tTP_AMo_test, temp, mix, pressure, phi, fuel]
-    
+
     return package
 
 
@@ -468,7 +470,7 @@ def rank_all(SpecificSpecieSens):
             ranking = ranking_per_step(step)
             all_ranks.append([x for x in ranking])
             all_ranks_params.append([x for x in ranking])
-            
+
     All_Ranks.append([x for x in all_ranks])
     All_Ranks_Params.append([x for x in all_ranks_params])
 
@@ -653,22 +655,6 @@ def reduce_cases(paramlist, a, debug=False):
     return parameters_list
 
 
-def duplicate_reactions(gas):
-    """[Fill in information]"""
-    dup_rxns = {}
-    eqns = gas.reaction_equations()
-    for i in range(len(eqns)):
-        if gas.reaction(i).duplicate:
-            rxn_eqn = gas.reaction_equation(i)
-            if rxn_eqn not in dup_rxns.keys():
-                dup_rxns[rxn_eqn] = [i]
-            elif rxn_eqn in dup_rxns.keys():
-                dup_rxns[rxn_eqn].append(i)
-            else:
-                print('Something went wrong!')
-    return dup_rxns
-
-
 def sens_dup_filter(sens_information, duplicate_reactions):
     for s in sens_information:
         for d in duplicate_reactions.keys():
@@ -730,14 +716,14 @@ if __name__ == "__main__":
     fuel_name = 'H2' #chemical formula of fuel
     diluent_name = 'N2' #chemical formula of diluent
     mixture_type = 'Custom'
-    
+
     SpecificSpecies = ['OH'] #Species of interest for rxn ranking data
     starttime = 0     #in the case a reading is too early
     endtime   = 0.001 #one milisecond
     delta_T   = 100
     ppm       = 1/1000000 #one ppm
     SCORE3_TIME = starttime + (endtime - starttime)*0.75 # time to evaluate score3
-    
+
     save_files = True # If true, save files for plotting script
     save_time  = True # If true, also save files for GUI. Not recommended for large runs
     debug = False  # If true, print lots of information for debugging.
@@ -776,13 +762,13 @@ if __name__ == "__main__":
     #create gas object
     gas                   = cantera.Solution(mechanism)
     a                     = calculate_a(fuel_name, mechanism)
-    dup_reactions         = duplicate_reactions(gas)
+    dup_reactions         = cf.duplicate_reactions(gas)
     rxns                  = range(0,len(gas.reaction_equations()))
     names                 = gas.species_names
     SpecificSpecieNumbers = [names.index(speci) for speci in SpecificSpecies]
-    
+
     #Package key parameters for simulations
-    Packed = {'Time': [starttime, endtime], 
+    Packed = {'Time': [starttime, endtime],
               'Names': [fuel_name, diluent_name, SpecificSpecies],
               'Parameters': [T, P, Phi, Fuel, Dilper, a],
               'Mixture_Info':[mixture_type, mechanism, dup_reactions],

@@ -38,6 +38,7 @@ def run_flame_simulation(mechan, arrtype, pres, eratio, ftod,
         file_saving(condi, flame_info, paralist, siminfo)
 
 
+
 def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
                    Tint, fuel, oxidizer, diluent, air, mingrid, mul_soret,
                    loglevel, mixture_type):
@@ -107,7 +108,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
         Phi          = 1 #Equivalence Ratio
         fuel         = 'CH4:1' #Fuel String
         oxidizer     = air #Oxidizer String
-        Tint         = 300 #Initial Temperatur of Unburned Mixture
+        Tint         = 300 #Initial Temperature of Unburned Mixture
         loglevel     = 1
         Debug_params = [P, Phi, [fuel, oxidizer]]
         conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
@@ -206,7 +207,7 @@ def run_simulations(conditions, paramlist, mt):
             else:
                 converged += 1
         flame_info_unfiltered = copy.deepcopy(flame_info_debug)
-        duplicate_rxns = duplicate_reactions(gas)
+        duplicate_rxns = cf.duplicate_reactions(gas)
         flame_info_filtered = flame_info_filter(flame_info_debug, duplicate_rxns)
         print('\nDebuggin complete!')
         toc      = time.time()
@@ -235,7 +236,7 @@ def run_simulations(conditions, paramlist, mt):
             else:
                 converged += 1
         flame_info_unfiltered = copy.deepcopy(flame_info)
-        duplicate_rxns = duplicate_reactions(gas)
+        duplicate_rxns = cf.duplicate_reactions(gas)
         flame_info_filtered = flame_info_filter(flame_info, duplicate_rxns)
         filter_end  = time.time()
         filter_time = filter_end - filter_start
@@ -315,6 +316,15 @@ def flame_sens(p, phi, f_o, cond):
     #o_f True Mixture uses a ratio of Oxidizer to Diluent
     #o_f False Mixture uses a ratio of Fuel to Diluent
 
+    # TODO: I think it would be simpler if most of the code below was moved
+    # somewhere else. It can probably be moved to common_functions.
+    # Instead, this function would take in a pre-defined
+    # mixture as its argument. For example, something like:
+    # flame_sens(p, T, Mix, cond).
+    # Then, it would find run the simulations, find sensitivity, and return
+    # flame_info for that combination of p, T, Mix, cond. I know that all the
+    # temperatures are the same, but using temperature as an argument makes it
+    # more compatible with the 0D simulations
     if mt == 'Debug':
         Fuel     = f_o[0]
         Oxidizer = f_o[1]
@@ -406,20 +416,7 @@ def flame_sens(p, phi, f_o, cond):
     return flame_info
 
 
-def duplicate_reactions(gas):
-    """[Fill in information]"""
-    dup_rxns = {}
-    eqns = gas.reaction_equations()
-    for i in range(len(eqns)):
-        if gas.reaction(i).duplicate:
-            rxn_eqn = gas.reaction_equation(i)
-            if rxn_eqn not in dup_rxns.keys():
-                dup_rxns[rxn_eqn] = [i]
-            elif rxn_eqn in dup_rxns.keys():
-                dup_rxns[rxn_eqn].append(i)
-            else:
-                print('Something went wrong!')
-    return dup_rxns
+
 
 
 def flame_info_filter(flame_information, duplicate_reactions):
