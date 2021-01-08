@@ -24,7 +24,7 @@ import common_functions as cf
 cantera.suppress_thermo_warnings()
 
 
-def reac_sens_parallel(a, pack, temp, pressure, phi, fuel):
+def reac_sens_parallel(temp, pressure, phi, fuel, pack):
     """ Function which saves simulation history.
 
     This function saves the different parameters through each time step
@@ -81,6 +81,7 @@ def reac_sens_parallel(a, pack, temp, pressure, phi, fuel):
     starttime       = pack['Time_Info'][0]
     endtime         = pack['Time_Info'][1]
     SCORE3_TIME     = pack['Time_Info'][2]
+    a               = pack['Parameters'][5]
 
 
     # oxygen   = a/phi*fuel
@@ -590,7 +591,7 @@ def update_progress(progress):
     sys.stdout.flush()
 
 
-def flow_reactor_parallel(params, a, pack):
+def flow_reactor_parallel(params, pack, fun):
     """Runs the simulation in Parallel by first determining the largest length
     of the four parameters. If all parameters are of equal length, the code will
     create a pool of temperatures to run. The code must be outside of ipython
@@ -613,7 +614,7 @@ def flow_reactor_parallel(params, a, pack):
 
     results = []
     for x in params:
-        results.append(pool.apply_async(reac_sens_parallel, args=(a, pack, *x)))
+        results.append(pool.apply_async(fun, args=(*x, pack)))
     pool.close()
     pool.join()
 
@@ -656,6 +657,22 @@ def reduce_cases(paramlist, a, debug=False):
 
 
 def sens_dup_filter(sens_information, duplicate_reactions):
+    """
+    
+
+    Parameters
+    ----------
+    sens_information : TYPE
+        DESCRIPTION.
+    duplicate_reactions : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    sens_information : TYPE
+        DESCRIPTION.
+
+    """
     for s in sens_information:
         for d in duplicate_reactions.keys():
                     sumt = 0
@@ -667,6 +684,22 @@ def sens_dup_filter(sens_information, duplicate_reactions):
 
 
 def calculate_a(fuel, mech):
+    """
+    
+
+    Parameters
+    ----------
+    fuel : TYPE
+        DESCRIPTION.
+    mech : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    a : TYPE
+        DESCRIPTION.
+
+    """
     #fuel C(x)H(y)O(z)
     gas        = cantera.Solution(mech)
     fuel_index = gas.species(gas.species_index(fuel_name)).composition
@@ -704,12 +737,14 @@ def mixture_maker(gas, phi, fuel, a, mtype, fname, dname):
 
 if __name__ == "__main__":
     ####Set experiment parameters
-    mechanism = 'mech-FFCM1_modified.cti' #Mechanism file
+    mech_name = 'mech-FFCM1_modified.cti' #Mechanism file
+    # mechanism = cf.model_folder(mech_name)
+    mechanism = os.path.join('Models',mech_name)
     #Parameters for main loop
-    T    = np.linspace(600, 2500, 4)                        #Temperature [K]
-    P    = np.logspace(np.log10(.1), np.log10(100), 4)      #Pressure [atm]
-    Phi  = np.logspace(np.log10(0.00025), np.log10(2.5), 4) #Equivalence ratio
-    Fuel = np.logspace(np.log10(0.00001), np.log10(0.1), 4) #Fuel mole fraction
+    T    = np.linspace(600, 2500, 2)                        #Temperature [K]
+    P    = np.logspace(np.log10(.1), np.log10(100), 2)      #Pressure [atm]
+    Phi  = np.logspace(np.log10(0.00025), np.log10(2.5), 2) #Equivalence ratio
+    Fuel = np.logspace(np.log10(0.00001), np.log10(0.1), 2) #Fuel mole fraction
     Dilper = np.logspace(np.log10(0.00001), np.log10(0.1), 2)
 
     #Parameters for mixture
@@ -783,7 +818,8 @@ if __name__ == "__main__":
         params = paramlist
     print(format(len(params))+' cases have a dilutent greater than -0')
     print('Start of Simulations')
-    sim_package = flow_reactor_parallel(params, a, Packed)
+    # sim_package = cf.parallelize(params, Packed, reac_sens_parallel)
+    sim_package = flow_reactor_parallel(params, Packed, reac_sens_parallel)
     sim_end     = time.time()
     sim_time    = sim_end - sim_start
     # sim_package_unfiltered = copy.deepcopy(sim_package_uf)
