@@ -4,9 +4,10 @@ Created on Wed Sep 16 13:32:37 2020
 
 @author: Kodo Bear
 """
-# import code_2_5
+# import code_2_5 as zeroD
 import Sensitized_Flame_Experiment as oneD
 # import BurnerSimulation
+import sys
 
 #Initializer
 # Simulation Types (0D, 1D, Burner)
@@ -38,9 +39,9 @@ Mixture_type = 'Oxi_Dil'
 ### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
 ###             variables should vary in log- or linear- space
 Pressure           = [0.5, 1, 2]
-Equivalence        = [0.05, 1, 12]
-Temperature        = [300, 400, 2]
-Diluent_Percentage = [0.05, 0.95, 12]
+Equivalence        = [0.05, 1, 2]
+Temperature        = [373, 400, 1]
+Diluent_Percentage = [0.05, 0.95, 2]
 Array_type = 'log'
 
 #Set experiment parameters
@@ -76,11 +77,11 @@ Save_files = True # If true, save files for plotting script
 if __name__ == "__main__":
 
     if Simulation_Type == '0D':
-        # 0D = 0DSimulation(Parameter_List, Mechanism_List)
+        # zeroD.run_flow_reactor_simulation(Parameter_List, Mechanism_List)
         print('Under-Construction!')
     elif Simulation_Type =='1D':
         oneD.run_flame_simulation(Mechanism, Array_type, Pressure, Equivalence,
-                                F_to_D, O_to_D, Tint, Fuel, Oxidizer, Diluent,
+                                Diluent_Percentage, Tint, Fuel, Oxidizer, Diluent,
                                 Air, Mingrid, Mul_soret, Loglevel,
                                 Mixture_type, Save_files)
     elif Simulation_Type == 'Burner':
