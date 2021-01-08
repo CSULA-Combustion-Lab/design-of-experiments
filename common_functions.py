@@ -280,7 +280,7 @@ def parallelize(param, cond, fun):
     for x in param:
         results.append(pool.apply_async(fun, args=(*x, cond)))
     pool.close()
-    pool.join()
+    # pool.join()  # This waits until all all processes have finished. It's commented so that the progress bar works.
 
     # Get the results
     datadict = dict()
