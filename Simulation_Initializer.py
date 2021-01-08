@@ -39,9 +39,9 @@ Mixture_type = 'Oxi_Dil'
 ### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
 ###             variables should vary in log- or linear- space
 Pressure           = [0.5, 1, 2]
-Equivalence        = [0.05, 1, 2]
+Equivalence        = [0.8, 1, 2]
 Temperature        = [373, 400, 1]
-Diluent_Percentage = [0.05, 0.95, 2]
+Diluent_Percentage = [0.5, 0.7, 2]
 Array_type = 'log'
 
 #Set experiment parameters

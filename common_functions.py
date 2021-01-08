@@ -18,7 +18,7 @@ from multiprocessing import cpu_count, Pool
 def model_folder(mechanism):
     """
     Generates the path given a mechanism file. If the Model folder is not
-    all ready created one will be generated. All mechanism files should be in 
+    all ready created one will be generated. All mechanism files should be in
     the model folder.
 
     Parameters
@@ -51,14 +51,14 @@ def model_folder(mechanism):
 
 def duplicate_reactions(gas):
     """
-    Generates a dictionary of reaction equations and 
+    Generates a dictionary of reaction equations and
     their reaction numbers for a given mechanism.
-    
+
     Parameters
     ----------
     gas : object
         Cantera generated gas object created using user provided mechanism
-    
+
     Returns
     -------
     dup_rxns : dict
@@ -214,7 +214,7 @@ def case_maker(cond):
 
 def mixture_maker(gas, phi, fuel, oxidizer):
     """
-    
+
 
     Parameters
     ----------

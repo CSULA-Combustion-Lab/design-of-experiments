@@ -143,10 +143,8 @@ class Flame(object):
                     f.energy_enabled = False
                     f.solve(loglevel=loglevel-1, refine_grid=True)
                 # Enable the energy equation for the following loop
-#                print('Main Loop 1')
                 f.energy_enabled = True
                 f.solve(loglevel=loglevel-1, refine_grid=True)
-#                print('Main Loop 2')
 
                 if mult_soret:
                     f.transport_model = 'Multi'  # 'Mix' is default

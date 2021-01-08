@@ -423,9 +423,6 @@ def flame_sens(p, phi, f_o, cond):
     return flame_info
 
 
-
-
-
 def flame_info_filter(flame_information, duplicate_reactions):
     """[Fill in information]"""
     for f in flame_information:
