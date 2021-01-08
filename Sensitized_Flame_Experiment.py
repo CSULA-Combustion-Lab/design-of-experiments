@@ -23,23 +23,23 @@ import common_functions as cf
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
-def run_flame_simulation(mechan, arrtype, pres, eratio, ftod,
-                         otod, tin, fue, oxi, dilu, air, mgrid,
+def run_flame_simulation(mech, arrtype, pres, eratio, xtod,
+                         tin, fue, oxi, dilu, air, mgrid,
                          msoret, loglev, mixtype, safi):
     """[Fill in information]"""
-
-    condi = initialization(mechan, arrtype, pres, eratio, ftod, otod, tin,
+    mechan = cf.model_folder(mech)
+    condi = initialization(mechan, arrtype, pres, eratio, xtod, tin,
                            fue, oxi, dilu, air, mgrid, msoret, loglev, mixtype)
     totiter, paralist = case_maker(condi)
     flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
                                                                   paralist,
-                                                                  Mixture_type)
+                                                                  mixtype)
     if safi:
         file_saving(condi, flame_info, paralist, siminfo)
 
 
 
-def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
+def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
                    Tint, fuel, oxidizer, diluent, air, mingrid, mul_soret,
                    loglevel, mixture_type):
     """[Fill in information]"""
@@ -49,13 +49,19 @@ def initialization(mechanism, array_type, Press, E_Ratio, F_to_D, O_to_D,
     if array_type == 'log':
         P    = np.logspace(np.log10(Press[0]), np.log10(Press[1]), Press[2])
         Phi  = np.logspace(np.log10(E_Ratio[0]), np.log10(E_Ratio[1]), E_Ratio[2])
-        FtD  = np.logspace(np.log10(F_to_D[0]), np.log10(F_to_D[1]), F_to_D[2])
-        OtD  = np.logspace(np.log10(O_to_D[0]), np.log10(O_to_D[1]), O_to_D[2])
+        XtD  = np.logspace(np.log10(X_to_D[0]), np.log10(X_to_D[1]), X_to_D[2])
+        FtD = XtD
+        OtD = XtD
+        # FtD  = np.logspace(np.log10(F_to_D[0]), np.log10(F_to_D[1]), F_to_D[2])
+        # OtD  = np.logspace(np.log10(O_to_D[0]), np.log10(O_to_D[1]), O_to_D[2])
     elif array_type == 'lin':
         P   = np.linspace(Press[0], Press[1], Press[2])
         Phi = np.linspace(E_Ratio[0], E_Ratio[1], E_Ratio[2])
-        FtD = np.linspace(F_to_D[0], F_to_D[1], F_to_D[2])
-        OtD = np.linspace(O_to_D[0], O_to_D[1], O_to_D[2])
+        XtD = np.linspace(X_to_D[0], X_to_D[1], X_to_D[2])
+        FtD = XtD
+        OtD = XtD
+        # FtD = np.linspace(F_to_D[0], F_to_D[1], F_to_D[2])
+        # OtD = np.linspace(O_to_D[0], O_to_D[1], O_to_D[2])
     else:
         print('Error! Check array_type variable for invalid string input')
         sys.exit()
@@ -222,7 +228,7 @@ def run_simulations(conditions, paramlist, mt):
         print('Initial number of cases: '+format(len(paramlist)))
         print('\nStart of simulations...')
         sim_start  = time.time()
-        flame_info = parallelize(paramlist, conditions, flame_sens)
+        flame_info = cf.parallelize(paramlist, conditions, flame_sens)
         sim_end    = time.time()
         sim_time   = sim_end - sim_start
         print('End of simulations')
@@ -251,43 +257,43 @@ def run_simulations(conditions, paramlist, mt):
     else:
         sys.exit()
 
-def parallelize(param, cond, fun):
-    """[Fill in information]"""
-    #Find optimal number of cpus to use
-    numcases = len(param) #Number of cases to run
-    if cpu_count() == 2 or cpu_count() == 1:
-        proc = 1 #Less Powerful Computer
-    elif numcases > cpu_count():
-        #Number of cases to run on each processor, rounded up
-        loops = [np.ceil(numcases/proc) for proc in range(1, cpu_count())]
-        # First entry in loops with the minumum number. Add one because
-        # of 0-based indexing, add another in case one process is much slower.
-        proc = loops.index(min(loops))+2
-    else: # More cpus than cases
-        proc = numcases
+# def parallelize(param, cond, fun):
+#     """[Fill in information]"""
+#     #Find optimal number of cpus to use
+#     numcases = len(param) #Number of cases to run
+#     if cpu_count() == 2 or cpu_count() == 1:
+#         proc = 1 #Less Powerful Computer
+#     elif numcases > cpu_count():
+#         #Number of cases to run on each processor, rounded up
+#         loops = [np.ceil(numcases/proc) for proc in range(1, cpu_count())]
+#         # First entry in loops with the minumum number. Add one because
+#         # of 0-based indexing, add another in case one process is much slower.
+#         proc = loops.index(min(loops))+2
+#     else: # More cpus than cases
+#         proc = numcases
 
-    pool = Pool(processes=proc)
+#     pool = Pool(processes=proc)
 
-    results = []
-    for x in param:
-        results.append(pool.apply_async(fun, args=(*x, cond)))
-    pool.close()
-    # pool.join()
+#     results = []
+#     for x in param:
+#         results.append(pool.apply_async(fun, args=(*x, cond)))
+#     pool.close()
+#     pool.join()
 
-    # Get the results
-    datadict = dict()
-    casenum  = 0
-    for p in tqdm(results):
-        try:
-            # Assign it to datadict. This is ordered by the time when each
-            # simulation starts, not when they end
-            datadict[casenum] = p.get()
-        except RuntimeError: # I'm not sure what this is
-            print('\nUnknown RunTimeError.')
-            datadict[casenum] = {'Flame': [None, 'RunTimeError']}
-        casenum += 1
-    outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
-    return outlist
+#     # Get the results
+#     datadict = dict()
+#     casenum  = 0
+#     for p in tqdm(results):
+#         try:
+#             # Assign it to datadict. This is ordered by the time when each
+#             # simulation starts, not when they end
+#             datadict[casenum] = p.get()
+#         except RuntimeError: # I'm not sure what this is
+#             print('\nUnknown RunTimeError.')
+#             datadict[casenum] = {'Flame': [None, 'RunTimeError']}
+#         casenum += 1
+#     outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
+#     return outlist
 
 
 def flame_sens(p, phi, f_o, cond):
