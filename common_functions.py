@@ -6,11 +6,33 @@ Created on Tue Jan  5 14:15:27 2021
 """
 
 import os
+import sys
 import errno
+import numpy as np
 import cantera as ct
 import itertools as it
+from tqdm import tqdm
+from multiprocessing import cpu_count, Pool
+
 
 def model_folder(mechanism):
+    """
+    Generates the path given a mechanism file. If the Model folder is not
+    all ready created one will be generated. All mechanism files should be in 
+    the model folder.
+
+    Parameters
+    ----------
+    mechanism : .cti
+        Mechanism file with information on species, reactions, thermodynamic
+        properties of a fuel.
+
+    Returns
+    -------
+    model_path : Path
+        Path for the mechanism file found inside the Models folder.
+
+    """
     #Save Path/Parent Directory
     parent_dir = 'Models'
     try:
@@ -20,12 +42,32 @@ def model_folder(mechanism):
             raise
 
     model_path = os.path.join(parent_dir, mechanism)
+    if not os.path.exists(model_path):
+        print("Mechanism file not found in Models folder.")
+        sys.exit()
 
     return model_path
 
 
 def duplicate_reactions(gas):
-    """[Fill in information]"""
+    """
+    Generates a dictionary of reaction equations and 
+    their reaction numbers for a given mechanism.
+    
+    Parameters
+    ----------
+    gas : object
+        Cantera generated gas object created using user provided mechanism
+    
+    Returns
+    -------
+    dup_rxns : dict
+        Dictionary of the following format:
+        dup_rxns = {'Reaction Equation 1': [Rxn Number_a, Rxn Number_b]
+                            :
+                            :
+                    'Reaction Equation N': [Rxn Number_a, Rxn Number_b]}
+    """
     dup_rxns = {}
     eqns = gas.reaction_equations()
     for i in range(len(eqns)):
@@ -171,7 +213,26 @@ def case_maker(cond):
 
 
 def mixture_maker(gas, phi, fuel, oxidizer):
-    """[Fill in information]"""
+    """
+    
+
+    Parameters
+    ----------
+    gas : TYPE
+        DESCRIPTION.
+    phi : TYPE
+        DESCRIPTION.
+    fuel : TYPE
+        DESCRIPTION.
+    oxidizer : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    Mixture : TYPE
+        DESCRIPTION.
+
+    """
     gas.set_equivalence_ratio(phi, (fuel), (oxidizer))
     Mix_dict = gas.mole_fraction_dict()
     Mixture = []
@@ -179,3 +240,59 @@ def mixture_maker(gas, phi, fuel, oxidizer):
         temp = [key,value]
         Mixture.append(temp)
     return Mixture
+
+def parallelize(param, cond, fun):
+    """
+    Parrallelize all cases found in param using information found from cond
+    and calculated using function defined by fun.
+
+    Parameters
+    ----------
+    param : List
+        DESCRIPTION.
+    cond : Dictionry
+        DESCRIPTION.
+    fun : Function
+        Name of the function being used per simulation
+
+    Returns
+    -------
+    outlist : Dictionary
+        DESCRIPTION.
+
+    """
+    #Find optimal number of cpus to use
+    numcases = len(param) #Number of cases to run
+    if cpu_count() == 2 or cpu_count() == 1:
+        proc = 1 #Less Powerful Computer
+    elif numcases > cpu_count():
+        #Number of cases to run on each processor, rounded up
+        loops = [np.ceil(numcases/proc) for proc in range(1, cpu_count())]
+        # First entry in loops with the minumum number. Add one because
+        # of 0-based indexing, add another in case one process is much slower.
+        proc = loops.index(min(loops))+2
+    else: # More cpus than cases
+        proc = numcases
+
+    pool = Pool(processes=proc)
+
+    results = []
+    for x in param:
+        results.append(pool.apply_async(fun, args=(*x, cond)))
+    pool.close()
+    pool.join()
+
+    # Get the results
+    datadict = dict()
+    casenum  = 0
+    for p in tqdm(results):
+        try:
+            # Assign it to datadict. This is ordered by the time when each
+            # simulation starts, not when they end
+            datadict[casenum] = p.get()
+        except RuntimeError: # I'm not sure what this is
+            print('\nUnknown RunTimeError.')
+            datadict[casenum] = {'Error': [None, 'RunTimeError']}
+        casenum += 1
+    outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
+    return outlist
