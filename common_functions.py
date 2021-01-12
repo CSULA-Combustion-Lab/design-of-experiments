@@ -90,12 +90,14 @@ def case_maker(cond):
     ----------
     cond : dict
         Dictionary of the following format:
+        for 1D
         conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
                       'Mixture': [fuel, diluent, oxidizer, mixture_type],
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer]}
-
+        for 0D
+        conditions =
     Returns
     -------
     totaliterations : float
@@ -140,7 +142,7 @@ def case_maker(cond):
     elif mix_type == 'Oxi_Dil':
         print('Oxidizer to Diluent Loop Enabled')
         totaliterations = len(p)*len(phi)*len(otd)*len(T)
-        P_T_phi_otd = it.product(p,phi,otd)
+        P_T_phi_otd = it.product(p,phi,otd) #TODO: Fix this Line
 
         for pressure, temperature, equiv, ox_to_dil in P_T_phi_otd:
             if type(Fuel_name) is str:
@@ -197,6 +199,7 @@ def case_maker(cond):
     # TODO: Following this example, add other mixture types. I don't think we
     # need the "totaliterations" variable, since it's just len(paramlist),
     # right?
+    # Rewrite 0D conditions dictionary so that is it formated similar to 1D
 
 
     # elif mix_type == 'Oxi_Dil' or mix_type == 'Fue_Dil':
