@@ -104,7 +104,7 @@ def case_maker(cond):
         Number of iterations
     paramlist : list
         List that is used to define the initial state for simulations.
-        Format is [[Pressure, Temperature, Mixture], [...], ...]
+        Format is [[Pressure, Temperature, Mixture dictionary], [...], ...]
 
     """
     print('WARNING: common_functions.case_maker is not implemented yet!')
@@ -142,7 +142,7 @@ def case_maker(cond):
     elif mix_type == 'Oxi_Dil':
         print('Oxidizer to Diluent Loop Enabled')
         totaliterations = len(p)*len(phi)*len(otd)*len(T)
-        P_T_phi_otd = it.product(p,phi,otd) #TODO: Fix this Line
+        P_T_phi_otd = it.product(p, T, phi, otd)
 
         for pressure, temperature, equiv, ox_to_dil in P_T_phi_otd:
             if type(Fuel_name) is str:
@@ -164,13 +164,13 @@ def case_maker(cond):
                 raise ValueError(msg)
             Oxidizer += Diluent_name + ':' + str(1 - ox_to_dil)
 
-            mix = mixture_maker(gas, equiv, Fuel, Oxidizer)
-            paramlist.append([pressure, temperature, mix])
+            gas.set_equivalence_ratio(phi, (Fuel), (Oxidizer))
+            paramlist.append([pressure, temperature, gas.mole_fraction_dict()])
         assert len(paramlist) == totaliterations  # Sanity check
     elif mix_type == 'Fue_Dil':
         print('Fuel to Diluent Loop Enabled')
         totaliterations = len(p)*len(phi)*len(ftd)
-        P_T_phi_ftd = it.product(p,phi,ftd)
+        P_T_phi_ftd = it.product(p, T, phi, ftd)
 
         for pressure, temperature, equiv, f_to_dil in P_T_phi_ftd:
             if type(Fuel_name) is str:
@@ -192,8 +192,8 @@ def case_maker(cond):
             else:
                 raise ValueError(msg)
 
-            mix = mixture_maker(gas, equiv, Fuel, Oxidizer)
-            paramlist.append([pressure, temperature, mix])
+            gas.set_equivalence_ratio(phi, (Fuel), (Oxidizer))
+            paramlist.append([pressure, temperature, gas.mole_fraction_dict()])
         assert len(paramlist) == totaliterations  # Sanity check
 
     # TODO: Following this example, add other mixture types. I don't think we
@@ -214,35 +214,6 @@ def case_maker(cond):
         sys.exit()
     return totaliterations, paramlist
 
-
-def mixture_maker(gas, phi, fuel, oxidizer):
-    """
-
-
-    Parameters
-    ----------
-    gas : TYPE
-        DESCRIPTION.
-    phi : TYPE
-        DESCRIPTION.
-    fuel : TYPE
-        DESCRIPTION.
-    oxidizer : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    Mixture : TYPE
-        DESCRIPTION.
-
-    """
-    gas.set_equivalence_ratio(phi, (fuel), (oxidizer))
-    Mix_dict = gas.mole_fraction_dict()
-    Mixture = []
-    for key, value in Mix_dict.items():
-        temp = [key,value]
-        Mixture.append(temp)
-    return Mixture
 
 def parallelize(param, cond, fun):
     """

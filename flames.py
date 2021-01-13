@@ -397,6 +397,8 @@ class Mixture(object):
     chemfile : str
         Path to a chemistry file.
     """
+    # TODO: A huge amount of this function can just be done using native cantera functions.
+    # It can also use a mixture dictionary instead of list to simplify this code
 
     def __init__(self, fuel, chemfile):
         self.fuel = fuel
@@ -529,19 +531,22 @@ class Mixture(object):
     @classmethod
     def check_or_create(cls, mix, chemfile):
         """
-        If mix is a list, create a mixture object
+        If mix is a list or dictionary, create a mixture object
         If mix is already a mixture object, check that the chemfile is correct
         """
         if type(mix) is list:
             return(cls(mix, chemfile))
+        elif type(mix) is dict:
+            mix_list = [[k, v] for k, v in mix.items()]
+            return(cls(mix_list, chemfile))
         elif type(mix) is cls:  # mix is already a member of this class
             if mix.chemfile == chemfile:
                 return(mix)
             else:
                 raise NameError('The chemistry file initially used for the mixture is not the same as the desired chemistry file. {} vs. {}'.format(mix.chemfile, chemfile))
         else:
-            raise RuntimeError('The mixture is not a list or a mixture object'+
-                               ', it is type: ' + str(type(mix)))
+            raise RuntimeError('The mixture is not a list, dict, or a ' +
+                               'mixture object, it is type: ' + str(type(mix)))
 
 
 def find_chemfile(workingdir, verbose=0):
