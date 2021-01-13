@@ -391,17 +391,22 @@ class Mixture(object):
 
     Parameters
     ----------
-    fuel : list
-        Define the mixture composition. List of the form
+    comp : list or dict
+        Define the mixture composition.
+        List of the form
         [['species name', mole fraction], ['species name', mole fraction], ...]
+        Or, dictionary of the form {'component': mole fraction, ...}
     chemfile : str
         Path to a chemistry file.
     """
-    # TODO: A huge amount of this function can just be done using native cantera functions.
-    # It can also use a mixture dictionary instead of list to simplify this code
 
-    def __init__(self, fuel, chemfile):
-        self.fuel = fuel
+    def __init__(self, comp, chemfile):
+        if type(comp) is list:
+            self.comp = {k: v for k, v in comp}
+        elif type(comp) is dict:
+            self.comp = comp
+        else:
+            raise TypeError('Mixture composition must be a list of dict.')
         self._normalize()
         self.chemfile = chemfile
         self.cantera_mix = None  # initialize variables
@@ -411,12 +416,9 @@ class Mixture(object):
 
     def _normalize(self):
         """Normalize mole fractions to sum to one."""
-        total = sum([x[1] for x in self.fuel])
-        self.fuel = [[row[0], row[1]/total] for row in self.fuel]
-        reactant_pieces = []
-        for r in self.fuel:
-            reactant_pieces.append(r[0] + ':' + str(r[1]))
-        self.reactants = ', '.join(reactant_pieces)
+        total = sum([v for v in self.comp.values()])
+        for k in self.comp:
+            self.comp[k] = self.comp[k] / total
 
     def cantera_mixture(self, T, P):
         """Return a cantera solution object.
@@ -424,7 +426,6 @@ class Mixture(object):
         T: temperature in Kelvin
         P: Pressure in atm
         """
-        self._normalize()
         if self.chemfile[-4:] != '.cti':
             raise RuntimeError('Chemfile must be in cantera format')
         try:
@@ -433,7 +434,7 @@ class Mixture(object):
             print(err)
             return None
 
-        gas.TPX = T, P*cantera.one_atm, self.reactants
+        gas.TPX = T, P*cantera.one_atm, self.comp
         self.cantera_mix = gas
         return gas
 
@@ -457,8 +458,7 @@ class Mixture(object):
             gas = self.cantera_mix  # Don't need to reload the kinetic model
         fuels = []
         oxidizers = []
-        for row in self.fuel:
-            species = row[0]
+        for species in self.comp:
             C = gas.n_atoms(species, 'C')
             H = gas.n_atoms(species, 'H')
             O = gas.n_atoms(species, 'O')
@@ -478,16 +478,14 @@ class Mixture(object):
         self._oxidizer = oxidizers
 
     def _change_phi(self, phi_targ=1.0):
-        """Change the equivalence ratio.
-
-        Change the equivalence ratio by changing fuel content, holding
-        diluent/o2 ratio constant. This could also be done using
-        Solution.set_equivalence_ratio in cantera
+        """Change the equivalence ratio by changing fuel content,
+        holding diluent/o2 ratio constant.
+        This could also be done using Solution.set_equivalence_ratio in cantera
         """
         fuel_comps = self.fuels
-        for row in self.fuel:
-            if row[0] in fuel_comps:
-                row[1] *= phi_targ / self.phi
+        for species in self.comp:
+            if species in fuel_comps:
+                self.comp[species] *= phi_targ / self.phi
         self._normalize()
         self.cantera_mix = None  # Force re-calculation
         self._phi = None
@@ -495,17 +493,18 @@ class Mixture(object):
             print('Error: Could not correctly change equivalence ratio.')
 
     def __str__(self):
+        "This is called if you print(mixture)"
         outstr = ''
-        for row in self.fuel:
-            outstr += row[0] + ':\t'+'{:5.3f}'.format(row[1])+'\n'
+        for species, molefraction in self.comp:
+            outstr += species + ':\t'+'{:5.3f}'.format(molefraction)+'\n'
         return outstr
 
     def __repr__(self):
-        return('Mixture({}, {})'.format(self.fuel, self.chemfile))
+        return('Mixture({}, {})'.format(self.comp, self.chemfile))
 
     @property
     def phi(self):
-        """Equivalence ratio property that can use a getter and setter."""
+        """Equivalence ratio property that can use a getter and setter"""
         if self._phi is None:
             self._equivalence_ratio()
         return self._phi
@@ -516,14 +515,14 @@ class Mixture(object):
 
     @property
     def fuels(self):
-        """Find the fuel components."""
+        ''' Find the fuel components. '''
         if self._fuels is None:
             self._components()
         return self._fuels
 
     @property
     def oxidizer(self):
-        """Find the mixture components."""
+        ''' Find the oxidizer components. '''
         if self._oxidizer is None:
             self._components()
         return self._oxidizer
@@ -534,11 +533,8 @@ class Mixture(object):
         If mix is a list or dictionary, create a mixture object
         If mix is already a mixture object, check that the chemfile is correct
         """
-        if type(mix) is list:
+        if type(mix) in [list, dict]:
             return(cls(mix, chemfile))
-        elif type(mix) is dict:
-            mix_list = [[k, v] for k, v in mix.items()]
-            return(cls(mix_list, chemfile))
         elif type(mix) is cls:  # mix is already a member of this class
             if mix.chemfile == chemfile:
                 return(mix)
