@@ -47,9 +47,6 @@ Array_type = 'log'
 #Set experiment parameters
 Mechanism = 'Li_model_modified_trioxane.cti' #Mechanism file
 
-#Initial temperature of unburned mixture
-Tint = 373 #Temperature [K]
-
 #Parameters for mixture (Fuel, Oxidizer, Diluent)
 # Fuel and Oxidizer can either be a single chemical string or multichemical list
 #  For multichemical follow structure ['Chemical1', % of Total, ...]
@@ -81,7 +78,7 @@ if __name__ == "__main__":
         print('Under-Construction!')
     elif Simulation_Type =='1D':
         oneD.run_flame_simulation(Mechanism, Array_type, Pressure, Equivalence,
-                                Diluent_Percentage, Tint, Fuel, Oxidizer, Diluent,
+                                Diluent_Percentage, Temperature, Fuel, Oxidizer, Diluent,
                                 Air, Mingrid, Mul_soret, Loglevel,
                                 Mixture_type, Save_files)
     elif Simulation_Type == 'Burner':

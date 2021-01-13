@@ -23,8 +23,9 @@ class Flame(object):
 
     Parameters
     ----------
-    mix : list or Mixture
+    mix : list, dict, or Mixture
         If list, should be in the form [[name, moles],[...]].
+        If dict, should be in the form {'name': moles, ...}
     P : float
         Unburned pressure (atm)
     Tin : float
@@ -77,7 +78,7 @@ class Flame(object):
         except OSError:
             pass
 
-        reactants = self.mixture.reactants
+        reactants = self.mixture.comp
         gas = self.mixture.cantera_mixture(self.Tin, self.P)
 
         # Initial conditions and convergence parameters

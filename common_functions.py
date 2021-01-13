@@ -100,14 +100,11 @@ def case_maker(cond):
         conditions =
     Returns
     -------
-    totaliterations : float
-        Number of iterations
     paramlist : list
         List that is used to define the initial state for simulations.
         Format is [[Pressure, Temperature, Mixture dictionary], [...], ...]
 
     """
-    print('WARNING: common_functions.case_maker is not implemented yet!')
     Fuel_name     = cond['Mixture'][0]
     Diluent_name  = cond['Mixture'][1]
     Oxidizer_name = cond['Mixture'][2]
@@ -132,7 +129,6 @@ def case_maker(cond):
     elif mix_type == 'Custom':
         print('Custom Loop Enabled')
         #Under Construction
-        totaliterations = len(p)*len(otd)
         for i in p:
             for k in otd:
                 paramlist.append((i, ftd, k))
@@ -141,10 +137,12 @@ def case_maker(cond):
     # I made significant changes to the Oxi_Dil and Fue_Dil sections below - JS. 1/6/21
     elif mix_type == 'Oxi_Dil':
         print('Oxidizer to Diluent Loop Enabled')
-        totaliterations = len(p)*len(phi)*len(otd)*len(T)
         P_T_phi_otd = it.product(p, T, phi, otd)
 
         for pressure, temperature, equiv, ox_to_dil in P_T_phi_otd:
+            if ox_to_dil > 1:
+                continue  # Impossible mixture
+
             if type(Fuel_name) is str:
                 Fuel = Fuel_name
             elif type(Fuel_name) is list:  # multi_fuel
@@ -164,15 +162,18 @@ def case_maker(cond):
                 raise ValueError(msg)
             Oxidizer += Diluent_name + ':' + str(1 - ox_to_dil)
 
-            gas.set_equivalence_ratio(phi, (Fuel), (Oxidizer))
+            gas.set_equivalence_ratio(equiv, (Fuel), (Oxidizer))
             paramlist.append([pressure, temperature, gas.mole_fraction_dict()])
-        assert len(paramlist) == totaliterations  # Sanity check
+
     elif mix_type == 'Fue_Dil':
         print('Fuel to Diluent Loop Enabled')
-        totaliterations = len(p)*len(phi)*len(ftd)
+
         P_T_phi_ftd = it.product(p, T, phi, ftd)
 
         for pressure, temperature, equiv, f_to_dil in P_T_phi_ftd:
+            if f_to_dil > 1:
+                continue  # Impossible mixture
+
             if type(Fuel_name) is str:
                 Fuel = Fuel_name + ':' + str(f_to_dil) + ' '
             elif type(Fuel_name) is list:  # multi_fuel
@@ -192,13 +193,11 @@ def case_maker(cond):
             else:
                 raise ValueError(msg)
 
-            gas.set_equivalence_ratio(phi, (Fuel), (Oxidizer))
+            gas.set_equivalence_ratio(equiv, (Fuel), (Oxidizer))
             paramlist.append([pressure, temperature, gas.mole_fraction_dict()])
-        assert len(paramlist) == totaliterations  # Sanity check
 
-    # TODO: Following this example, add other mixture types. I don't think we
-    # need the "totaliterations" variable, since it's just len(paramlist),
-    # right?
+
+    # TODO: Following this example, add other mixture types.
     # Rewrite 0D conditions dictionary so that is it formated similar to 1D
 
 
@@ -212,7 +211,8 @@ def case_maker(cond):
     else:
         print('Error creating mixtures. Check mixture_type variable.')
         sys.exit()
-    return totaliterations, paramlist
+
+    return paramlist
 
 
 def parallelize(param, cond, fun):

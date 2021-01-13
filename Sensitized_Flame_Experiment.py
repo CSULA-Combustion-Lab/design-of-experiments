@@ -30,7 +30,7 @@ def run_flame_simulation(mech, arrtype, pres, eratio, xtod,
     mechan = cf.model_folder(mech)
     condi = initialization(mechan, arrtype, pres, eratio, xtod, tin,
                            fue, oxi, dilu, air, mgrid, msoret, loglev, mixtype)
-    totiter, paralist = case_maker(condi)
+    paralist = cf.case_maker(condi)
     flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
                                                                   paralist,
                                                                   mixtype)
@@ -40,7 +40,7 @@ def run_flame_simulation(mech, arrtype, pres, eratio, xtod,
 
 
 def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
-                   Tint, fuel, oxidizer, diluent, air, mingrid, mul_soret,
+                   Temperature, fuel, oxidizer, diluent, air, mingrid, mul_soret,
                    loglevel, mixture_type):
     """[Fill in information]"""
     #Working directory
@@ -49,6 +49,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
     if array_type == 'log':
         P    = np.logspace(np.log10(Press[0]), np.log10(Press[1]), Press[2])
         Phi  = np.logspace(np.log10(E_Ratio[0]), np.log10(E_Ratio[1]), E_Ratio[2])
+        Tint = np.logspace(np.log10(Temperature[0]), np.log10(Temperature[1]), Temperature[2])
         XtD  = np.logspace(np.log10(X_to_D[0]), np.log10(X_to_D[1]), X_to_D[2])
         FtD = XtD
         OtD = XtD
@@ -58,6 +59,7 @@ def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
         P   = np.linspace(Press[0], Press[1], Press[2])
         Phi = np.linspace(E_Ratio[0], E_Ratio[1], E_Ratio[2])
         XtD = np.linspace(X_to_D[0], X_to_D[1], X_to_D[2])
+        Tint = np.linspace(*Temperature)
         FtD = XtD
         OtD = XtD
         # FtD = np.linspace(F_to_D[0], F_to_D[1], F_to_D[2])
@@ -146,52 +148,13 @@ def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
     return conditions
 
 
-def case_maker(cond):
-    """[Insert Information]"""
-    mix_type = cond['Mixture'][3]
-    p        = cond['Parameters'][0]
-    phi      = cond['Parameters'][1]
-    # fod      = cond['Parameters'][2]
-    otd      = cond['Parameters'][4]
-    ftd      = cond['Parameters'][2]
-
-    if mix_type == 'Debug':
-        print('Debug Loop Enabled')
-    elif mix_type == 'Custom':
-        print('Custom Loop Enabled')
-        #Under Construction
-        totaliterations = len(p)*len(otd)
-        paramlist       = []
-        for i in p:
-            for k in otd:
-                paramlist.append((i, ftd, k))
-        #Under Construction
-    elif mix_type == 'Oxi_Dil':
-        print('Oxidizer to Diluent Loop Enabled')
-        totaliterations = len(p)*len(phi)*len(otd)
-        paramlist       = list(it.product(p,phi,otd))
-    elif mix_type == 'Fue_Dil':
-        print('Fuel to Diluent Loop Enabled')
-        totaliterations = len(p)*len(phi)*len(ftd)
-        paramlist       = list(it.product(p,phi,ftd))
-    # elif mix_type == 'Oxi_Dil' or mix_type == 'Fue_Dil':
-    #     if mix_type == 'Oxi_Dil':
-    #         print('Oxidizer to Diluent Loop Enabled')
-    #     elif mix_type == 'Fue_Dil':
-    #         print('Fuel to Diluent Loop Enabled')
-    #     totaliterations = len(p)*len(phi)*len(fod)
-    #     paramlist       = list(it.product(p,phi,fod))
-    else:
-        print('Error in Initializing. Check mixture_type variable.')
-        sys.exit()
-    return totaliterations, paramlist
-
 def run_simulations(conditions, paramlist, mt):
     """[Insert Information]"""
     tic = time.time()
     chem = conditions['Files'][0]
     gas = ct.Solution(chem)
     ##########################Debug loop#######################################
+    # TODO: Can the debug loop be deleted?
     if mt == 'Debug':
         Debug_params = conditions['Debug'][1]
         """[Fill in information]"""
@@ -257,155 +220,53 @@ def run_simulations(conditions, paramlist, mt):
     else:
         sys.exit()
 
-# def parallelize(param, cond, fun):
-#     """[Fill in information]"""
-#     #Find optimal number of cpus to use
-#     numcases = len(param) #Number of cases to run
-#     if cpu_count() == 2 or cpu_count() == 1:
-#         proc = 1 #Less Powerful Computer
-#     elif numcases > cpu_count():
-#         #Number of cases to run on each processor, rounded up
-#         loops = [np.ceil(numcases/proc) for proc in range(1, cpu_count())]
-#         # First entry in loops with the minumum number. Add one because
-#         # of 0-based indexing, add another in case one process is much slower.
-#         proc = loops.index(min(loops))+2
-#     else: # More cpus than cases
-#         proc = numcases
 
-#     pool = Pool(processes=proc)
+def flame_sens(p, T, mix, cond):
+    """
+    Run one flame simulation.
 
-#     results = []
-#     for x in param:
-#         results.append(pool.apply_async(fun, args=(*x, cond)))
-#     pool.close()
-#     pool.join()
+    Parameters
+    ----------
+    p : float
+        Pressure in UNITS??
+    T : float
+        Temperature in Kelvin.
+    mix : dict
+        Dictionary where keys are mixture components, values are mole fracs.
+    cond : dict
+        Dictionary with detailed information on the condition.
 
-#     # Get the results
-#     datadict = dict()
-#     casenum  = 0
-#     for p in tqdm(results):
-#         try:
-#             # Assign it to datadict. This is ordered by the time when each
-#             # simulation starts, not when they end
-#             datadict[casenum] = p.get()
-#         except RuntimeError: # I'm not sure what this is
-#             print('\nUnknown RunTimeError.')
-#             datadict[casenum] = {'Flame': [None, 'RunTimeError']}
-#         casenum += 1
-#     outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
-#     return outlist
+    Returns
+    -------
+    flame_info : TYPE
+        DESCRIPTION.
 
-
-def flame_sens(p, phi, f_o, cond):
+    """
     """[Fill in information]"""
-    Tin           = cond['Parameters'][3]
     at            = cond['Parameters'][5]
     chem          = cond['Files'][0]
     tempfile      = cond['Files'][1]
     Fuel_name     = cond['Mixture'][0]
     Diluent_name  = cond['Mixture'][1]
     Oxidizer_name = cond['Mixture'][2]
-    mt            = cond['Mixture'][3]
-    multif        = cond['T/F'][0]
-    multio        = cond['T/F'][1]
     mg            = cond['Flame'][0]
     ms            = cond['Flame'][1]
     logl          = cond['Flame'][2]
-    gas = ct.Solution(chem)
 
-    if not mt == 'Debug':
-        Diluent = 1 - f_o #Define Diluent Percentage in Fuel/Oxidizer
+    # More summary parameters to save later
+    Fuel = 'unused'
+    Oxidizer = 'unused'
+    Fue_Percent = mixture_percentage(Fuel_name, mix)
+    Oxi_Percent = mixture_percentage(Oxidizer_name, mix)
+    Dil_Percent = mix[Diluent_name]
+    mixture = flames.Mixture(mix, chem)  # Create mixture object
+    phi = mixture.phi
 
-    #Four Mixture Types (Debug, Custom, Oxidizer to Diluent, Fuel to Diluent)
-    #Debug Mixture is a single mixture to test for errors in code
-    #Custom Mixture is under construction
-    #o_f True Mixture uses a ratio of Oxidizer to Diluent
-    #o_f False Mixture uses a ratio of Fuel to Diluent
-
-    # TODO: I think it would be simpler if most of the code below was moved
-    # somewhere else. It can probably be moved to common_functions.
-    # Instead, this function would take in a pre-defined
-    # mixture as its argument. For example, something like:
-    # flame_sens(p, T, Mix, cond).
-    # Then, it would find run the simulations, find sensitivity, and return
-    # flame_info for that combination of p, T, Mix, cond. I know that all the
-    # temperatures are the same, but using temperature as an argument makes it
-    # more compatible with the 0D simulations.
-    # I already started this process, see the case_maker function in common_functions.
-    if mt == 'Debug':
-        Fuel     = f_o[0]
-        Oxidizer = f_o[1]
-        Diluent  = 0
-
-    elif mt == 'Custom':
-       #Under Construction#
-       Fuel = f_o[0]
-       Oxidizer = f_o[1]
-       #Under Construction#
-
-    elif mt == 'Oxi_Dil':
-       if multif:
-           Fuel = ''
-           for fl in range(0,len(Fuel_name),2):
-                Fuel += Fuel_name[fl]+':'+str(Fuel_name[fl+1])+' '
-       else:
-           Fuel = Fuel_name
-       if multio:
-           Oxidizer = ''
-           for ol in range(0,len(Oxidizer_name),2):
-               Oxidizer += Oxidizer_name[ol]+':'+str(Oxidizer_name[ol+1]*f_o)+' '
-           Oxidizer += Diluent_name+':'+str(Diluent)
-       else:
-           Oxidizer = Oxidizer_name+':'+str(f_o)+' '+Diluent_name+':'+str(Diluent)
-
-    elif mt == 'Fue_Dil':
-       if multif:
-           Fuel = ''
-           for fl in range(0,len(Fuel_name),2):
-                Fuel += Fuel_name[fl]+':'+str(Fuel_name[fl+1]*f_o)+' '
-           Fuel += Diluent_name+':'+str(Diluent)
-       else:
-           Fuel = Fuel_name+':'+str(f_o)+' '+Diluent_name+':'+str(Diluent)
-       if multio:
-           Oxidizer = ''
-           for ol in range(0,len(Oxidizer_name),2):
-               Oxidizer += Oxidizer_name[ol]+':'+str(Oxidizer_name[ol+1])+' '
-       else:
-           Oxidizer = Oxidizer_name
-
-    else:
-        print('Error. Check mixture_type variable for invalid string input.')
-        sys.exit()
-
-    Mix = mixture_maker(gas, phi, Fuel, Oxidizer)
-    Fue_Percent = mixture_percentage(Fuel_name, Mix, multif)
-    Oxi_Percent = mixture_percentage(Oxidizer_name, Mix, multio)
-
-    if mt == 'Debug':
-        print('\nMixture Composition:')
-        print(Mix)
-
-    if Diluent < 0:
-        Dil_Percent = 0
-        flame_info = {'Flame': [None, 'Diluent < 0'],
-                      'Conditions': [Tin, p, phi, Fuel, Oxidizer, Mix,
-                                     Fuel_name, Oxidizer_name, Diluent_name,
-                                     Fue_Percent, Oxi_Percent, Dil_Percent,
-                                     at]}
-        return flame_info
-    else:
-        Dil_Percent = 0
-        for n in Mix:
-            if n[0] == Diluent_name:
-                Dil_Percent = n[1]
-            else:
-                continue
-
-    f = flames.Flame(Mix, p, Tin, tempfile, chemfile=chem)
+    f = flames.Flame(mixture, p, T, tempfile, chemfile=chem)
     f.run(mingrid=mg, loglevel=logl, mult_soret=ms)
     if f.flame_result is None:
         flame_info = {'Flame': [None, 'Flame did not converge'],
-                      'Conditions': [Tin, p, phi, Fuel, Oxidizer, Mix,
+                      'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                                      Fuel_name, Oxidizer_name, Diluent_name,
                                      Fue_Percent, Oxi_Percent, Dil_Percent,
                                      at]}
@@ -416,7 +277,7 @@ def flame_sens(p, phi, f_o, cond):
     flame_T    = f.flame_result.T[-1] #Flame temperature at end
     flame_rho  = f.flame_result.density_mass[0] #Flame density at the front
     flame_info = {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
-                  'Conditions': [Tin, p, phi, Fuel, Oxidizer, Mix,
+                  'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                                  Fuel_name, Oxidizer_name, Diluent_name,
                                  Fue_Percent, Oxi_Percent, Dil_Percent,
                                  at]}
@@ -449,22 +310,17 @@ def mixture_maker(gas, phi, fuel, oxidizer):
     return Mixture
 
 
-def mixture_percentage(fo_list, mix, tf):
-    Percentage = 0
-    if not tf:
-        for m in mix:
-            if m[0] == fo_list:
-                Percentage += m[1]
-            else:
-                continue
+def mixture_percentage(components, mix):
+    if type(components) is str:  # Single Component
+        return mix[components]
+    elif type(components) is list:
+        # Format is [component1, quantity1, component2, quantity2, ...]
+        Percentage = 0
+        for n in range(0, len(components), 2):
+            Percentage += mix[components[n]]
+        return Percentage
     else:
-        for n in range(0, len(fo_list), 2):
-            for m in mix:
-                if m[0] == fo_list[n]:
-                    Percentage += m[1]
-                else:
-                    continue
-    return Percentage
+        raise TypeError
 
 def file_saving(cond, fla_inf, p_list, s_info):
     save_time_start = time.time()
