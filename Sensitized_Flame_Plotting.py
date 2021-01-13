@@ -55,9 +55,9 @@ def rxn_plots(f_info, save_path, log):
         if log:
             a.set_xscale('log')
 
-        fig.suptitle('Initial Temperature: '+format(Tint)+' [K]')
-        plt.savefig(save_path+'\\Max Reactions with Initial Temperature '
-                    +format(Tint)+'K.png')
+        fig.suptitle('Initial Temperature: {:.0f} K'.format(Tint))
+        plt.savefig(save_path +
+                    '\\Max Reactions with Initial Temperature {:.0f} K.png'.format(Tint))
     plt.close(fig)
 
 
@@ -123,11 +123,10 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
         if log:
             a.set_xscale('log')
 
-        figa.suptitle('Reaction '+Rxn_Eq+'\nInitial Temperature: '
-                      +format(Tint)+' [K]')
+        figa.suptitle('Reaction {}\nInitial Temperature: {:.0f} K'.format(Rxn_Eq, Tint))
         plt.savefig(save_path+'\\Reaction '+Rxn_Number+
                     ' Average Strength against top '+format(nrxns)+' rxns'
-                    ' with Initial Temperature '+format(Tint)+'K.png')
+                    ' with Initial Temperature '+format(Tint, '.0f')+'K.png')
     plt.close(figa)
 
     if not len(Sens_str_threshold) == 0:
@@ -148,11 +147,11 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
 
             figb.suptitle('Reaction '+Rxn_Eq+
                           '\n Threshold >= '+format(threshold)+
-                          ' Initial Temperature: '+format(Tint)+' [K]')
+                          ' Initial Temperature: '+format(Tint, '.0f')+' K')
             plt.savefig(save_path+'\\Reaction '
                         +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
                         ' Average Strength above_equal to '+format(threshold)+
-                        ' with Initial Temperature '+format(Tint)+'K.png')
+                        ' with Initial Temperature '+format(Tint, '.0f')+'K.png')
         plt.close(figb)
     else:
         print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
@@ -169,7 +168,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     figc.savefig(save_path+'\\Reaction '
                  +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
                  ' Normalized Sensitivity vs Flame Speed '+
-                 ' with Initial Temperature '+format(Tint)+'K.png')
+                 ' with Initial Temperature '+format(Tint, '.0f')+'K.png')
     plt.close(figc)
 
 
@@ -215,10 +214,10 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
                 a.set_yscale('log')
             fig.suptitle('Reaction Number: '+format(Rxn_num)+
                           ' Reaction Name: '+Rxn_name+
-                          '\nInitial Temperature: '+format(Tint)+' [K]')
+                          '\nInitial Temperature: '+format(Tint, '.0f')+' K')
             plt.savefig(save_path+'\\Reaction Number '+format(Rxn_num)+
                         ' Max Sensitivity for Parameters with'
-                        ' Initial Temperature '+format(Tint)+'K.png')
+                        ' Initial Temperature '+format(Tint, '.0f')+'K.png')
         plt.close(fig)
     else:
         print('Reaction Number '+str(Rxn_num)+', Reaction: '+str(Rxn_name)+
@@ -263,9 +262,9 @@ def flame_speed_plots(f_info, save_path, log):
         a.set_ylabel(cond_dict[y_key][1])
         if log:
             a.set_xscale('log')
-        fig.suptitle('Initial Temperature: '+format(Tint)+' [K]')
+        fig.suptitle('Initial Temperature: '+format(Tint, '.0f')+' K')
         plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
-                    ' Initial Temperature '+format(Tint)+'K.png')
+                    ' Initial Temperature '+format(Tint, '.0f')+'K.png')
     plt.close(fig)
 
 

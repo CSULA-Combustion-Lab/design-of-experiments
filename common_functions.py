@@ -134,7 +134,11 @@ def case_maker(cond):
                 paramlist.append((i, ftd, k))
         #Under Construction
 
-    # I made significant changes to the Oxi_Dil and Fue_Dil sections below - JS. 1/6/21
+    # TODO: The quantity that the code is referring to as "X to diluent ratio"
+    # is actually "X/(X+diluent)". This is a different quantity, with a
+    # different meaning. "X to diluent ratio" would be "X/diluent". We should
+    # either change the definition in this function, or change the labels on
+    # many figures and other outputs.
     elif mix_type == 'Oxi_Dil':
         print('Oxidizer to Diluent Loop Enabled')
         P_T_phi_otd = it.product(p, T, phi, otd)

@@ -30,6 +30,8 @@ def run_flame_simulation(mech, arrtype, pres, eratio, xtod,
     mechan = cf.model_folder(mech)
     condi = initialization(mechan, arrtype, pres, eratio, xtod, tin,
                            fue, oxi, dilu, air, mgrid, msoret, loglev, mixtype)
+    if len(condi['Parameters'][3]) > 1:
+        print('WARNING: This code has not been tested using multiple inlet temperatures!')
     paralist = cf.case_maker(condi)
     flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
                                                                   paralist,
