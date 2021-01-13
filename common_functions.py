@@ -129,6 +129,7 @@ def case_maker(cond):
         print('Error! Check array_type variable for invalid string input')
         sys.exit()
 
+    # Should we have some parameters, like phi, that are always "lin" no matter what?
     P    = function(*Press)
     T    = function(*Temperature)
     param1 = function(*mix_params[1])
