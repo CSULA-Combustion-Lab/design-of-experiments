@@ -135,7 +135,6 @@ def case_maker(cond):
     param2 = function(*mix_params[2])
     mix_type = mix_params[0]
 
-
     # Deal with multi-fuel and multi-oxidizer
     msg = ('Fuel or oxidizer input format is incorrect. It should be a string '
            'with the name of the component, or a list of the format '
