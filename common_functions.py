@@ -13,6 +13,7 @@ import cantera as ct
 import itertools as it
 from tqdm import tqdm
 from multiprocessing import cpu_count, Pool
+# TODO: Add a separate folder with some tests for these common functions.
 
 
 def model_folder(mechanism):
@@ -91,7 +92,7 @@ def case_maker(cond):
     cond : dict
         Dictionary of the following format:
         for 1D
-        conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
+        conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
                       'Mixture': [fuel, diluent, oxidizer, mixture_type],
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
@@ -108,97 +109,120 @@ def case_maker(cond):
     Fuel_name     = cond['Mixture'][0]
     Diluent_name  = cond['Mixture'][1]
     Oxidizer_name = cond['Mixture'][2]
-    mix_type = cond['Mixture'][3]
-    p        = cond['Parameters'][0]
-    phi      = cond['Parameters'][1]
-    T        = cond['Parameters'][3]
-    # fod      = cond['Parameters'][2]
-    otd      = cond['Parameters'][4]
-    ftd      = cond['Parameters'][2]
+    Press        = cond['Parameters'][0]
+    Temperature  = cond['Parameters'][1]
+    mix_params   = cond['Parameters'][2]
+    array_type   = cond['Parameters'][3]
     chem     = cond['Files'][0]
 
-    gas = ct.Solution(chem)
 
+    # Create ranges for the parameters
+    def logspace(start, stop, number):
+        """Custom, simplified logspace function."""
+        return np.logspace(np.log10(start), np.log10(stop), number)
+
+    if array_type == 'log':
+        function = logspace
+    elif array_type == 'lin':
+        function = np.linspace
+    else:
+        print('Error! Check array_type variable for invalid string input')
+        sys.exit()
+
+    P    = function(*Press)
+    T    = function(*Temperature)
+    param1 = function(*mix_params[1])
+    param2 = function(*mix_params[2])
+    mix_type = mix_params[0]
+
+
+    # Deal with multi-fuel and multi-oxidizer
     msg = ('Fuel or oxidizer input format is incorrect. It should be a string '
            'with the name of the component, or a list of the format '
            '[component1, quantity1, component2, quantity2...]')
+    if type(Fuel_name) is str:
+        Fuel = {Fuel_name: 1}
+    elif type(Fuel_name) is list:  # multi_fuel
+        Fuel = {}
+        for fl in range(0,len(Fuel_name),2):
+            Fuel[Fuel_name[fl]] = Fuel_name[fl+1]
+    else:
+        raise ValueError(msg)
+
+    if type(Oxidizer_name) is str:
+        Oxidizer = {Oxidizer_name: 1}
+    elif type(Oxidizer_name) is list:  # multi_ox
+        Oxidizer = {}
+        for ox in range(0, len(Oxidizer_name), 2):
+            Oxidizer[Oxidizer_name[ox]] = Oxidizer_name[ox+1]
+    else:
+        raise ValueError(msg)
+
+    # Create mixtures
+    gas = ct.Solution(chem)
+
     paramlist = []
+    quad_loop = it.product(P, T, param1, param2)  # Four parameters for looping.
 
     if mix_type == 'Debug':
         print('Debug Loop Enabled')
     elif mix_type == 'Custom':
         print('Custom Loop Enabled')
         #Under Construction
-        for i in p:
-            for k in otd:
-                paramlist.append((i, ftd, k))
+        # for i in p:
+        #     for k in otd:
+        #         paramlist.append((i, ftd, k))
         #Under Construction
 
     # TODO: The quantity that the code is referring to as "X to diluent ratio"
-    # is actually "X/(X+diluent)". This is a different quantity, with a
-    # different meaning. "X to diluent ratio" would be "X/diluent". We should
-    # either change the definition in this function, or change the labels on
-    # many figures and other outputs.
+    # is very confusing.
+    # Initializer calls it "Diluent_Percentage" which I would think of as
+    # "diluent / (X+diluent).
+    # The rest of the code (and outputs) call it "X to diluent ratio", which
+    # I would understand to mean "X/diluent".
+    # But, the quantity is actually "X/(X+diluent)", which I would call
+    # "X% in X mixture," like "O2 % in oxidizer." I've started fixing this.
     elif mix_type == 'Oxi_Dil':
         print('Oxidizer to Diluent Loop Enabled')
-        P_T_phi_otd = it.product(p, T, phi, otd)
-
-        for pressure, temperature, equiv, ox_to_dil in P_T_phi_otd:
+        for pressure, temperature, equiv, ox_to_dil in quad_loop:
             if ox_to_dil > 1:
                 continue  # Impossible mixture
 
-            if type(Fuel_name) is str:
-                Fuel = Fuel_name
-            elif type(Fuel_name) is list:  # multi_fuel
-                Fuel = ''
-                for fl in range(0,len(Fuel_name),2):
-                    Fuel += Fuel_name[fl]+':'+str(Fuel_name[fl+1])+' '
-            else:
-                raise ValueError(msg)
+            # Mix the oxidizer with diluent
+            diluted_ox = {k: v * ox_to_dil for k, v in Oxidizer.items()}
+            diluted_ox[Diluent_name] = 1 - ox_to_dil
 
-            if type(Oxidizer_name) is str:
-                Oxidizer = Oxidizer_name + ':'+str(ox_to_dil) + ' '
-            elif type(Oxidizer_name) is list:  # multi_ox
-                Oxidizer = ''
-                for ox in range(0, len(Oxidizer_name), 2):
-                    Oxidizer += Oxidizer_name[ox] + ':' + str(Oxidizer_name[ox+1]*ox_to_dil) + ' '
-            else:
-                raise ValueError(msg)
-            Oxidizer += Diluent_name + ':' + str(1 - ox_to_dil)
-
-            gas.set_equivalence_ratio(equiv, (Fuel), (Oxidizer))
+            gas.set_equivalence_ratio(equiv, Fuel, diluted_ox)
             paramlist.append([pressure, temperature, gas.mole_fraction_dict()])
 
     elif mix_type == 'Fue_Dil':
         print('Fuel to Diluent Loop Enabled')
-
-        P_T_phi_ftd = it.product(p, T, phi, ftd)
-
-        for pressure, temperature, equiv, f_to_dil in P_T_phi_ftd:
+        for pressure, temperature, equiv, f_to_dil in quad_loop:
             if f_to_dil > 1:
                 continue  # Impossible mixture
 
-            if type(Fuel_name) is str:
-                Fuel = Fuel_name + ':' + str(f_to_dil) + ' '
-            elif type(Fuel_name) is list:  # multi_fuel
-                Fuel = ''
-                for fl in range(0,len(Fuel_name),2):
-                    Fuel += Fuel_name[fl]+':'+str(Fuel_name[fl+1]*f_to_dil)+' '
-            else:
-                raise ValueError(msg)
-            Fuel += Diluent_name + ':' + str(1 - f_to_dil)
+            # Mix the fuel with diluent
+            diluted_f = {k: v * f_to_dil for k, v in Fuel.items()}
+            diluted_f[Diluent_name] = 1 - f_to_dil
 
-            if type(Oxidizer_name) is str:
-                Oxidizer = Oxidizer_name
-            elif type(Oxidizer_name) is list:  # multi_ox
-                Oxidizer = ''
-                for ox in range(0, len(Oxidizer_name), 2):
-                    Oxidizer += Oxidizer_name[ox] + ':' + str(Oxidizer_name[ox+1])
-            else:
-                raise ValueError(msg)
-
-            gas.set_equivalence_ratio(equiv, (Fuel), (Oxidizer))
+            gas.set_equivalence_ratio(equiv, diluted_f, Oxidizer)
             paramlist.append([pressure, temperature, gas.mole_fraction_dict()])
+    elif mix_type == 'phi_fuel':
+        print('phi + fuel Loop Enabled')
+        for pressure, temperature, equiv, fuel_frac in quad_loop:
+            if fuel_frac > 1:
+                continue  # Impossible mixture
+
+            gas.set_equivalence_ratio(equiv, Fuel, Oxidizer)  # Without diluent
+            initial_mix = gas.mole_fraction_dict()
+            fuel_total = sum([initial_mix[k] for k in Fuel])
+            if fuel_total < fuel_frac:
+                continue  # Cannot create mixture at this phi + fuel
+            mixture = {k: v*fuel_frac/fuel_total for k, v in initial_mix.items()}
+            mixture[Diluent_name] = 1 - fuel_frac / fuel_total
+            assert np.isclose(1, sum(mixture.values()))  # Temporary check
+
+            paramlist.append([pressure, temperature, mixture])
 
 
     # TODO: Following this example, add other mixture types.

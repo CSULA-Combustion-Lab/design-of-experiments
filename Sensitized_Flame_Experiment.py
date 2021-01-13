@@ -23,52 +23,26 @@ import common_functions as cf
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
-def run_flame_simulation(mech, arrtype, pres, eratio, xtod,
-                         tin, fue, oxi, dilu, air, mgrid,
-                         msoret, loglev, mixtype, safi):
+def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
+                         mgrid, msoret, loglev, safi):
     """[Fill in information]"""
     mechan = cf.model_folder(mech)
-    condi = initialization(mechan, arrtype, pres, eratio, xtod, tin,
-                           fue, oxi, dilu, air, mgrid, msoret, loglev, mixtype)
-    if len(condi['Parameters'][3]) > 1:
-        print('WARNING: This code has not been tested using multiple inlet temperatures!')
+    condi = initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
+                           mix_params, mgrid, msoret, loglev)
     paralist = cf.case_maker(condi)
     flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
-                                                                  paralist,
-                                                                  mixtype)
+                                                                  paralist)
     if safi:
         file_saving(condi, flame_info, paralist, siminfo)
 
 
 
-def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
-                   Temperature, fuel, oxidizer, diluent, air, mingrid, mul_soret,
-                   loglevel, mixture_type):
+def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
+                   diluent, mix_params, mingrid, mul_soret, loglevel):
     """[Fill in information]"""
     #Working directory
     flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
-
-    if array_type == 'log':
-        P    = np.logspace(np.log10(Press[0]), np.log10(Press[1]), Press[2])
-        Phi  = np.logspace(np.log10(E_Ratio[0]), np.log10(E_Ratio[1]), E_Ratio[2])
-        Tint = np.logspace(np.log10(Temperature[0]), np.log10(Temperature[1]), Temperature[2])
-        XtD  = np.logspace(np.log10(X_to_D[0]), np.log10(X_to_D[1]), X_to_D[2])
-        FtD = XtD
-        OtD = XtD
-        # FtD  = np.logspace(np.log10(F_to_D[0]), np.log10(F_to_D[1]), F_to_D[2])
-        # OtD  = np.logspace(np.log10(O_to_D[0]), np.log10(O_to_D[1]), O_to_D[2])
-    elif array_type == 'lin':
-        P   = np.linspace(Press[0], Press[1], Press[2])
-        Phi = np.linspace(E_Ratio[0], E_Ratio[1], E_Ratio[2])
-        XtD = np.linspace(X_to_D[0], X_to_D[1], X_to_D[2])
-        Tint = np.linspace(*Temperature)
-        FtD = XtD
-        OtD = XtD
-        # FtD = np.linspace(F_to_D[0], F_to_D[1], F_to_D[2])
-        # OtD = np.linspace(O_to_D[0], O_to_D[1], O_to_D[2])
-    else:
-        print('Error! Check array_type variable for invalid string input')
-        sys.exit()
+    mixture_type = mix_params[0]
 
     if type(oxidizer) is list:
         multioxidizer = True
@@ -117,11 +91,11 @@ def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
         P            = 1 #Pressure [atm]
         Phi          = 1 #Equivalence Ratio
         fuel         = 'CH4:1' #Fuel String
-        oxidizer     = air #Oxidizer String
+        oxidizer     = 'O2:1, N2:3.76'  #Oxidizer String
         Tint         = 300 #Initial Temperature of Unburned Mixture
         loglevel     = 1
         Debug_params = [P, Phi, [fuel, oxidizer]]
-        conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
+        conditions = {'Parameters': [P, Phi, None, Tint, None, array_type],
                       'Mixture': [fuel, diluent, oxidizer, mixture_type],
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
@@ -140,9 +114,9 @@ def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer]}
 
-    #Multifuel loop
-    elif mixture_type == 'Oxi_Dil' or mixture_type == 'Fue_Dil':
-        conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
+    # All other mixture types
+    else:
+        conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
                       'Mixture': [fuel, diluent, oxidizer, mixture_type],
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
@@ -150,8 +124,9 @@ def initialization(mechanism, array_type, Press, E_Ratio, X_to_D,
     return conditions
 
 
-def run_simulations(conditions, paramlist, mt):
+def run_simulations(conditions, paramlist):
     """[Insert Information]"""
+    mt = conditions['Mixture'][3]
     tic = time.time()
     chem = conditions['Files'][0]
     gas = ct.Solution(chem)
@@ -188,8 +163,7 @@ def run_simulations(conditions, paramlist, mt):
         return flame_info_filtered, flame_info_unfiltered, sim_info
 
     ########################Simulation loop####################################
-    elif mt == 'Oxi_Dil' or mt == 'Fue_Dil' or mt == 'Custom':
-        """[Fill in information]"""
+    else:
         print('Initial number of cases: '+format(len(paramlist)))
         print('\nStart of simulations...')
         sim_start  = time.time()
@@ -219,8 +193,6 @@ def run_simulations(conditions, paramlist, mt):
         print('Total time '+format(duration, '0.5f')+' seconds.\n')
         sim_info = [sim_time, converged, duration]
         return flame_info_filtered, flame_info_unfiltered, sim_info
-    else:
-        sys.exit()
 
 
 def flame_sens(p, T, mix, cond):
@@ -245,7 +217,7 @@ def flame_sens(p, T, mix, cond):
 
     """
     """[Fill in information]"""
-    at            = cond['Parameters'][5]
+    at            = cond['Parameters'][3]
     chem          = cond['Files'][0]
     tempfile      = cond['Files'][1]
     Fuel_name     = cond['Mixture'][0]
@@ -327,11 +299,8 @@ def mixture_percentage(components, mix):
 def file_saving(cond, fla_inf, p_list, s_info):
     save_time_start = time.time()
     p             = cond['Parameters'][0]
-    phi           = cond['Parameters'][1]
-    # fod           = cond['Parameters'][2]
-    ftd           = cond['Parameters'][2]
-    Tin           = cond['Parameters'][3]
-    otd           = cond['Parameters'][4]
+    T             = cond['Parameters'][1]
+    mix_params    = cond['Parameters'][2]
     chem          = cond['Files'][0]
     Fuel_name     = cond['Mixture'][0]
     Diluent_name  = cond['Mixture'][1]
@@ -408,7 +377,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
                             +MF_text+MO_text+
                             "==============================\n"
                             "\n==========Parameters==========\n"
-                            "Initial Temperature: "+format(Tin)
+                            "Initial Temperature: "+format(T)
                             +" [Kelvin]\nPressure: "
                             +format(D_params[0])+" [atm]\n"
                             "Equivalence Ratio: "+format(D_params[1])+
@@ -453,18 +422,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
         filename  = 'Case Description.txt'
         filename  = os.path.join(save_path, filename)
         f         = open(filename, "w")
-        if mt == 'Oxi_Dil':
-            F_O_text = ("\nOxidizer to Diluent Mole Fraction Range: "
-                        +format(otd)+"\n")
-            # F_O_text = ("\nOxidizer to Diluent Mole Fraction Range: "
-            #             +format(fod)+"\n")
-        elif mt == 'Fue_Dil':
-            F_O_text = ("\nFuel Mole Fraction Range: "
-                        +format(ftd)+"\n")
-            # F_O_text = ("\nFuel Mole Fraction Range: "
-            #             +format(fod)+"\n")
-        else:
-            print('Error, strings in text description')
+
         if multif:
             MF_text = ("Multifuel = "+format(multif)+"\n"
                        "Fuels\Percentages = "+format((Fuel_name))+"\n")
@@ -475,6 +433,17 @@ def file_saving(cond, fla_inf, p_list, s_info):
                        "Oxidizer\Percentages = "+format((Oxidizer_name))+"\n")
         else:
             MO_text = "Multioxidizer = "+format(multio)+"\n"
+
+        if mt == 'Oxi_Dil':
+            labels = ('Mixture Type', 'Equivalence Ratio', 'O2 fraction in oxidizer')
+        elif mt == 'Fue_Dil':
+            labels = ('Mixture Type', 'Equivalence Ratio', 'Fuel fraction in fuel mix')
+        elif mt == 'phi_fuel':
+            labels = ('Mixture Type', 'Equivalence Ratio', 'Fuel fraction in mixture')
+        else:
+            labels = ('Mixture Type', 'Parameter 1', 'Parameter 2')
+        mixture_text = '\n'.join(['\t{}: {}'.format(k, v) for
+                                  k, v in zip(labels, mix_params)])
         text_description = ("This file provides simulation information.\n"
                             "The following information are the parameters "
                             "and cases simulated\n\n"
@@ -486,10 +455,11 @@ def file_saving(cond, fla_inf, p_list, s_info):
                             +MF_text+MO_text+
                             "==============================\n"
                             "\n================Parameters================"
-                            "\nInitial Temperature: "+format(Tin)
+                            "\n[Initial, Final, # of points]"
+                            "\nInitial Temperature: "+format(T)
                             +" [Kelvin]\nPressure Range: "
-                            +format(p)+" [atm]\nEquivalence "
-                            +"Ratio Range: "+format(phi)+F_O_text+
+                            +format(p)+" [atm]\nMixture Parameters:\n"
+                            +mixture_text + '\n'
                             "==========================================\n"
                             "\n======Flame Simulation Information======"
                             "\nMingrid = "+format(mg)+

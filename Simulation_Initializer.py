@@ -24,24 +24,29 @@ Simulation_Type = '1D'
 #  Custom is under construction
 #  Oxi_Dil creates a mixture where the Diluent is a ratio of the Oxidizer used
 #  Fue_Dil creates a mixture where the Diluent is a ratio of the Fuel used
-Mixture_type = 'Oxi_Dil'
+#  phi_fuel specifies the equivalence ratio and fuel mole fraction
+Mixture_type = 'phi_fuel'
 
 #Parameters (Pressure, Equivalence, Temperature, Diluent Percentage)
-## All three parameters are lists of three numbers
+## All parameters are lists of three numbers
 ### First Number: Initial point
 ### Second Number: End Point
-### Third Number: Number of point. If set to 1 only first point is evaluated
+### Third Number: Number of points. If set to 1 only first point is evaluated
 ## Units
 ### Pressure: Atmosphere [atm]
 ### Equivalence: Dimensionless (<1:Fuel Lean, 1:Unity, >1:Fuel Rich)
 ### Temperature: Kelvin [K]
 ### Diluent_Percentage: Percent [%]
+Pressure           = [0.5, 1, 2]
+Temperature        = [373, 400, 1]
+
+# Mixture parameters. Not all of these will be used, depending on Mixture_type
+Equivalence        = [0.8, 1, 2]
+fraction_in_oxidizer_or_fuel = [0.5, 0.7, 2]  # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
+fuel_fraction      = [0.1, 0.5, 2]
+
 ### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
 ###             variables should vary in log- or linear- space
-Pressure           = [0.5, 1, 2]
-Equivalence        = [0.8, 1, 2]
-Temperature        = [373, 400, 1]
-Diluent_Percentage = [0.5, 0.7, 2]
 Array_type = 'log'
 
 #Set experiment parameters
@@ -57,7 +62,6 @@ Fuel     = 'C3H6O3' #chemical formula of fuel
 Oxidizer = 'O2' #chemical formula of oxidizer
 # Oxidizer = ['O2', .35 , 'NO2', .65]
 Diluent  = 'N2' #chemical formula of diluent
-Air      = 'O2:1, N2:3.76' #chemical components for air as an oxidizer
 
 #################### Missing code here #########################
 #   Add code to define F_to_D and O_to_D. Or, are these necessary?
@@ -73,14 +77,21 @@ Save_files = True # If true, save files for plotting script
 
 if __name__ == "__main__":
 
+    # Package the mixture parameters. Each mixture type requires two variables
+    if Mixture_type in ('Oxi_Dil', 'Fue_Dil'):
+        mix_params = (Mixture_type, Equivalence, fraction_in_oxidizer_or_fuel)
+    elif Mixture_type == 'phi_fuel':
+        mix_params = (Mixture_type, Equivalence, fuel_fraction)
+    else:
+        raise ValueError('Mixture_type = {} is not supported'.format(Mixture_type))
+
     if Simulation_Type == '0D':
         # zeroD.run_flow_reactor_simulation(Parameter_List, Mechanism_List)
         print('Under-Construction!')
     elif Simulation_Type =='1D':
-        oneD.run_flame_simulation(Mechanism, Array_type, Pressure, Equivalence,
-                                Diluent_Percentage, Temperature, Fuel, Oxidizer, Diluent,
-                                Air, Mingrid, Mul_soret, Loglevel,
-                                Mixture_type, Save_files)
+        oneD.run_flame_simulation(Mechanism, Array_type, Pressure, Temperature,
+                                  Fuel, Oxidizer, Diluent, mix_params, Mingrid,
+                                  Mul_soret, Loglevel, Save_files)
     elif Simulation_Type == 'Burner':
         # Burner = BurnerSimulation(Parameter_List, Mechanism_List)
         print('Under Construction!')
