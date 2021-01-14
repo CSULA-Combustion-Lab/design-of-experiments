@@ -161,8 +161,8 @@ def case_maker(cond):
     # Create mixtures
     gas = ct.Solution(chem)
 
-    paramlist = []
-    quad_loop = it.product(P, T, param1, param2)  # Four parameters for looping.
+    mixlist = []
+    mix_loop = it.product(param1, param2)  # Two parameters for looping.
 
     if mix_type == 'Debug':
         print('Debug Loop Enabled')
@@ -184,7 +184,7 @@ def case_maker(cond):
     # "X% in X mixture," like "O2 % in oxidizer." I've started fixing this.
     elif mix_type == 'Oxi_Dil':
         print('Oxidizer to Diluent Loop Enabled')
-        for pressure, temperature, equiv, ox_to_dil in quad_loop:
+        for equiv, ox_to_dil in mix_loop:
             if ox_to_dil > 1:
                 continue  # Impossible mixture
 
@@ -193,11 +193,11 @@ def case_maker(cond):
             diluted_ox[Diluent_name] = 1 - ox_to_dil
 
             gas.set_equivalence_ratio(equiv, Fuel, diluted_ox)
-            paramlist.append([pressure, temperature, gas.mole_fraction_dict()])
+            mixlist.append(gas.mole_fraction_dict())
 
     elif mix_type == 'Fue_Dil':
         print('Fuel to Diluent Loop Enabled')
-        for pressure, temperature, equiv, f_to_dil in quad_loop:
+        for equiv, f_to_dil in mix_loop:
             if f_to_dil > 1:
                 continue  # Impossible mixture
 
@@ -206,10 +206,11 @@ def case_maker(cond):
             diluted_f[Diluent_name] = 1 - f_to_dil
 
             gas.set_equivalence_ratio(equiv, diluted_f, Oxidizer)
-            paramlist.append([pressure, temperature, gas.mole_fraction_dict()])
+            mixlist.append(gas.mole_fraction_dict())
+
     elif mix_type == 'phi_fuel':
         print('phi + fuel Loop Enabled')
-        for pressure, temperature, equiv, fuel_frac in quad_loop:
+        for equiv, fuel_frac in mix_loop:
             if fuel_frac > 1:
                 continue  # Impossible mixture
 
@@ -220,9 +221,18 @@ def case_maker(cond):
                 continue  # Cannot create mixture at this phi + fuel
             mixture = {k: v*fuel_frac/fuel_total for k, v in initial_mix.items()}
             mixture[Diluent_name] = 1 - fuel_frac / fuel_total
-            assert np.isclose(1, sum(mixture.values()))  # Temporary check
+            mixlist.append(mixture)
 
-            paramlist.append([pressure, temperature, mixture])
+    elif mix_type == 'Ox_Fuel':
+        print('Oxidizer + Fuel Loop Enabled')
+        for oxi_frac, fuel_frac in mix_loop:
+            if fuel_frac + oxi_frac > 1:
+                continue  # Impossible mixture
+            reduced_fuel = {k: v * fuel_frac for k, v in Fuel.items()}
+            reduced_ox = {k: v * oxi_frac for k, v in Oxidizer.items()}
+            mixture = {**reduced_fuel, **reduced_ox,
+                       Diluent_name: 1 - fuel_frac - oxi_frac}
+            mixlist.append(mixture)
 
 
     # TODO: Following this example, add other mixture types.
@@ -240,7 +250,7 @@ def case_maker(cond):
         print('Error creating mixtures. Check mixture_type variable.')
         sys.exit()
 
-    return paramlist
+    return list(it.product(P, T, mixlist))
 
 
 def parallelize(param, cond, fun):

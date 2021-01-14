@@ -25,7 +25,8 @@ Simulation_Type = '1D'
 #  Oxi_Dil creates a mixture where the Diluent is a ratio of the Oxidizer used
 #  Fue_Dil creates a mixture where the Diluent is a ratio of the Fuel used
 #  phi_fuel specifies the equivalence ratio and fuel mole fraction
-Mixture_type = 'phi_fuel'
+#  Ox_fuel specifies the oxidizer and fuel mole fractions
+Mixture_type = 'Ox_Fuel'
 
 #Parameters (Pressure, Equivalence, Temperature, Diluent Percentage)
 ## All parameters are lists of three numbers
@@ -43,7 +44,8 @@ Temperature        = [373, 400, 1]
 # Mixture parameters. Not all of these will be used, depending on Mixture_type
 Equivalence        = [0.8, 1, 2]
 fraction_in_oxidizer_or_fuel = [0.5, 0.7, 2]  # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
-fuel_fraction      = [0.1, 0.5, 2]
+fuel_fraction      = [0.1, 0.5, 3]
+oxidizer_fraction  = [0.2, 0.6, 3]
 
 ### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
 ###             variables should vary in log- or linear- space
@@ -82,6 +84,8 @@ if __name__ == "__main__":
         mix_params = (Mixture_type, Equivalence, fraction_in_oxidizer_or_fuel)
     elif Mixture_type == 'phi_fuel':
         mix_params = (Mixture_type, Equivalence, fuel_fraction)
+    elif Mixture_type == 'Ox_Fuel':
+        mix_params = (Mixture_type, oxidizer_fraction, fuel_fraction)
     else:
         raise ValueError('Mixture_type = {} is not supported'.format(Mixture_type))
 

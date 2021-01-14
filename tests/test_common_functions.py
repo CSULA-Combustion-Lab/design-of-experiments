@@ -101,6 +101,26 @@ def test_case_maker_fue_dil():
     nptest.assert_allclose(mixture['H2']/(mixture['N2'] + mixture['H2']),
                            f_in_fuel[0])
 
+def test_case_maker_Ox_Fuel():
+    ox = [rand()/2, 1, 1]
+    fuel = [rand() / 2, 1, 1]
+    P = [rand(), 100, 1]
+    T = [500 * rand(), 1000, 1]
+    mix_params = ('Ox_Fuel', ox, fuel)
+    conditions = {'Parameters': [P, T, mix_params, 'log'],
+                  'Mixture': ['H2', 'N2', 'O2', 'Ox_Fuel'],
+                  'Files': [cf.model_folder('grimech30.cti'), None]}
+    paramlist = cf.case_maker(conditions)
+    case = paramlist[0]
+    mixture = case[2]
+    print(mixture)
+
+    nptest.assert_allclose(case[:2], [P[0], T[0]])
+    assert all([x >= 0 for k, x in mixture.items()])
+    nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'])
+    nptest.assert_allclose(ox[0], mixture['O2'])
+    nptest.assert_allclose(fuel[0], mixture['H2'])
+
 def test_multi_f_o():
     phi = [0.3 + rand(), 2, 1]
     fuel = [0.2 + rand() / 5, 1, 1]
