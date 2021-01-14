@@ -434,16 +434,6 @@ def file_saving(cond, fla_inf, p_list, s_info):
         else:
             MO_text = "Multioxidizer = "+format(multio)+"\n"
 
-        if mt == 'Oxi_Dil':
-            labels = ('Mixture Type', 'Equivalence Ratio', 'O2 fraction in oxidizer')
-        elif mt == 'Fue_Dil':
-            labels = ('Mixture Type', 'Equivalence Ratio', 'Fuel fraction in fuel mix')
-        elif mt == 'phi_fuel':
-            labels = ('Mixture Type', 'Equivalence Ratio', 'Fuel fraction in mixture')
-        else:
-            labels = ('Mixture Type', 'Parameter 1', 'Parameter 2')
-        mixture_text = '\n'.join(['\t{}: {}'.format(k, v) for
-                                  k, v in zip(labels, mix_params)])
         text_description = ("This file provides simulation information.\n"
                             "The following information are the parameters "
                             "and cases simulated\n\n"
@@ -453,15 +443,9 @@ def file_saving(cond, fla_inf, p_list, s_info):
                             "Oxidizer: "+str(Oxidizer_name)+"\n"
                             "Diluent: "+str(Diluent_name)+"\n"
                             +MF_text+MO_text+
-                            "==============================\n"
-                            "\n================Parameters================"
-                            "\n[Initial, Final, # of points]"
-                            "\nInitial Temperature: "+format(T)
-                            +" [Kelvin]\nPressure Range: "
-                            +format(p)+" [atm]\nMixture Parameters:\n"
-                            +mixture_text + '\n'
-                            "==========================================\n"
-                            "\n======Flame Simulation Information======"
+                            "==============================\n\n"
+                            + cf.parameters_string(p, T, mix_params) +
+                            "\n\n======Flame Simulation Information======"
                             "\nMingrid = "+format(mg)+
                             "\nMult_Soret = "+format(ms)+
                             "\n========================================\n"

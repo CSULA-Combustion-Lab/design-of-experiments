@@ -308,3 +308,38 @@ def parallelize(param, cond, fun):
         casenum += 1
     outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
     return outlist
+
+def parameters_string(P, T, mix_params):
+    """
+    Parameters
+    ----------
+    P : list
+        [initial, final, # of points]
+    T : list
+        [initial, final, # of points]
+    mix_params : tuple
+        (type, param1, param2)
+
+    Returns
+    -------
+    string to be printed
+
+    """
+    mt = mix_params[0]
+    if mt == 'Oxi_Dil':
+        labels = ('Mixture Type', 'Equivalence Ratio', 'O2 fraction in oxidizer')
+    elif mt == 'Fue_Dil':
+        labels = ('Mixture Type', 'Equivalence Ratio', 'Fuel fraction in fuel mix')
+    elif mt == 'phi_fuel':
+        labels = ('Mixture Type', 'Equivalence Ratio', 'Fuel fraction in mixture')
+    else:
+        labels = ('Mixture Type', 'Parameter 1', 'Parameter 2')
+    mixture_text = '\n'.join(['\t{}: {}'.format(k, v) for
+                              k, v in zip(labels, mix_params)])
+    string = ("================Parameters================" +
+              "\n[Initial, Final, # of points]\nInitial Temperature: " +
+              format(T) + " [Kelvin]\nPressure Range: " + format(P) +
+              " [atm]\nMixture Parameters:\n" + mixture_text +
+              "\n==========================================")
+    return string
+

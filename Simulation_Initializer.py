@@ -6,6 +6,7 @@ Created on Wed Sep 16 13:32:37 2020
 """
 # import code_2_5 as zeroD
 import Sensitized_Flame_Experiment as oneD
+import common_functions as cf
 # import BurnerSimulation
 import sys
 
@@ -93,6 +94,7 @@ if __name__ == "__main__":
         # zeroD.run_flow_reactor_simulation(Parameter_List, Mechanism_List)
         print('Under-Construction!')
     elif Simulation_Type =='1D':
+        print(cf.parameters_string(Pressure, Temperature, mix_params))
         oneD.run_flame_simulation(Mechanism, Array_type, Pressure, Temperature,
                                   Fuel, Oxidizer, Diluent, mix_params, Mingrid,
                                   Mul_soret, Loglevel, Save_files)
