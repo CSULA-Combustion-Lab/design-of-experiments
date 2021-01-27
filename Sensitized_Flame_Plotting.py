@@ -64,7 +64,6 @@ def rxn_plots(f_info, save_path, log):
 def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                        conditions_a=['P', 'F', 'Phi', 'O2']):
     """[Insert Information]"""
-    Tint       = f_info[0]['Conditions'][0]
     Rxn_Eq     = format(f_info[0]['Flame'][0][rxn_int][2])
     Rxn_Number = format(f_info[0]['Flame'][0][rxn_int][0]+1)
     #List for strengths
@@ -74,6 +73,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     Oxygen        = []
     Su            = []
     Sens_strength = []
+    Tint          = []
     #Lists for above threshold
     P_threshold        = []
     Phi_threshold      = []
@@ -81,10 +81,12 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     Oxygen_threshold   = []
     Su_threshold       = []
     Sens_str_threshold = []
+    T_threshold        = []
     for f in f_info:
         average_nrxns = rxn_average(f, nrxns)
         strength = f['Flame'][0][rxn_int][1]/average_nrxns
         Sens_strength.append(strength)
+        Tint.append(f['Conditions'][0])
         Pressure.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
         Fuel.append(f['Conditions'][9])
@@ -99,19 +101,23 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
             Oxygen_threshold.append(f_info[n]['Conditions'][10])
             Su_threshold.append(f['Flame'][1])
             Sens_str_threshold.append(Sens_strength[n])
+            T_threshold.append(f_info[n]['Conditions'][0])
 
     #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
     cond_dict = {'P': [Pressure, 'Pressure [atm]', P_threshold],
                  'F': [Fuel, 'Fuel Mole Fraction', F_threshold],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
                  'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
-                 'T': [Tint, 'Temperature [K]'],
+                 'T': [Tint, 'Temperature [K]', T_threshold],
                  'Su': [Su, 'Flame Speed [m/s]', Su_threshold],
                  'Strength': [Sens_strength, r'$\hat S_{'+Rxn_Eq+'}$',
                               Sens_str_threshold]}
 
     figa, axesa = plt.subplots(nrows=2, ncols=2, sharey=True)
     axa         = axesa.flatten()
+
+    T_initials = set(Tint)
+    T_fmt = 'Initial Temperature = ' + ', '.join(['{:.0f} K' for x in T_initials])
     for a, condition, string in zip(axa, conditions_a,
                                     ['(a)', '(b)', '(c)', '(d)']):
         x_key = condition
@@ -123,10 +129,9 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
         if log:
             a.set_xscale('log')
 
-        figa.suptitle('Reaction {}\nInitial Temperature: {:.0f} K'.format(Rxn_Eq, Tint))
+        figa.suptitle(('Reaction {}\n' + T_fmt).format(Rxn_Eq, *T_initials))
         plt.savefig(save_path+'\\Reaction '+Rxn_Number+
-                    ' Average Strength against top '+format(nrxns)+' rxns'
-                    ' with Initial Temperature '+format(Tint, '.0f')+'K.png')
+                    ' Average Strength against top '+format(nrxns)+' rxns.png')
     plt.close(figa)
 
     if not len(Sens_str_threshold) == 0:
@@ -145,13 +150,9 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
             if log:
                 a.set_yscale('log')
 
-            figb.suptitle('Reaction '+Rxn_Eq+
-                          '\n Threshold >= '+format(threshold)+
-                          ' Initial Temperature: '+format(Tint, '.0f')+' K')
-            plt.savefig(save_path+'\\Reaction '
-                        +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
-                        ' Average Strength above_equal to '+format(threshold)+
-                        ' with Initial Temperature '+format(Tint, '.0f')+'K.png')
+            figb.suptitle(('Reaction {}\n Threshold >= {:.1f}, ' + T_fmt).format(Rxn_Eq, threshold, *T_initials))
+            fname = ('Reaction {} Average Strength with ' + T_fmt + '.png').format(Rxn_Number, *T_initials)
+            plt.savefig(os.path.join(save_path, fname))
         plt.close(figb)
     else:
         print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
@@ -165,10 +166,8 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     axc.set(xlabel=cond_dict[x_key][1], ylabel=cond_dict[y_key][1],
             title='Normalized Sensitivity of Reaction '+Rxn_Eq+
             ' vs. Flame Speed')
-    figc.savefig(save_path+'\\Reaction '
-                 +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
-                 ' Normalized Sensitivity vs Flame Speed '+
-                 ' with Initial Temperature '+format(Tint, '.0f')+'K.png')
+    fname = ('Reaction {} Normalized Sensitivity vs Flame speed with ' + T_fmt + '.png').format(Rxn_Number, *T_initials)
+    figc.savefig(os.path.join(save_path, fname))
     plt.close(figc)
 
 
@@ -495,10 +494,10 @@ if __name__ == "__main__":
     #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
 
     #Plot Functions
-    Rxn_interest = [] #Reaction number of the reaction of interest
+    Rxn_interest = [29, 30, 31] #Reaction number of the reaction of interest
     Nrxns        = 7 #Top n-reactions
     Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
-    Four_Plot = ['P', 'F', 'Su', 'O2']
+    Four_Plot = ['T', 'F', 'Su', 'O2']
     array_type   = Flame[0]['Conditions'][12]
     if array_type == 'log':
         Logspace = True #If True all plots will use logspace
@@ -516,7 +515,7 @@ if __name__ == "__main__":
     if not len(Rxn_interest) == 0:
         for Rxns in Rxn_interest:
             rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-                                Threshold, Plot_path, Logspace)
+                                Threshold, Plot_path, Logspace, Four_Plot)
             rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
     for Trxns in Topnrxns:
         rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
