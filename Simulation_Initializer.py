@@ -18,6 +18,7 @@ import sys
 ## Burner Simulates a planar flame stabalized at some distance from burner
 Simulation_Type = '1D'
 
+# TODO: Check mix type names. Keep naming argument similar. Who reads this next must do it!
 #Mixture Type (Debug, Custom, Oxi_Dil, Fue_Dil)
 #Provide one of the four types of mixtures into
 # variable mixture_type as a string
@@ -89,7 +90,8 @@ if __name__ == "__main__":
         mix_params = (Mixture_type, oxidizer_fraction, fuel_fraction)
     else:
         raise ValueError('Mixture_type = {} is not supported'.format(Mixture_type))
-
+    # TODO: 0D needs to take in mix_params tuple as seen above.
+    # Example of implementation can be seen in 1D code below.
     if Simulation_Type == '0D':
         # zeroD.run_flow_reactor_simulation(Parameter_List, Mechanism_List)
         print('Under-Construction!')
