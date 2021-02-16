@@ -10,19 +10,23 @@ Created on Tue Jul 17 13:29:22 2018
 pushing a change in the code.
  """
 
-import cantera
-import numpy as np
-import math
-import time, sys
-import itertools as it
-import pickle
 import os
-# import copy
+import math
+import pickle
+import cantera
+import time, sys
+import numpy as np
+import itertools as it
 from datetime import datetime
 import common_functions as cf
 
 cantera.suppress_thermo_warnings()
 
+def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
+                         mgrid, msoret, loglev, safi):
+    
+    if safi:
+        file_saving()
 
 def reac_sens_parallel(temp, pressure, phi, fuel, pack):
     """ Function which saves simulation history.
@@ -734,6 +738,92 @@ def mixture_maker(gas, phi, fuel, a, mtype, fname, dname):
         mixture = gas.mole_fraction_dict()
     return mixture
 
+def file_saving():
+    
+    print('Creating Directory...')
+    #Save Path/Parent Directory
+    parent_dir = '0D_Sensitivity_Results'
+    try:
+        os.makedirs(parent_dir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+            
+    #Create Directory Name
+    now = datetime.now()
+    dt_string = now.strftime("%d_%m_%Y %H.%M.%S")
+    directory = dt_string
+
+    figures_dir = 'Figures'
+    figure_path = os.path.join(save_path, figures_dir)
+    os.makedirs(figure_path)
+
+    print('\nDirectory Created\nCreating Text File...')
+    #Text Description
+    filename  = 'Case Description.txt'
+    filename  = os.path.join(save_path, filename)
+    f         = open(filename, "w")
+    text_description = ("This file provides a description of the parameters "
+            "and specific species of interest investigated in the "
+            "Flow Reactor Simulation.\r\n"
+            "=======Species of Interest======="
+            "\r"+format(SpecificSpecies)+"\r"
+            "=================================\r\n"
+            "=====================Parameters==========================\r"
+            "Temperatures 	    = "+format(T)+" [K]\r"
+            "Pressures    	    = "+format(P)+" [atm]\r"
+            "Equivalence Ratios  = "+format(Phi)+" [phi]\r"
+            "Fuel Mole Fractions = "+format(Fuel)+" [mole fraction]\r"
+            "=========================================================\r\n"
+            "==========Number of Cases==========\r"
+            "Total Cases Simulated 	     = "+format(len(paramlist))+"\r"
+            "Cases Meeting All Conditions = "+format(len(All_Ranks))+"\r"
+            "===================================\r\n"
+            "=====Conditions=====\r"
+            "PPM Limit     = "+format(ppm*1e6)+"\r"
+            "delta_T Limit = "+format(delta_T)+"\r"
+            "====================\r\n"
+            "====================Times====================\r"
+            "Simulation Time = "+format(sim_time, '0.2f')+" [seconds]\r"
+            "Ranking Time    = "+format(rank_time, '0.2f')+" [seconds]\r"
+            "Total Time      = "+format(duration, '0.2f')+" [seconds]\r"
+            "=============================================")
+    f.write(text_description)
+    f.close()
+
+    print('\nText File Created\nSaving Files...\n')
+    #File saving
+    gas_reactions = cantera.Solution(mechanism).reaction_equations()
+    species_rxn_file = [SpecificSpecies, [len(rxns)], [a],
+                                         [gas_reactions], [SCORE3_TIME]]
+
+    # This loop can make the saving easier. Just put the thing to be
+    # saved and the file name in the save_list
+    save_list = [(int_strength, 'Integrated Strength.pkl'),
+                 (All_Ranks_Params, 'All_Ranks.pkl'),
+                 (score3_Max_sens_rxn, 'Max_Sens_Rxn.pkl'),
+                 (species_rxn_file, 'Species_Rxn.pkl'),
+                 (Parameters, 'Case_Parameters.pkl')]
+    for item in save_list:
+        file = os.path.join(save_path, item[1])
+        with open(file, 'wb') as f:
+            pickle.dump(item[0], f)
+
+    if save_time:
+        Mole_Frac_fname = 'Mole_fractions.pkl'
+        file = os.path.join(save_path, Mole_Frac_fname)
+        with open(file, "wb") as f:
+            pickle.dump(All_tTP_AMo, f)
+        f.close()
+
+        file = os.path.join(save_path, 'All_time_sens.pkl')
+        with open(file, "wb") as f:
+            pickle.dump(All_time_Sens, f)
+        f.close()
+        print('Files Saved')
+
+    else:
+        print('File Saved')
 
 if __name__ == "__main__":
     ####Set experiment parameters
@@ -822,8 +912,6 @@ if __name__ == "__main__":
     sim_package = flow_reactor_parallel(params, Packed, reac_sens_parallel)
     sim_end     = time.time()
     sim_time    = sim_end - sim_start
-    # sim_package_unfiltered = copy.deepcopy(sim_package_uf)
-    # sim_package            = sim_info_filter(sim_package_uf, dup_reactions)
     print('End of Simulations')
     print('It took '+format(sim_time, '0.5f')+' seconds to simulate all cases')
 
@@ -886,85 +974,86 @@ if __name__ == "__main__":
           ' seconds.\n')
 
     if save_files:
-        print('Creating Directory...')
-        #Creat Directory Name
-        now = datetime.now()
-        dt_string = now.strftime("%d_%m_%Y %H.%M.%S")
-        # dt_string = 'test2'
-        directory = dt_string
+        file_saving()
+        # print('Creating Directory...')
+        # #Creat Directory Name
+        # now = datetime.now()
+        # dt_string = now.strftime("%d_%m_%Y %H.%M.%S")
+        # # dt_string = 'test2'
+        # directory = dt_string
 
-        #Save Path
-        parent_dir = r'Outputs'
-        save_path = os.path.join(parent_dir, directory)
-        os.makedirs(save_path)
+        # #Save Path
+        # parent_dir = r'Outputs'
+        # save_path = os.path.join(parent_dir, directory)
+        # os.makedirs(save_path)
 
-        figures_dir = 'Figures'
-        figure_path = os.path.join(save_path, figures_dir)
-        os.makedirs(figure_path)
+        # figures_dir = 'Figures'
+        # figure_path = os.path.join(save_path, figures_dir)
+        # os.makedirs(figure_path)
 
-        print('\nDirectory Created\nCreating Text File...')
-        #Text Description
-        filename  = 'Case Description.txt'
-        filename  = os.path.join(save_path, filename)
-        f         = open(filename, "w")
-        text_description = ("This file provides a description of the parameters "
-                "and specific species of interest investigated in the "
-                "Flow Reactor Simulation.\r\n"
-                "=======Species of Interest======="
-                "\r"+format(SpecificSpecies)+"\r"
-                "=================================\r\n"
-                "=====================Parameters==========================\r"
-                "Temperatures 	    = "+format(T)+" [K]\r"
-                "Pressures    	    = "+format(P)+" [atm]\r"
-                "Equivalence Ratios  = "+format(Phi)+" [phi]\r"
-                "Fuel Mole Fractions = "+format(Fuel)+" [mole fraction]\r"
-                "=========================================================\r\n"
-                "==========Number of Cases==========\r"
-                "Total Cases Simulated 	     = "+format(len(paramlist))+"\r"
-                "Cases Meeting All Conditions = "+format(len(All_Ranks))+"\r"
-                "===================================\r\n"
-                "=====Conditions=====\r"
-                "PPM Limit     = "+format(ppm*1e6)+"\r"
-                "delta_T Limit = "+format(delta_T)+"\r"
-                "====================\r\n"
-                "====================Times====================\r"
-                "Simulation Time = "+format(sim_time, '0.2f')+" [seconds]\r"
-                "Ranking Time    = "+format(rank_time, '0.2f')+" [seconds]\r"
-                "Total Time      = "+format(duration, '0.2f')+" [seconds]\r"
-                "=============================================")
-        f.write(text_description)
-        f.close()
+        # print('\nDirectory Created\nCreating Text File...')
+        # #Text Description
+        # filename  = 'Case Description.txt'
+        # filename  = os.path.join(save_path, filename)
+        # f         = open(filename, "w")
+        # text_description = ("This file provides a description of the parameters "
+        #         "and specific species of interest investigated in the "
+        #         "Flow Reactor Simulation.\r\n"
+        #         "=======Species of Interest======="
+        #         "\r"+format(SpecificSpecies)+"\r"
+        #         "=================================\r\n"
+        #         "=====================Parameters==========================\r"
+        #         "Temperatures 	    = "+format(T)+" [K]\r"
+        #         "Pressures    	    = "+format(P)+" [atm]\r"
+        #         "Equivalence Ratios  = "+format(Phi)+" [phi]\r"
+        #         "Fuel Mole Fractions = "+format(Fuel)+" [mole fraction]\r"
+        #         "=========================================================\r\n"
+        #         "==========Number of Cases==========\r"
+        #         "Total Cases Simulated 	     = "+format(len(paramlist))+"\r"
+        #         "Cases Meeting All Conditions = "+format(len(All_Ranks))+"\r"
+        #         "===================================\r\n"
+        #         "=====Conditions=====\r"
+        #         "PPM Limit     = "+format(ppm*1e6)+"\r"
+        #         "delta_T Limit = "+format(delta_T)+"\r"
+        #         "====================\r\n"
+        #         "====================Times====================\r"
+        #         "Simulation Time = "+format(sim_time, '0.2f')+" [seconds]\r"
+        #         "Ranking Time    = "+format(rank_time, '0.2f')+" [seconds]\r"
+        #         "Total Time      = "+format(duration, '0.2f')+" [seconds]\r"
+        #         "=============================================")
+        # f.write(text_description)
+        # f.close()
 
-        print('\nText File Created\nSaving Files...\n')
-        #File saving
-        gas_reactions = cantera.Solution(mechanism).reaction_equations()
-        species_rxn_file = [SpecificSpecies, [len(rxns)], [a],
-                                             [gas_reactions], [SCORE3_TIME]]
+        # print('\nText File Created\nSaving Files...\n')
+        # #File saving
+        # gas_reactions = cantera.Solution(mechanism).reaction_equations()
+        # species_rxn_file = [SpecificSpecies, [len(rxns)], [a],
+        #                                      [gas_reactions], [SCORE3_TIME]]
 
-        # This loop can make the saving easier. Just put the thing to be
-        # saved and the file name in the save_list
-        save_list = [(int_strength, 'Integrated Strength.pkl'),
-                     (All_Ranks_Params, 'All_Ranks.pkl'),
-                     (score3_Max_sens_rxn, 'Max_Sens_Rxn.pkl'),
-                     (species_rxn_file, 'Species_Rxn.pkl'),
-                     (Parameters, 'Case_Parameters.pkl')]
-        for item in save_list:
-            file = os.path.join(save_path, item[1])
-            with open(file, 'wb') as f:
-                pickle.dump(item[0], f)
+        # # This loop can make the saving easier. Just put the thing to be
+        # # saved and the file name in the save_list
+        # save_list = [(int_strength, 'Integrated Strength.pkl'),
+        #              (All_Ranks_Params, 'All_Ranks.pkl'),
+        #              (score3_Max_sens_rxn, 'Max_Sens_Rxn.pkl'),
+        #              (species_rxn_file, 'Species_Rxn.pkl'),
+        #              (Parameters, 'Case_Parameters.pkl')]
+        # for item in save_list:
+        #     file = os.path.join(save_path, item[1])
+        #     with open(file, 'wb') as f:
+        #         pickle.dump(item[0], f)
 
-        if save_time:
-            Mole_Frac_fname = 'Mole_fractions.pkl'
-            file = os.path.join(save_path, Mole_Frac_fname)
-            with open(file, "wb") as f:
-                pickle.dump(All_tTP_AMo, f)
-            f.close()
+        # if save_time:
+        #     Mole_Frac_fname = 'Mole_fractions.pkl'
+        #     file = os.path.join(save_path, Mole_Frac_fname)
+        #     with open(file, "wb") as f:
+        #         pickle.dump(All_tTP_AMo, f)
+        #     f.close()
 
-            file = os.path.join(save_path, 'All_time_sens.pkl')
-            with open(file, "wb") as f:
-                pickle.dump(All_time_Sens, f)
-            f.close()
-            print('Files Saved')
+        #     file = os.path.join(save_path, 'All_time_sens.pkl')
+        #     with open(file, "wb") as f:
+        #         pickle.dump(All_time_Sens, f)
+        #     f.close()
+        #     print('Files Saved')
 
-        else:
-            print('File Saved')
+        # else:
+        #     print('File Saved')
