@@ -4,7 +4,7 @@ Created on Wed Sep 16 13:32:37 2020
 
 @author: Kodo Bear
 """
-# import code_2_5 as zeroD
+import Sensitized_0D_Experiment as zeroD
 import Sensitized_Flame_Experiment as oneD
 import common_functions as cf
 # import BurnerSimulation
@@ -93,7 +93,10 @@ if __name__ == "__main__":
     # TODO: 0D needs to take in mix_params tuple as seen above.
     # Example of implementation can be seen in 1D code below.
     if Simulation_Type == '0D':
-        # zeroD.run_flow_reactor_simulation(Parameter_List, Mechanism_List)
+        print(cf.parameters_string(Pressure, Temperature, mix_params))
+        zeroD.run_0d_simulation(Mechanism, Array_type, Pressure, Temperature,
+                                Fuel, Oxidizer, Diluent,
+                                mix_params, Save_files)
         print('Under-Construction!')
     elif Simulation_Type =='1D':
         print(cf.parameters_string(Pressure, Temperature, mix_params))

@@ -365,7 +365,6 @@ def file_saving(cond, fla_inf, p_list, s_info):
     Fuel_name     = cond['Mixture'][0]
     Diluent_name  = cond['Mixture'][1]
     Oxidizer_name = cond['Mixture'][2]
-    # mt            = cond['Mixture'][3]
     multif        = cond['T/F'][0]
     multio        = cond['T/F'][1]
     mg            = cond['Flame'][0]
