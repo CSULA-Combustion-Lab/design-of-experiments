@@ -13,7 +13,6 @@ import cantera as ct
 import itertools as it
 from tqdm import tqdm
 from multiprocessing import cpu_count, Pool
-# TODO: Add a separate folder with some tests for these common functions.
 
 
 def model_folder(mechanism):

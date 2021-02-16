@@ -12,20 +12,50 @@ import pickle
 import time, sys
 import numpy as np
 import cantera as ct
-import itertools as it
-from multiprocessing import cpu_count, Pool
 from datetime import datetime
-from tqdm import tqdm
 
 import flames
 import common_functions as cf
-
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
 def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
                          mgrid, msoret, loglev, safi):
-    """[Fill in information]"""
+    """
+    
+
+    Parameters
+    ----------
+    mech : TYPE
+        DESCRIPTION.
+    arrtype : TYPE
+        DESCRIPTION.
+    pres : TYPE
+        DESCRIPTION.
+    temp : TYPE
+        DESCRIPTION.
+    fue : TYPE
+        DESCRIPTION.
+    oxi : TYPE
+        DESCRIPTION.
+    dilu : TYPE
+        DESCRIPTION.
+    mix_params : TYPE
+        DESCRIPTION.
+    mgrid : TYPE
+        DESCRIPTION.
+    msoret : TYPE
+        DESCRIPTION.
+    loglev : TYPE
+        DESCRIPTION.
+    safi : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     mechan = cf.model_folder(mech)
     condi = initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
                            mix_params, mgrid, msoret, loglev)
@@ -39,7 +69,40 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
 
 def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
                    diluent, mix_params, mingrid, mul_soret, loglevel):
-    """[Fill in information]"""
+    """
+    
+
+    Parameters
+    ----------
+    mechanism : TYPE
+        DESCRIPTION.
+    array_type : TYPE
+        DESCRIPTION.
+    Press : TYPE
+        DESCRIPTION.
+    Temperature : TYPE
+        DESCRIPTION.
+    fuel : TYPE
+        DESCRIPTION.
+    oxidizer : TYPE
+        DESCRIPTION.
+    diluent : TYPE
+        DESCRIPTION.
+    mix_params : TYPE
+        DESCRIPTION.
+    mingrid : TYPE
+        DESCRIPTION.
+    mul_soret : TYPE
+        DESCRIPTION.
+    loglevel : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    conditions : TYPE
+        DESCRIPTION.
+
+    """
     #Working directory
     flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
     mixture_type = mix_params[0]
@@ -82,117 +145,69 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
                   'Sum of individual fuel percentage must add up to 1!')
             sys.exit()
 
-    #Debug loop parameters
-    if mixture_type == 'Debug':
-        DEBUG_FMT = ('Removing condition: T={:.0f}, P={:.0f}, Phi={:.3g}, '+
-                     ' FtD={:.3g}, OtD={:.3g}')
-        #Debug Mixture [Pressure, Equivalence Ratio, Fuel String,
-        #               Oxygen String, Initial Temperature of Unburned Mixture]
-        P            = 1 #Pressure [atm]
-        Phi          = 1 #Equivalence Ratio
-        fuel         = 'CH4:1' #Fuel String
-        oxidizer     = 'O2:1, N2:3.76'  #Oxidizer String
-        Tint         = 300 #Initial Temperature of Unburned Mixture
-        loglevel     = 1
-        Debug_params = [P, Phi, [fuel, oxidizer]]
-        conditions = {'Parameters': [P, Phi, None, Tint, None, array_type],
-                      'Mixture': [fuel, diluent, oxidizer, mixture_type],
-                      'Flame': [mingrid, mul_soret, loglevel],
-                      'Files': [mechanism, flame_temp],
-                      'T/F': [multifuel, multioxidizer],
-                      'Debug': [DEBUG_FMT, Debug_params]}
-
-    #Custom loop
-    elif mixture_type == 'Custom':
-        P   = [1] #Pressure [atm]
-        Phi = [0.25] #Equivalence Ratio
-        FtD = [0.05] #Fuel to Diluent Mole Fraction
-        OtD = [0.25] #Oxygen to Diluent Mole Fraction
-        conditions = {'Parameters': [P, Phi, FtD, Tint, OtD, array_type],
-                      'Mixture': [fuel, diluent, oxidizer, mixture_type],
-                      'Flame': [mingrid, mul_soret, loglevel],
-                      'Files': [mechanism, flame_temp],
-                      'T/F': [multifuel, multioxidizer]}
-
-    # All other mixture types
-    else:
-        conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
-                      'Mixture': [fuel, diluent, oxidizer, mixture_type],
-                      'Flame': [mingrid, mul_soret, loglevel],
-                      'Files': [mechanism, flame_temp],
-                      'T/F': [multifuel, multioxidizer]}
+    conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
+                  'Mixture': [fuel, diluent, oxidizer, mixture_type],
+                  'Flame': [mingrid, mul_soret, loglevel],
+                  'Files': [mechanism, flame_temp],
+                  'T/F': [multifuel, multioxidizer]}
     return conditions
 
 
 def run_simulations(conditions, paramlist):
-    """[Insert Information]"""
-    mt = conditions['Mixture'][3]
+    """
+    
+
+    Parameters
+    ----------
+    conditions : TYPE
+        DESCRIPTION.
+    paramlist : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    flame_info_filtered : TYPE
+        DESCRIPTION.
+    flame_info_unfiltered : TYPE
+        DESCRIPTION.
+    sim_info : TYPE
+        DESCRIPTION.
+
+    """
+    # mt = conditions['Mixture'][3]
     tic = time.time()
     chem = conditions['Files'][0]
     gas = ct.Solution(chem)
-    ##########################Debug loop#######################################
-    # TODO: Can the debug loop be deleted?
-    if mt == 'Debug':
-        Debug_params = conditions['Debug'][1]
-        """[Fill in information]"""
-        print('Debugging in process..')
-        print('\nConditions Used:'
-              '\nPressure: '+format(Debug_params[0])+' [atm]'
-              '\nPhi: '+format(Debug_params[1])+
-              '\nFuel: '+format(Debug_params[2][0])+
-              '\nOxidizer: '+format(Debug_params[2][1])+
-              '\nUnburned Temperature: '+format(Tint)+' [K]')
-        sim_start  = time.time()
-        flame_info_debug = flame_sens(*Debug_params, conditions)
-        sim_end    = time.time()
-        sim_time   = sim_end - sim_start
-        converged    = 0
-        for x in flame_info_debug:
-            if x['Flame'][0] is None:
-                continue
-            else:
-                converged += 1
-        flame_info_unfiltered = copy.deepcopy(flame_info_debug)
-        duplicate_rxns = cf.duplicate_reactions(gas)
-        flame_info_filtered = flame_info_filter(flame_info_debug, duplicate_rxns)
-        print('\nDebuggin complete!')
-        toc      = time.time()
-        duration = toc - tic
-        print('Dubugging time: '+format(duration, '0.5f')+' seconds\n')
-        sim_info = [sim_time, converged, duration]
-        return flame_info_filtered, flame_info_unfiltered, sim_info
-
-    ########################Simulation loop####################################
-    else:
-        print('Initial number of cases: '+format(len(paramlist)))
-        print('\nStart of simulations...')
-        sim_start  = time.time()
-        flame_info = cf.parallelize(paramlist, conditions, flame_sens)
-        sim_end    = time.time()
-        sim_time   = sim_end - sim_start
-        print('End of simulations')
-        print('Simulations took '+format(sim_time, '0.5f')+' seconds.')
-        print('\nStart flame information filtering...')
-        filter_start = time.time()
-        converged    = 0
-        for x in flame_info:
-            if x['Flame'][0] is None:
-                continue
-            else:
-                converged += 1
-        flame_info_unfiltered = copy.deepcopy(flame_info)
-        duplicate_rxns = cf.duplicate_reactions(gas)
-        flame_info_filtered = flame_info_filter(flame_info, duplicate_rxns)
-        filter_end  = time.time()
-        filter_time = filter_end - filter_start
-        print('End of filtering')
-        print('Filtering took '+format(filter_time, '0.5f')+ ' seconds.')
-        print('\nNumber of cases converged:' +str(converged))
-        toc      = time.time() #Main Code Time End
-        duration = toc-tic
-        print('Total time '+format(duration, '0.5f')+' seconds.\n')
-        sim_info = [sim_time, converged, duration]
-        return flame_info_filtered, flame_info_unfiltered, sim_info
+   
+    print('Initial number of cases: '+format(len(paramlist)))
+    print('\nStart of simulations...')
+    sim_start  = time.time()
+    flame_info = cf.parallelize(paramlist, conditions, flame_sens)
+    sim_end    = time.time()
+    sim_time   = sim_end - sim_start
+    print('End of simulations')
+    print('Simulations took '+format(sim_time, '0.5f')+' seconds.')
+    print('\nStart flame information filtering...')
+    filter_start = time.time()
+    converged    = 0
+    for x in flame_info:
+        if x['Flame'][0] is None:
+            continue
+        else:
+            converged += 1
+    flame_info_unfiltered = copy.deepcopy(flame_info)
+    duplicate_rxns = cf.duplicate_reactions(gas)
+    flame_info_filtered = flame_info_filter(flame_info, duplicate_rxns)
+    filter_end  = time.time()
+    filter_time = filter_end - filter_start
+    print('End of filtering')
+    print('Filtering took '+format(filter_time, '0.5f')+ ' seconds.')
+    print('\nNumber of cases converged:' +str(converged))
+    toc      = time.time() #Main Code Time End
+    duration = toc-tic
+    print('Total time '+format(duration, '0.5f')+' seconds.\n')
+    sim_info = [sim_time, converged, duration]
+    return flame_info_filtered, flame_info_unfiltered, sim_info
 
 
 def flame_sens(p, T, mix, cond):
@@ -202,7 +217,7 @@ def flame_sens(p, T, mix, cond):
     Parameters
     ----------
     p : float
-        Pressure in UNITS??
+        Pressure in atmospheres.
     T : float
         Temperature in Kelvin.
     mix : dict
@@ -259,7 +274,22 @@ def flame_sens(p, T, mix, cond):
 
 
 def flame_info_filter(flame_information, duplicate_reactions):
-    """[Fill in information]"""
+    """
+    
+
+    Parameters
+    ----------
+    flame_information : TYPE
+        DESCRIPTION.
+    duplicate_reactions : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    flame_information : TYPE
+        DESCRIPTION.
+
+    """
     for f in flame_information:
         if f['Flame'][0] is None:
             continue
@@ -273,18 +303,28 @@ def flame_info_filter(flame_information, duplicate_reactions):
     return flame_information
 
 
-def mixture_maker(gas, phi, fuel, oxidizer):
-    """[Fill in information]"""
-    gas.set_equivalence_ratio(phi, (fuel), (oxidizer))
-    Mix_dict = gas.mole_fraction_dict()
-    Mixture = []
-    for key, value in Mix_dict.items():
-        temp = [key,value]
-        Mixture.append(temp)
-    return Mixture
-
-
 def mixture_percentage(components, mix):
+    """
+    
+
+    Parameters
+    ----------
+    components : TYPE
+        DESCRIPTION.
+    mix : TYPE
+        DESCRIPTION.
+
+    Raises
+    ------
+    TypeError
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
     if type(components) is str:  # Single Component
         return mix[components]
     elif type(components) is list:
@@ -296,7 +336,27 @@ def mixture_percentage(components, mix):
     else:
         raise TypeError
 
+
 def file_saving(cond, fla_inf, p_list, s_info):
+    """
+    
+
+    Parameters
+    ----------
+    cond : TYPE
+        DESCRIPTION.
+    fla_inf : TYPE
+        DESCRIPTION.
+    p_list : TYPE
+        DESCRIPTION.
+    s_info : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     save_time_start = time.time()
     p             = cond['Parameters'][0]
     T             = cond['Parameters'][1]
@@ -305,7 +365,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     Fuel_name     = cond['Mixture'][0]
     Diluent_name  = cond['Mixture'][1]
     Oxidizer_name = cond['Mixture'][2]
-    mt            = cond['Mixture'][3]
+    # mt            = cond['Mixture'][3]
     multif        = cond['T/F'][0]
     multio        = cond['T/F'][1]
     mg            = cond['Flame'][0]
@@ -321,180 +381,71 @@ def file_saving(cond, fla_inf, p_list, s_info):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
-    #########################Debug directory###################################
-    if mt == 'Debug':
-        """[Fill in information]"""
-        D_params = cond['Debug'][1]
-        print('Start debug file save...')
-        debug_dir = 'debug'
-        debug_path = os.path.join(parent_dir, debug_dir)
-        if not os.path.exists(debug_path):
-            try:
-                os.makedirs(debug_path)
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
 
-        figures_dir = 'Flame_Sensitivity_Plots'
-        save_path   = os.path.join(parent_dir, debug_dir)
-        figure_path = os.path.join(save_path, figures_dir)
-        if not os.path.exists(figure_path):
-            try:
-                os.makedirs(figure_path)
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
+    #Create Directory Name
+    print('Creating Directory...')
+    now = datetime.now()
+    dt_string = now.strftime("%Y_%m_%d %H.%M.%S Flame_Speed_Sens")
+    directory = dt_string
+    save_path = os.path.join(parent_dir, directory)
+    os.makedirs(save_path)
 
-        print('\nCreating text file...')
-        #Text Description
-        filename  = 'Case Description.txt'
-        filename  = os.path.join(save_path, filename)
-        f         = open(filename, "w")
-        if mt == 'Oxi_Dil':
-            F_O_text  = "\nOxidizer to Diluent Fraction: "
-        elif mt == 'Fue_Dil':
-            F_O_text  = "\nFuel to Diluent Fraction: "
-        else:
-            print('Error, check string in text description')
-        if multif:
-            MF_text = ("Multifuel = "+format(multif)+"\n"
-                       "Fuels\Percentages = "+format((Fuel_name))+"\n")
-        else:
-            MF_text = "Multifuel = "+format(multif)+"\n"
-        if multio:
-            MO_text = ("Multioxidizer = "+format(multio)+"\n"
-                       "Oxidizer\Percentages = "+format((Oxidizer_name))+"\n")
-        else:
-            MO_text = "Multioxidizer = "+format(multio)+"\n"
-        text_description = ("This file provides debug information.\n The "
-                            "following information are the parameters "
-                            "and cases simulated\n\n"
-                            "==========Properties==========\n"
-                            "Mechanism: "+chem+"\n"
-                            "Fuel: "+str(Fuel_name)+"\n"
-                            "Oxidizer: "+str(Oxidizer_name)+"\n"
-                            "Diluent: "+str(Diluent_name)+"\n"
-                            +MF_text+MO_text+
-                            "==============================\n"
-                            "\n==========Parameters==========\n"
-                            "Initial Temperature: "+format(T)
-                            +" [Kelvin]\nPressure: "
-                            +format(D_params[0])+" [atm]\n"
-                            "Equivalence Ratio: "+format(D_params[1])+
-                            F_O_text+format(D_params[2][0])+"\n"
-                            "==============================\n"
-                            "\n==========Flame-Information==========\n"
-                            "FLame Speed: "+format(fla_inf['Flame'][1])
-                            +" [m/s]"
-                            "\nMingrid = "+format(mg)+
-                            "\nMult_Soret = "+format(ms)+
-                            "\n=====================================\n"
-                            "\n==============Time==============\n"
-                            "Run time: "+format(dur, '0.5f')+" [s]\n"
-                            "================================")
-        f.write(text_description)
-        f.close()
-        print('\nText file created')
+    figures_dir = 'Flame_Sensitivity_Plots'
+    figure_path = os.path.join(save_path, figures_dir)
+    os.makedirs(figure_path)
+    print('Directory Created')
 
-        debug_file = os.path.join(debug_path, 'flame_info_debug.pkl')
-        with open(debug_file, 'wb') as f:
-            pickle.dump(fla_inf, f)
-        print('End debug file save')
+    print('\nCreating text file...')
+    #Text Description
+    filename  = 'Case Description.txt'
+    filename  = os.path.join(save_path, filename)
+    f         = open(filename, "w")
 
-    ##########################Normal directory#################################
+    if multif:
+        MF_text = ("Multifuel = "+format(multif)+"\n"
+                   "Fuels\Percentages = "+format((Fuel_name))+"\n")
     else:
-        """[Fill in information]"""
-        #Create Directory Name
-        print('Creating Directory...')
-        now = datetime.now()
-        dt_string = now.strftime("%Y_%m_%d %H.%M.%S Flame_Speed_Sens")
-        directory = dt_string
-        save_path = os.path.join(parent_dir, directory)
-        os.makedirs(save_path)
+        MF_text = "Multifuel = "+format(multif)+"\n"
+    if multio:
+        MO_text = ("Multioxidizer = "+format(multio)+"\n"
+                   "Oxidizer\Percentages = "+format((Oxidizer_name))+"\n")
+    else:
+        MO_text = "Multioxidizer = "+format(multio)+"\n"
 
-        figures_dir = 'Flame_Sensitivity_Plots'
-        figure_path = os.path.join(save_path, figures_dir)
-        os.makedirs(figure_path)
-        print('Directory Created')
+    text_description = ("This file provides simulation information.\n"
+                        "The following information are the parameters "
+                        "and cases simulated\n\n"
+                        "==========Properties==========\n"
+                        "Mechanism: "+chem+"\n"
+                        "Fuel: "+str(Fuel_name)+"\n"
+                        "Oxidizer: "+str(Oxidizer_name)+"\n"
+                        "Diluent: "+str(Diluent_name)+"\n"
+                        +MF_text+MO_text+
+                        "==============================\n\n"
+                        + cf.parameters_string(p, T, mix_params) +
+                        "\n\n======Flame Simulation Information======"
+                        "\nMingrid = "+format(mg)+
+                        "\nMult_Soret = "+format(ms)+
+                        "\n========================================\n"
+                        "\n=============Time/Converged=============\n"
+                        "Total Cases: "+format(len(p_list))+"\n"
+                        "Sim time: "+format(s_time, '0.5f')+" [s]\n"
+                        "Cases Converged: "+str(conv)+"\n"
+                        "Run time: "+format(dur, '0.5f')+" [s]\n"
+                        "========================================")
 
-        print('\nCreating text file...')
-        #Text Description
-        filename  = 'Case Description.txt'
-        filename  = os.path.join(save_path, filename)
-        f         = open(filename, "w")
+    f.write(text_description)
+    f.close()
+    print('Text file created')
 
-        if multif:
-            MF_text = ("Multifuel = "+format(multif)+"\n"
-                       "Fuels\Percentages = "+format((Fuel_name))+"\n")
-        else:
-            MF_text = "Multifuel = "+format(multif)+"\n"
-        if multio:
-            MO_text = ("Multioxidizer = "+format(multio)+"\n"
-                       "Oxidizer\Percentages = "+format((Oxidizer_name))+"\n")
-        else:
-            MO_text = "Multioxidizer = "+format(multio)+"\n"
-
-        text_description = ("This file provides simulation information.\n"
-                            "The following information are the parameters "
-                            "and cases simulated\n\n"
-                            "==========Properties==========\n"
-                            "Mechanism: "+chem+"\n"
-                            "Fuel: "+str(Fuel_name)+"\n"
-                            "Oxidizer: "+str(Oxidizer_name)+"\n"
-                            "Diluent: "+str(Diluent_name)+"\n"
-                            +MF_text+MO_text+
-                            "==============================\n\n"
-                            + cf.parameters_string(p, T, mix_params) +
-                            "\n\n======Flame Simulation Information======"
-                            "\nMingrid = "+format(mg)+
-                            "\nMult_Soret = "+format(ms)+
-                            "\n========================================\n"
-                            "\n=============Time/Converged=============\n"
-                            "Total Cases: "+format(len(p_list))+"\n"
-                            "Sim time: "+format(s_time, '0.5f')+" [s]\n"
-                            "Cases Converged: "+str(conv)+"\n"
-                            "Run time: "+format(dur, '0.5f')+" [s]\n"
-                            "========================================")
-        if mt == 'Custom':
-            """[Fill in information]"""
-            text_description = ("The following simulation was a custom"
-                            " run using the following properties and "
-                            " parameters.\n\n"
-                            "==========Properties==========\n"
-                            "Mechanism: "+chem+"\n"
-                            "Fuel: "+str(Fuel_name)+"\n"
-                            "Oxidizer: "+str(Oxidizer_name)+"\n"
-                            "Diluent: "+str(Diluent_name)+"\n"
-                            "==============================\n"
-                            "\n================Parameters================"
-                            "\nInitial Temperature: "+format(Tin)+
-                            " [Kelvin]\nPressure Range: "+format(p)+
-                            " [atm]\nFuel Range: "+format(ftd)+
-                            " [mole fraction]\nOxygen Range: "
-                            +format(otd)+" [mole fraction]\n"
-                            "==========================================\n"
-                            "\n======Flame Simulation Information======"
-                            "\nMingrid = "+format(mg)+
-                            "\nMult_Soret = "+format(ms)+
-                            "\n========================================\n"
-                            "\n=============Time/Converged=============\n"
-                            "Total Cases: "+format(len(p_list))+"\n"
-                            "Sim time: "+format(s_time, '0.5f')+" [s]\n"
-                            "Cases Converged: "+str(conv)+"\n"
-                            "Run time: "+format(dur, '0.5f')+" [s]\n"
-                            "========================================")
-        f.write(text_description)
-        f.close()
-        print('Text file created')
-
-        print('\nStart file saving...')
-        file = os.path.join(save_path, 'Flame Information.pkl')
-        with open(file, 'wb') as f:
-            pickle.dump(fla_inf, f)
-        save_time_end = time.time()
-        save_time = save_time_end - save_time_start
-        print('Total File Save Time: '+format(save_time, '0.5f')+' seconds.\n')
-        print('End file saving')
+    print('\nStart file saving...')
+    file = os.path.join(save_path, 'Flame Information.pkl')
+    with open(file, 'wb') as f:
+        pickle.dump(fla_inf, f)
+    save_time_end = time.time()
+    save_time = save_time_end - save_time_start
+    print('Total File Save Time: '+format(save_time, '0.5f')+' seconds.\n')
+    print('End file saving')
 
 
 if __name__ == "__main__":
@@ -503,8 +454,6 @@ if __name__ == "__main__":
     #Set experiment parameters
     mech_name = 'Li_model_modified_trioxane.cti' #Mechanism file
     Mechanism = cf.model_folder(mech_name)
-
-    # Mechanism = os.path.join('Models', mech_name)
 
     #Parameters for main loop
     # P and Phi are used in all cases.
@@ -552,12 +501,3 @@ if __name__ == "__main__":
     run_flame_simulation(Mechanism, Array_type, Press, E_Ratio, F_to_D,
                          O_to_D, Tint, Fuel, Oxidizer, Diluent, Air, Mingrid,
                          Mul_soret, Loglevel, Mixture_type, Save_files)
-    # Conditions = initialization(Mechanism, Array_type, Press, E_Ratio, F_to_D,
-    #                             O_to_D, Tint, Fuel, Oxidizer, Diluent, Air,
-    #                             Mingrid, Mul_soret, Loglevel, Mixture_type)
-    # Totaliterations, Paramlist = case_maker(Conditions)
-    # Flame_info, Flame_info_unfiltered, Sim_info = run_simulations(Conditions,
-    #                                                               Paramlist,
-    #                                                               Mixture_type)
-    # if Save_files:
-    #     file_saving(Conditions, Flame_info, Paramlist, Sim_info)
