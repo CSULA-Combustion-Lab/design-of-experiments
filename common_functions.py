@@ -97,7 +97,12 @@ def case_maker(cond):
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer]}
         for 0D
-        conditions =
+        conditions = {'Parameters': [Press, Temperature, mix_params, array_type], 
+                      'Mixture':[fuel_name, diluent_name, oxidizer_name, mixture_type],
+                      'ZeroD': [SpecificSpecies, dup_reactions],
+                      'Time_Info': [starttime, endtime, SCORE3_TIME],
+                      'Files': [mechanism],
+                      'Limits': [delta_T, ppm]}
     Returns
     -------
     paramlist : list
@@ -112,7 +117,7 @@ def case_maker(cond):
     Temperature  = cond['Parameters'][1]
     mix_params   = cond['Parameters'][2]
     array_type   = cond['Parameters'][3]
-    chem     = cond['Files'][0]
+    chem         = cond['Files'][0]
 
 
     # Create ranges for the parameters
@@ -163,16 +168,6 @@ def case_maker(cond):
     mixlist = []
     mix_loop = it.product(param1, param2)  # Two parameters for looping.
 
-    if mix_type == 'Debug':
-        print('Debug Loop Enabled')
-    elif mix_type == 'Custom':
-        print('Custom Loop Enabled')
-        #Under Construction
-        # for i in p:
-        #     for k in otd:
-        #         paramlist.append((i, ftd, k))
-        #Under Construction
-
     # TODO: The quantity that the code is referring to as "X to diluent ratio"
     # is very confusing.
     # Initializer calls it "Diluent_Percentage" which I would think of as
@@ -181,7 +176,7 @@ def case_maker(cond):
     # I would understand to mean "X/diluent".
     # But, the quantity is actually "X/(X+diluent)", which I would call
     # "X% in X mixture," like "O2 % in oxidizer." I've started fixing this.
-    elif mix_type == 'Oxi_Dil':
+    if mix_type == 'Oxi_Dil':
         print('Oxidizer to Diluent Loop Enabled')
         for equiv, ox_to_dil in mix_loop:
             if ox_to_dil > 1:
