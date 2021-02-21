@@ -78,7 +78,7 @@ Loglevel  = 0
 
 #True/False statements
 Save_files = True # If true, save files for plotting script
-
+Save_time  = True # Only used for zeroD. If true, saves time for GUI
 if __name__ == "__main__":
 
     # Package the mixture parameters. Each mixture type requires two variables
@@ -90,13 +90,14 @@ if __name__ == "__main__":
         mix_params = (Mixture_type, oxidizer_fraction, fuel_fraction)
     else:
         raise ValueError('Mixture_type = {} is not supported'.format(Mixture_type))
+        
     # TODO: 0D needs to take in mix_params tuple as seen above.
     # Example of implementation can be seen in 1D code below.
     if Simulation_Type == '0D':
         print(cf.parameters_string(Pressure, Temperature, mix_params))
         zeroD.run_0d_simulation(Mechanism, Array_type, Pressure, Temperature,
                                 Fuel, Oxidizer, Diluent,
-                                mix_params, Save_files)
+                                mix_params, Save_files, Save_time)
         print('Under-Construction!')
     elif Simulation_Type =='1D':
         print(cf.parameters_string(Pressure, Temperature, mix_params))
