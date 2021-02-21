@@ -12,6 +12,7 @@ pushing a change in the code.
 
 import os
 import math
+import errno
 import pickle
 import cantera
 import time, sys
@@ -22,13 +23,112 @@ import common_functions as cf
 
 cantera.suppress_thermo_warnings()
 
-def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
-                         mgrid, msoret, loglev, safi):
+def run_0D_simulation(mech, arrtype, pres, temp, 
+                      fue, oxi, dilu, mix_params, safi, sati):
+    """
     
-    if safi:
-        file_saving()
 
-def reac_sens_parallel(temp, pressure, phi, fuel, pack):
+    Parameters
+    ----------
+    mech : TYPE
+        DESCRIPTION.
+    arrtype : TYPE
+        DESCRIPTION.
+    pres : TYPE
+        DESCRIPTION.
+    temp : TYPE
+        DESCRIPTION.
+    fue : TYPE
+        DESCRIPTION.
+    oxi : TYPE
+        DESCRIPTION.
+    dilu : TYPE
+        DESCRIPTION.
+    mix_params : TYPE
+        DESCRIPTION.
+    safi : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    mechan = cf.model_folder(mech)
+    condi = initialization(mechan, arrtype, pres, temp, 
+                           fue, oxi, dilu, mix_params)
+    paralist = cf.case_maker(condi)
+    zerod_info, zerod_info_unfiltered, siminfo = run_simulations(condi,
+                                                                  paralist)
+    if safi:
+        file_saving(condi, zerod_info, paralist, siminfo, sati)
+
+def initialization():
+    print("Under Construction")
+    
+def run_simulations():
+    print("Under Construction")
+    
+# def ranking_process():
+#     print('Start Ranking Process')
+#     Cases = len(params)
+#     case  = 0
+#     rank_start = time.time()
+#     update_progress(0)
+#     for sims in sim_package:
+#         [t_T_P_AMol, t_SMol, t_AllSpecieSens,
+#          All_time_Sens_test, All_tTP_AMo_test,
+#          temp, mix, pressure, phi, fuel] = sims
+#         temp_condition = T_limit(t_T_P_AMol, temp, delta_T)
+#         if temp_condition == 1:
+#             if debug:
+#                 print('T limit ' + DEBUG_FMT.format(temp, pressure, phi, fuel))
+#             del All_tTP_AMo_test[-1]
+#             del All_time_Sens_test[-1]
+#             case +=1
+#             update_progress(case/Cases)
+#             continue
+#         else:
+#             All_tTP_AMo.append(All_tTP_AMo_test)
+#             All_time_Sens.append(All_time_Sens_test)
+#             condition_info = {
+#                 'temperature': temp, 'pressure': pressure*101.325,
+#                 'equivalence': phi, 'fuel': fuel}
+#             Parameters.append(condition_info)
+
+#         #initialize parameters
+#         SpecificSpecieSens = []   #list of sens of interest per rxn
+#         all_ranks          = []
+#         senstime           = np.array([x[0] for x in t_AllSpecieSens])   #times for all specie sensitivities
+#         sensitivities      = np.absolute(np.array([x[1] for x in t_AllSpecieSens])) #sensitivities
+#         molfrac_conditions = mole_fractions()
+#         specific_sens()
+#         sensitivity_score()
+#         sensitivity_score2()
+#         sensitivity_score3()
+#         rank_all(SpecificSpecieSens)
+#         IS_norm = integrated(t_AllSpecieSens, SpecificSpecieNumbers, len(rxns),
+#                              molfrac_conditions)
+#         int_strength.append([condition_info, IS_norm])
+#         case += 1
+#         update_progress(case/Cases)
+
+#     rank_end  = time.time()
+#     rank_time = rank_end - rank_start
+#     print('End Ranking Process')
+#     print('It took '+format(rank_time, '0.5f')+' seconds to rank all cases')
+
+#     toc       = time.time()
+#     duration  = toc-tic
+#     numbr_mix = len(Phi)
+#     tp_combs  = len(T)*len(P)
+#     print('Number of cases ran', len(paramlist))
+#     print('Number of cases that meet all conditions', len(All_Ranks))
+#     print(numbr_mix, 'mixture with',tp_combs,
+#           'Temperature/Pressure combinations took '+format(duration, '0.5f')+
+#           ' seconds.\n')
+
+def reac_sens_parallel(pressure, temp, mix, pack):
     """ Function which saves simulation history.
 
     This function saves the different parameters through each time step
@@ -74,31 +174,23 @@ def reac_sens_parallel(temp, pressure, phi, fuel, pack):
 
     """
 
-    starttime       = pack['Time'][0]
-    endtime         = pack['Time'][1]
-    fuel_name       = pack['Names'][0]
-    diluent_name    = pack['Names'][1]
-    SpecificSpecies = pack['Names'][2]
-    mix_type        = pack['Mixture_Info'][0]
-    mechanism       = pack['Mixture_Info'][1]
-    dup_reactions   = pack['Mixture_Info'][2]
+    # fuel_name       = pack['Mixture'][0]
+    # diluent_name    = pack['Mixture'][1]
+    # mix_type        = pack['Mixture_Info'][0]
+    # a               = pack['Parameters'][5]
+    SpecificSpecies = pack['ZeroD'][4]
+    mechanism       = pack['Files'][0]
+    dup_reactions   = pack['ZeroD'][5]
     starttime       = pack['Time_Info'][0]
     endtime         = pack['Time_Info'][1]
     SCORE3_TIME     = pack['Time_Info'][2]
-    a               = pack['Parameters'][5]
 
-
-    # oxygen   = a/phi*fuel
-    # diluent  = 1 - oxygen - fuel
-    # mix      = {fuel_name:fuel, 'O2':oxygen, diluent_name:diluent}
-    gas1     = cantera.Solution(mechanism)
-    mix      = mixture_maker(gas1, phi, fuel, a,
-                             mix_type, fuel_name, diluent_name)
+    # mix      = mixture_maker(gas1, phi, fuel, a,
+    #                          mix_type, fuel_name, diluent_name)
+    # mix = cf.case_maker(pack)
+    gas1 = cantera.Solution(mechanism)
     gas1.TPX = temp, pressure*101325, mix
     rxns     = range(0,len(gas1.reaction_equations()))
-    #Insert for test#
-    # dup_reactions = duplicate_reactions(gas1)
-    #End Insert#
 
     reac = cantera.IdealGasConstPressureReactor(gas1, name=None, energy='on')
     sim  = cantera.ReactorNet([reac])
@@ -127,8 +219,10 @@ def reac_sens_parallel(temp, pressure, phi, fuel, pack):
     All_time_Sens_test = t_AllSpecieSens
     All_tTP_AMo_test = t_T_P_AMol
 
+    # package = [t_T_P_AMol, t_SMol, t_AllSpecieSens, All_time_Sens_test,
+    #            All_tTP_AMo_test, temp, mix, pressure, phi, fuel]
     package = [t_T_P_AMol, t_SMol, t_AllSpecieSens, All_time_Sens_test,
-               All_tTP_AMo_test, temp, mix, pressure, phi, fuel]
+               All_tTP_AMo_test, temp, mix, pressure]
 
     return package
 
@@ -411,7 +505,7 @@ def sensitivity_score2():
     max_rxn[2] = pressure*101.325
     rxn_name   = [None]*(len(SpecificSpecies)+1)
     rxn_name[0] = {'temperature': temp, 'pressure': pressure*101.325,
-                   'equivalence': phi, 'fuel': fuel}
+                   'mixture': mix}
 
     max_sens = np.zeros(len(rxns))
     rxn_t    = np.zeros(len(rxns))
@@ -439,7 +533,7 @@ def sensitivity_score3():
     max_rxn[2] = pressure*101.325
     rxn_name   = [None]*(num_spec+1)
     rxn_name[0] = {'temperature': temp, 'pressure': pressure*101.325,
-                   'equivalence': phi, 'fuel': fuel, 'score3time': SCORE3_TIME}
+                   'mixture': mix, 'score3time': SCORE3_TIME}
 
     time = np.array([x[0] for x in t_AllSpecieSens])
     ind = np.argwhere(time > SCORE3_TIME)[0][0]
@@ -466,7 +560,7 @@ def rank_all(SpecificSpecieSens):
     data3 = np.absolute(np.array([x[:] for x in SpecificSpecieSens]))
     all_ranks_params    = [None]*1
     all_ranks_params[0] = {'temperature': temp, 'pressure': pressure*101.325,
-                         'equivalence': phi, 'fuel': fuel}
+                         'mixture': mix}
     step  = [None]*len(rxns)
     for i in range(0,len(senstime)):
         for j in range(0,len(SpecificSpecies)):
@@ -723,22 +817,25 @@ def calculate_a(fuel, mech):
     return a
 
 
-def mixture_maker(gas, phi, fuel, a, mtype, fname, dname):
-    if mtype == "Fuel_Phi":
-        oxygen   = a/phi*fuel
-        diluent  = 1 - oxygen - fuel
-        mixture  = {fname:fuel, 'O2':oxygen, dname:diluent}
-    elif mtype == "DiluentMix_Fuel":
-        fstring = fname+":"+str(fuel)+","+dname+":"+str(1-fuel)
-        gas.set_equivalence_ratio(phi, (fstring), ('O2'))
-        mixture = gas.mole_fraction_dict()
-    elif mtype == "DiluentMix_Oxi":
-        fstring = 'O2'+":"+str(fuel)+","+dname+":"+str(1-fuel)
-        gas.set_equivalence_ratio(phi, (fname), (fstring))
-        mixture = gas.mole_fraction_dict()
-    return mixture
+# def mixture_maker(gas, phi, fuel, a, mtype, fname, dname):
+#     if mtype == "Fuel_Phi":
+#         oxygen   = a/phi*fuel
+#         diluent  = 1 - oxygen - fuel
+#         mixture  = {fname:fuel, 'O2':oxygen, dname:diluent}
+#     elif mtype == "DiluentMix_Fuel":
+#         fstring = fname+":"+str(fuel)+","+dname+":"+str(1-fuel)
+#         gas.set_equivalence_ratio(phi, (fstring), ('O2'))
+#         mixture = gas.mole_fraction_dict()
+#     elif mtype == "DiluentMix_Oxi":
+#         fstring = 'O2'+":"+str(fuel)+","+dname+":"+str(1-fuel)
+#         gas.set_equivalence_ratio(phi, (fname), (fstring))
+#         mixture = gas.mole_fraction_dict()
+#     return mixture
 
-def file_saving():
+def file_saving(condi, zerod_info, paralist, siminfo, sati):
+    
+    P = condi['Parameters'][0]
+    T = condi['Parameters'][1]
     
     print('Creating Directory...')
     #Save Path/Parent Directory
@@ -753,8 +850,10 @@ def file_saving():
     now = datetime.now()
     dt_string = now.strftime("%d_%m_%Y %H.%M.%S")
     directory = dt_string
+    save_path = os.path.join(parent_dir, directory)
+    os.makedirs(save_path)
 
-    figures_dir = 'Figures'
+    figures_dir = 'ZeroD_Sensitivity_Plots'
     figure_path = os.path.join(save_path, figures_dir)
     os.makedirs(figure_path)
 
@@ -831,16 +930,19 @@ if __name__ == "__main__":
     # mechanism = cf.model_folder(mech_name)
     mechanism = os.path.join('Models',mech_name)
     #Parameters for main loop
-    T    = np.linspace(600, 2500, 2)                        #Temperature [K]
-    P    = np.logspace(np.log10(.1), np.log10(100), 2)      #Pressure [atm]
-    Phi  = np.logspace(np.log10(0.00025), np.log10(2.5), 2) #Equivalence ratio
-    Fuel = np.logspace(np.log10(0.00001), np.log10(0.1), 2) #Fuel mole fraction
-    Dilper = np.logspace(np.log10(0.00001), np.log10(0.1), 2)
+    Temperature = [600, 2500, 4]    #Temperature [K]
+    Press       = [.1, 100, 4]      #Pressure [atm]
+    Phi         = [0.00025, 2.5, 4] #Equivalence ratio
+    Fuel        = [0.00001, 0.1, 4] #Fuel mole fraction
+    Dilper       = [0.00001, 0.1, 4]
 
     #Parameters for mixture
     fuel_name = 'H2' #chemical formula of fuel
     diluent_name = 'N2' #chemical formula of diluent
-    mixture_type = 'Custom'
+    oxidizer_name = 'O2'
+    mixture_type = 'phi_fuel'
+    array_type = 'lin'
+    mix_params = (mixture_type, Phi, Fuel)
 
     SpecificSpecies = ['OH'] #Species of interest for rxn ranking data
     starttime = 0     #in the case a reading is too early
@@ -849,7 +951,7 @@ if __name__ == "__main__":
     ppm       = 1/1000000 #one ppm
     SCORE3_TIME = starttime + (endtime - starttime)*0.75 # time to evaluate score3
 
-    save_files = True # If true, save files for plotting script
+    save_files = False # If true, save files for plotting script
     save_time  = True # If true, also save files for GUI. Not recommended for large runs
     debug = False  # If true, print lots of information for debugging.
 
@@ -858,8 +960,8 @@ if __name__ == "__main__":
     tic = time.time()
     #initializing
     iteration       = 0
-    totaliterations = len(T)*len(P)*len(Fuel)*len(Phi)
-    paramlist       = list(it.product(T,P,Phi,Fuel))
+    totaliterations = len(Temperature)*len(Press)*len(Fuel)*len(Phi)
+    paramlist       = list(it.product(Temperature,Press,Phi,Fuel))
     Parameters      = []
     #first scoring criteria
     score_T_P_MaxSensavg = []
@@ -893,41 +995,50 @@ if __name__ == "__main__":
     SpecificSpecieNumbers = [names.index(speci) for speci in SpecificSpecies]
 
     #Package key parameters for simulations
-    Packed = {'Time': [starttime, endtime],
-              'Names': [fuel_name, diluent_name, SpecificSpecies],
-              'Parameters': [T, P, Phi, Fuel, Dilper, a],
-              'Mixture_Info':[mixture_type, mechanism, dup_reactions],
+    Packed = {'Parameters': [Press, Temperature, mix_params, array_type], 
+              'Mixture':[fuel_name, diluent_name, oxidizer_name, mixture_type],
+              'ZeroD': [SpecificSpecies, dup_reactions],
               'Time_Info': [starttime, endtime, SCORE3_TIME],
+              'Files': [mechanism],
               'Limits': [delta_T, ppm]}
+    # Old Method (Saved for testing purposes while code is being reworked.)
+    # conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
+    #                   'Mixture': [fuel, diluent, oxidizer, mixture_type],
+    #                   'Flame': [mingrid, mul_soret, loglevel],
+    #                   'Files': [mechanism, flame_temp],
+    #                   'T/F': [multifuel, multioxidizer]}
 
     print('Initial Number of Cases: '+format(len(paramlist)))
     sim_start   = time.time()
-    if mixture_type == 'Custom':
-        params = reduce_cases(paramlist, a, debug)
-    else:
-        params = paramlist
+    # Old Method (Saved for testing purposes while code is being reworked.)
+    # if mixture_type == 'Custom':
+    #     params = reduce_cases(paramlist, a, debug)
+    # else:
+    #     params = paramlist
+    params = cf.case_maker(Packed)
     print(format(len(params))+' cases have a dilutent greater than -0')
     print('Start of Simulations')
-    # sim_package = cf.parallelize(params, Packed, reac_sens_parallel)
-    sim_package = flow_reactor_parallel(params, Packed, reac_sens_parallel)
+    sim_package = cf.parallelize(params, Packed, reac_sens_parallel)
+    # sim_package = flow_reactor_parallel(params, Packed, reac_sens_parallel)
     sim_end     = time.time()
     sim_time    = sim_end - sim_start
     print('End of Simulations')
     print('It took '+format(sim_time, '0.5f')+' seconds to simulate all cases')
 
+    # ranking = ranking_process()
+    print('Start Ranking Process')
     Cases = len(params)
     case  = 0
-    print('Start Ranking Process')
     rank_start = time.time()
     update_progress(0)
     for sims in sim_package:
         [t_T_P_AMol, t_SMol, t_AllSpecieSens,
-         All_time_Sens_test, All_tTP_AMo_test,
-         temp, mix, pressure, phi, fuel] = sims
+          All_time_Sens_test, All_tTP_AMo_test,
+          temp, mix, pressure] = sims
         temp_condition = T_limit(t_T_P_AMol, temp, delta_T)
         if temp_condition == 1:
             if debug:
-                print('T limit ' + DEBUG_FMT.format(temp, pressure, phi, fuel))
+                print('T limit ' + DEBUG_FMT.format(temp, pressure, mix))
             del All_tTP_AMo_test[-1]
             del All_time_Sens_test[-1]
             case +=1
@@ -938,7 +1049,7 @@ if __name__ == "__main__":
             All_time_Sens.append(All_time_Sens_test)
             condition_info = {
                 'temperature': temp, 'pressure': pressure*101.325,
-                'equivalence': phi, 'fuel': fuel}
+                'mixture': mix}
             Parameters.append(condition_info)
 
         #initialize parameters
@@ -953,7 +1064,7 @@ if __name__ == "__main__":
         sensitivity_score3()
         rank_all(SpecificSpecieSens)
         IS_norm = integrated(t_AllSpecieSens, SpecificSpecieNumbers, len(rxns),
-                             molfrac_conditions)
+                              molfrac_conditions)
         int_strength.append([condition_info, IS_norm])
         case += 1
         update_progress(case/Cases)
@@ -966,7 +1077,7 @@ if __name__ == "__main__":
     toc       = time.time()
     duration  = toc-tic
     numbr_mix = len(Phi)
-    tp_combs  = len(T)*len(P)
+    tp_combs  = len(Temperature)*len(Press)
     print('Number of cases ran', len(paramlist))
     print('Number of cases that meet all conditions', len(All_Ranks))
     print(numbr_mix, 'mixture with',tp_combs,
@@ -974,7 +1085,7 @@ if __name__ == "__main__":
           ' seconds.\n')
 
     if save_files:
-        file_saving()
+        file_saving(Packed, sim_package, params, sims, save_time)
         # print('Creating Directory...')
         # #Creat Directory Name
         # now = datetime.now()
