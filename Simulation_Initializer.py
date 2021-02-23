@@ -71,6 +71,13 @@ Diluent  = 'N2' #chemical formula of diluent
 #   Add code to define F_to_D and O_to_D. Or, are these necessary?
 #################################################################
 
+#Zero Dimensional Conditions
+SpecificSpecies = ['OH'] #Species of interest for rxn ranking data
+Starttime = 0     #in the case a reading is too early
+Endtime   = 0.001 #one milisecond
+Delta_T   = 100
+PPM       = 1/1000000 #one ppm
+
 #Flame Conditions
 Mingrid   = 200
 Mul_soret = False
@@ -96,8 +103,9 @@ if __name__ == "__main__":
     if Simulation_Type == '0D':
         print(cf.parameters_string(Pressure, Temperature, mix_params))
         zeroD.run_0d_simulation(Mechanism, Array_type, Pressure, Temperature,
-                                Fuel, Oxidizer, Diluent,
-                                mix_params, Save_files, Save_time)
+                                Fuel, Oxidizer, Diluent, mix_params,
+                                SpecificSpecies, Starttime, Endtime, 
+                                Delta_T, PPM, Save_files, Save_time)
         print('Under-Construction!')
     elif Simulation_Type =='1D':
         print(cf.parameters_string(Pressure, Temperature, mix_params))
