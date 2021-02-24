@@ -16,10 +16,10 @@ from multiprocessing import cpu_count, Pool
 
 
 def model_folder(mechanism):
-    """
-    Generates the path given a mechanism file. If the Model folder is not
-    all ready created one will be generated. All mechanism files should be in
-    the model folder.
+    """Generate the path given a mechanism file.
+
+    If the Model folder is not already created, one will be generated.
+    All mechanism files should be in the model folder.
 
     Parameters
     ----------
@@ -33,7 +33,7 @@ def model_folder(mechanism):
         Path for the mechanism file found inside the Models folder.
 
     """
-    #Save Path/Parent Directory
+    # Save Path/Parent Directory
     parent_dir = 'Models'
     try:
         os.makedirs(parent_dir)
@@ -50,9 +50,7 @@ def model_folder(mechanism):
 
 
 def duplicate_reactions(gas):
-    """
-    Generates a dictionary of reaction equations and
-    their reaction numbers for a given mechanism.
+    """Find and report duplicate reactions in a model.
 
     Parameters
     ----------
@@ -62,7 +60,7 @@ def duplicate_reactions(gas):
     Returns
     -------
     dup_rxns : dict
-        Dictionary of the following format:
+        Dictionary containing duplicate reactions of the following format:
         dup_rxns = {'Reaction Equation 1': [Rxn Number_a, Rxn Number_b]
                             :
                             :
@@ -83,8 +81,7 @@ def duplicate_reactions(gas):
 
 
 def case_maker(cond):
-    """
-    Generate parameters for each simulation.
+    """Generate mixture and thermodynamic parameters for each simulation.
 
     Parameters
     ----------
@@ -92,17 +89,18 @@ def case_maker(cond):
         Dictionary of the following format:
         for 1D
         conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
-                      'Mixture': [fuel, diluent, oxidizer, mixture_type],
+                      'Mixture': [fuel, diluent, oxidizer],
                       'Flame': [mingrid, mul_soret, loglevel],
                       'Files': [mechanism, flame_temp],
                       'T/F': [multifuel, multioxidizer]}
         for 0D
-        conditions = {'Parameters': [Press, Temperature, mix_params, array_type], 
-                      'Mixture':[fuel_name, diluent_name, oxidizer_name, mixture_type],
+        conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
+                      'Mixture':[fuel_name, diluent_name, oxidizer_name],
                       'ZeroD': [SpecificSpecies, dup_reactions],
                       'Time_Info': [starttime, endtime, SCORE3_TIME],
                       'Files': [mechanism],
                       'Limits': [delta_T, ppm]}
+
     Returns
     -------
     paramlist : list
@@ -118,7 +116,6 @@ def case_maker(cond):
     mix_params   = cond['Parameters'][2]
     array_type   = cond['Parameters'][3]
     chem         = cond['Files'][0]
-
 
     # Create ranges for the parameters
     def logspace(start, stop, number):
@@ -148,7 +145,7 @@ def case_maker(cond):
         Fuel = {Fuel_name: 1}
     elif type(Fuel_name) is list:  # multi_fuel
         Fuel = {}
-        for fl in range(0,len(Fuel_name),2):
+        for fl in range(0, len(Fuel_name), 2):
             Fuel[Fuel_name[fl]] = Fuel_name[fl+1]
     else:
         raise ValueError(msg)
@@ -228,18 +225,8 @@ def case_maker(cond):
                        Diluent_name: 1 - fuel_frac - oxi_frac}
             mixlist.append(mixture)
 
-
     # TODO: Following this example, add other mixture types.
     # Rewrite 0D conditions dictionary so that is it formated similar to 1D
-
-
-    # elif mix_type == 'Oxi_Dil' or mix_type == 'Fue_Dil':
-    #     if mix_type == 'Oxi_Dil':
-    #         print('Oxidizer to Diluent Loop Enabled')
-    #     elif mix_type == 'Fue_Dil':
-    #         print('Fuel to Diluent Loop Enabled')
-    #     totaliterations = len(p)*len(phi)*len(fod)
-    #     paramlist       = list(it.product(p,phi,fod))
     else:
         print('Error creating mixtures. Check mixture_type variable.')
         sys.exit()

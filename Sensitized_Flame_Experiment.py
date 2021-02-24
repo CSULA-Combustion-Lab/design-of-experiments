@@ -22,7 +22,7 @@ ct.suppress_thermo_warnings() #Suppress cantera warnings!
 def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
                          mgrid, msoret, loglev, safi):
     """
-    
+
 
     Parameters
     ----------
@@ -70,7 +70,7 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
 def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
                    diluent, mix_params, mingrid, mul_soret, loglevel):
     """
-    
+
 
     Parameters
     ----------
@@ -105,7 +105,6 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
     """
     #Working directory
     flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
-    mixture_type = mix_params[0]
 
     if type(oxidizer) is list:
         multioxidizer = True
@@ -146,7 +145,7 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
             sys.exit()
 
     conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
-                  'Mixture': [fuel, diluent, oxidizer, mixture_type],
+                  'Mixture': [fuel, diluent, oxidizer],
                   'Flame': [mingrid, mul_soret, loglevel],
                   'Files': [mechanism, flame_temp],
                   'T/F': [multifuel, multioxidizer]}
@@ -155,7 +154,7 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
 
 def run_simulations(conditions, paramlist):
     """
-    
+
 
     Parameters
     ----------
@@ -174,11 +173,10 @@ def run_simulations(conditions, paramlist):
         DESCRIPTION.
 
     """
-    # mt = conditions['Mixture'][3]
     tic = time.time()
     chem = conditions['Files'][0]
     gas = ct.Solution(chem)
-   
+
     print('Initial number of cases: '+format(len(paramlist)))
     print('\nStart of simulations...')
     sim_start  = time.time()
@@ -275,7 +273,7 @@ def flame_sens(p, T, mix, cond):
 
 def flame_info_filter(flame_information, duplicate_reactions):
     """
-    
+
 
     Parameters
     ----------
@@ -305,7 +303,7 @@ def flame_info_filter(flame_information, duplicate_reactions):
 
 def mixture_percentage(components, mix):
     """
-    
+
 
     Parameters
     ----------
@@ -339,7 +337,7 @@ def mixture_percentage(components, mix):
 
 def file_saving(cond, fla_inf, p_list, s_info):
     """
-    
+
 
     Parameters
     ----------
