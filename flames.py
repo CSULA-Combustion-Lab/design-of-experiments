@@ -152,7 +152,7 @@ class Flame(object):
                     f.soret_enabled = True  # False is default
                 # Refine the grid and check for grid independence.
                 self._grid_independence(f, mingrid, loglevel)
-                log('Finished calculation - S_u =  {:.2f} cm/s'.format(f.u[0] * 100),
+                log('Finished calculation - S_u =  {:.2f} cm/s'.format(f.velocity[0] * 100),
                     loglevel)
                 if self.name:
                     try:
@@ -198,9 +198,9 @@ class Flame(object):
             integer specifying amount of information to print.
         """
         grid = flame.flame.n_points
-        speed = flame.u[0] / 10  # Make the while loop below run at least once.
-        while grid < mingrid or abs(speed-flame.u[0])/speed > 0.05:
-            speed = flame.u[0]  # save previous speed
+        speed = flame.velocity[0] / 10  # Make the while loop below run at least once.
+        while grid < mingrid or abs(speed-flame.velocity[0])/speed > 0.05:
+            speed = flame.velocity[0]  # save previous speed
             flame = self._refine(flame, mingrid)  # Adjust refinement params
             msg = ('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n' +
                    '{} grid points, {} needed\n' +
@@ -215,7 +215,7 @@ class Flame(object):
             grid = flame.flame.n_points  # Final number of points
 
             log('Grid independence? Su = {:.2f} cm/s with {:} points'.format(
-                    flame.u[0]*100, grid), loglevel)
+                    flame.velocity[0]*100, grid), loglevel)
 
     def _refine(self, fl, mingrid):
         """
@@ -288,7 +288,7 @@ class Flame(object):
 
         out = [self.name, f.inlet.T, f.P/cantera.one_atm,
                f.density_mass[0], f.T[-1], f.density_mass[-1],
-               f.u[0]*100, f.u[-1]*100]
+               f.velocity[0]*100, f.velocity[-1]*100]
         if os.path.isfile(outfile):
             file = open(outfile, 'a+')
 

@@ -430,6 +430,20 @@ def top_rxns(flame, nrxns):
 
 
 if __name__ == "__main__":
+    # User-defined items #################################
+    # Reaction numbers of interest. If blank, only plot top Nrxns.
+    Rxn_interest = []
+
+    # Which four items should be plotted?
+    # Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P'
+    Four_Plot = ['T', 'F', 'Phi', 'O2']
+
+
+    Min_speed    = 0 # Minimum flame speed for plotting, in m/s
+    Nrxns        = 7 #Top n-reactions
+    Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
+    # ##########################################
+
     Folder_name = input('Please type name of folder, 1, or 2.\n'
                         ' 1 or blank: Use the last folder that was analyzed.\n'
                         ' 2: Use the last folder that was simulated:')
@@ -445,7 +459,7 @@ if __name__ == "__main__":
         print('Plotting the most recent simulations.')
         folders = os.listdir('Flame_Sensitivity_Results')
         # Assuming this is always sorted in ascending order...
-        Folder_name = folders[-1]
+        Folder_name = [x for x in folders if x[:2] == '20'][-1]
     print('Loading ' + Folder_name)
 
     # Save the loaded folder name
@@ -456,17 +470,15 @@ if __name__ == "__main__":
     Load_path = 'Flame_Sensitivity_Results\\' + Folder_name
     Plot_path = Load_path+'\\Flame_Sensitivity_Plots'
 
-    #Open up text file with description of simulation
-    File = open(Load_path+'\\Case Description.txt','r')
-    Description = File.read()
-    File.close()
-    print(Description)
+    # Open up text file with description of simulation
+    with open(os.path.join(Load_path, 'Case Description.txt'), 'r') as f:
+        print(f.read())
 
-    #Import flame file found in corresponding folder
+    # Import flame file found in corresponding folder
     with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
         Flame_info = pickle.load(f)
 
-    #Create two lists of flame and no_flame created from flame_info
+    # Create two lists of flame and no_flame created from flame_info
     Flame = []
     No_flame = []
     for x in Flame_info:
@@ -475,34 +487,29 @@ if __name__ == "__main__":
         else:
             Flame.append(x)
 
-    #If Flame list is empty plotting script will not occur
+    # If Flame list is empty plotting script will not occur
     if len(Flame) == 0:
         print('\nNo Conditions Produced a Flame!')
         sys.exit()
 
-    #Creates list that only appends information where flame speed is above min
-    Min_speed          = 0 #Minimum flame speed, lower limit
+    # Creates list that only appends information where flame speed is above min
     Flame_speed_filter = []
     for x in Flame:
         if x['Flame'][1] >= Min_speed:
             Flame_speed_filter.append(x)
 
-    #Note Flame and No_flame are dictionaries
+    # Note Flame and No_flame are dictionaries
     # {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
     #  'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
     #                 Fuel_name, Oxidizer_name, Diluent_name,
     #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
 
-    #Plot Functions
-    Rxn_interest = [29, 30, 31] #Reaction number of the reaction of interest
-    Nrxns        = 7 #Top n-reactions
-    Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
-    Four_Plot = ['T', 'F', 'Su', 'O2']
+    # Plot Functions
     array_type   = Flame[0]['Conditions'][12]
     if array_type == 'log':
-        Logspace = True #If True all plots will use logspace
+        Logspace = True # If True all plots will use logspace
     elif array_type == 'lin':
-        Logspace = False #If False all plots will use linspace
+        Logspace = False # If False all plots will use linspace
     else:
         print('Error! invalid string for array_type.')
 
@@ -511,13 +518,13 @@ if __name__ == "__main__":
     rxn_plots(Flame_speed_filter, Plot_path, Logspace)
     flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
     Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter,
-                                                        Nrxns, Load_path)
+                                                       Nrxns, Load_path)
     if not len(Rxn_interest) == 0:
         for Rxns in Rxn_interest:
             rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-                                Threshold, Plot_path, Logspace, Four_Plot)
+                               Threshold, Plot_path, Logspace, Four_Plot)
             rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
     for Trxns in Topnrxns:
         rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
-                            Threshold, Plot_path, Logspace, Four_Plot)
+                           Threshold, Plot_path, Logspace, Four_Plot)
         rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
