@@ -174,7 +174,6 @@ def case_maker(cond):
     # But, the quantity is actually "X/(X+diluent)", which I would call
     # "X% in X mixture," like "O2 % in oxidizer." I've started fixing this.
     if mix_type == 'Oxi_Dil':
-        print('Oxidizer to Diluent Loop Enabled')
         for equiv, ox_to_dil in mix_loop:
             if ox_to_dil > 1:
                 continue  # Impossible mixture
@@ -187,7 +186,6 @@ def case_maker(cond):
             mixlist.append(gas.mole_fraction_dict())
 
     elif mix_type == 'Fue_Dil':
-        print('Fuel to Diluent Loop Enabled')
         for equiv, f_to_dil in mix_loop:
             if f_to_dil > 1:
                 continue  # Impossible mixture
@@ -200,7 +198,6 @@ def case_maker(cond):
             mixlist.append(gas.mole_fraction_dict())
 
     elif mix_type == 'phi_fuel':
-        print('phi + fuel Loop Enabled')
         for equiv, fuel_frac in mix_loop:
             if fuel_frac > 1:
                 continue  # Impossible mixture
@@ -215,7 +212,6 @@ def case_maker(cond):
             mixlist.append(mixture)
 
     elif mix_type == 'Ox_Fuel':
-        print('Oxidizer + Fuel Loop Enabled')
         for oxi_frac, fuel_frac in mix_loop:
             if fuel_frac + oxi_frac > 1:
                 continue  # Impossible mixture
@@ -290,8 +286,10 @@ def parallelize(param, cond, fun):
     outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
     return outlist
 
-def parameters_string(P, T, mix_params):
-    """
+
+def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
+    """Return string of useful information.
+
     Parameters
     ----------
     P : list
@@ -300,6 +298,9 @@ def parameters_string(P, T, mix_params):
         [initial, final, # of points]
     mix_params : tuple
         (type, param1, param2)
+    chem : str
+        Chemistry file
+    fuel, oxidizer, diluent : dict, str, or list
 
     Returns
     -------
@@ -307,20 +308,25 @@ def parameters_string(P, T, mix_params):
 
     """
     mt = mix_params[0]
+    labels = ['Mixture Type']
     if mt == 'Oxi_Dil':
-        labels = ('Mixture Type', 'Equivalence Ratio', 'O2 fraction in oxidizer')
+        labels.extend(['Equivalence Ratio', 'O2 fraction in oxidizer'])
     elif mt == 'Fue_Dil':
-        labels = ('Mixture Type', 'Equivalence Ratio', 'Fuel fraction in fuel mix')
+        labels.extend(['Equivalence Ratio', 'Fuel fraction in fuel mix'])
     elif mt == 'phi_fuel':
-        labels = ('Mixture Type', 'Equivalence Ratio', 'Fuel fraction in mixture')
+        labels.extend(['Equivalence Ratio', 'Fuel fraction in mixture'])
+    elif mt == 'Ox_Fuel':
+        labels.extend(['Oxidizer mole fraction', 'Fuel mole fraction'])
     else:
-        labels = ('Mixture Type', 'Parameter 1', 'Parameter 2')
-    mixture_text = '\n'.join(['\t{}: {}'.format(k, v) for
+        labels.extend(['Parameter 1', 'Parameter 2'])
+    mixture_text = '\n'.join(['\t\t{}: {}'.format(k, v) for
                               k, v in zip(labels, mix_params)])
     string = ("================Parameters================" +
-              "\n[Initial, Final, # of points]\nInitial Temperature: " +
-              format(T) + " [Kelvin]\nPressure Range: " + format(P) +
-              " [atm]\nMixture Parameters:\n" + mixture_text +
+              "\nMechanism: " + chem + "\nFuel: " + str(fuel) +
+              "\nOxidizer: " + str(oxidizer) + "\nDiluent: " +
+              str(diluent) +
+              "\n[Initial, Final, # of points]\n\tTemperature: " +
+              format(T) + " [Kelvin]\n\tPressure Range: " + format(P) +
+              " [atm]\n\tMixture Parameters:\n" + mixture_text +
               "\n==========================================")
     return string
-

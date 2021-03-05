@@ -27,7 +27,7 @@ Simulation_Type = '1D'
 #  Oxi_Dil creates a mixture where the Diluent is a ratio of the Oxidizer used
 #  Fue_Dil creates a mixture where the Diluent is a ratio of the Fuel used
 #  phi_fuel specifies the equivalence ratio and fuel mole fraction
-#  Ox_fuel specifies the oxidizer and fuel mole fractions
+#  Ox_Fuel specifies the oxidizer and fuel mole fractions
 Mixture_type = 'Ox_Fuel'
 
 #Parameters (Pressure, Equivalence, Temperature, Diluent Percentage)
@@ -45,24 +45,24 @@ Temperature        = [300, 450, 1]
 
 # Mixture parameters. Not all of these will be used, depending on Mixture_type
 Equivalence        = [0.8, 1, 2]
-fraction_in_oxidizer_or_fuel = [0.5, 0.7, 2]  # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
-fuel_fraction      = [0.04, 0.5, 3]
-oxidizer_fraction  = [0.05, 0.9, 3]
+fraction_in_oxidizer_or_fuel = [0.21, 0.5, 2]  # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
+fuel_fraction      = [0.01, 0.5, 15]
+oxidizer_fraction  = [0.01, 0.9, 15]
 
 ### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
 ###             variables should vary in log- or linear- space
 Array_type = 'lin'
 
 #Set experiment parameters
-Mechanism = 'Li_Model.cti' #Mechanism file
+Mechanism = 'Nakamura Ammonia.cti' #Mechanism file
 
 #Parameters for mixture (Fuel, Oxidizer, Diluent)
 # Fuel and Oxidizer can either be a single chemical string or multichemical list
 #  For multichemical follow structure ['Chemical1', % of Total, ...]
 #  The percentage following the chemical name should sum up to 1
 # Diluent should be a single chemical added to the mixture
-Fuel     = 'H2' #chemical formula of fuel
-# Fuel  = ['NH3', .70 , 'H2', .30]
+# Fuel     = 'H2' #chemical formula of fuel
+Fuel  = ['NH3', .80 , 'H2', .20]
 Oxidizer = 'O2' #chemical formula of oxidizer
 # Oxidizer = ['O2', .35 , 'NO2', .65]
 Diluent  = 'N2' #chemical formula of diluent
@@ -77,7 +77,7 @@ PPM       = 1/1000000 #one ppm
 #Flame Conditions
 Mingrid   = 200
 Mul_soret = False
-Loglevel  = -1
+Loglevel  = 0
 
 #True/False statements
 Save_files = True # If true, save files for plotting script
@@ -97,14 +97,16 @@ if __name__ == "__main__":
     # TODO: 0D needs to take in mix_params tuple as seen above.
     # Example of implementation can be seen in 1D code below.
     if Simulation_Type == '0D':
-        print(cf.parameters_string(Pressure, Temperature, mix_params))
+        print(cf.parameters_string(Pressure, Temperature, mix_params,
+                                   Mechanism, Fuel, Oxidizer, Diluent))
         zeroD.run_0d_simulation(Mechanism, Array_type, Pressure, Temperature,
                                 Fuel, Oxidizer, Diluent, mix_params,
                                 SpecificSpecies, Starttime, Endtime,
                                 Delta_T, PPM, Save_files, Save_time)
         print('Under-Construction!')
     elif Simulation_Type =='1D':
-        print(cf.parameters_string(Pressure, Temperature, mix_params))
+        print(cf.parameters_string(Pressure, Temperature, mix_params,
+                                   Mechanism, Fuel, Oxidizer, Diluent))
         oneD.run_flame_simulation(Mechanism, Array_type, Pressure, Temperature,
                                   Fuel, Oxidizer, Diluent, mix_params, Mingrid,
                                   Mul_soret, Loglevel, Save_files)

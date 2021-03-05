@@ -398,28 +398,12 @@ def file_saving(cond, fla_inf, p_list, s_info):
     filename  = os.path.join(save_path, filename)
     f         = open(filename, "w")
 
-    if multif:
-        MF_text = ("Multifuel = "+format(multif)+"\n"
-                   "Fuels\Percentages = "+format((Fuel_name))+"\n")
-    else:
-        MF_text = "Multifuel = "+format(multif)+"\n"
-    if multio:
-        MO_text = ("Multioxidizer = "+format(multio)+"\n"
-                   "Oxidizer\Percentages = "+format((Oxidizer_name))+"\n")
-    else:
-        MO_text = "Multioxidizer = "+format(multio)+"\n"
-
     text_description = ("This file provides simulation information.\n"
                         "The following information are the parameters "
-                        "and cases simulated\n\n"
-                        "==========Properties==========\n"
-                        "Mechanism: "+chem+"\n"
-                        "Fuel: "+str(Fuel_name)+"\n"
-                        "Oxidizer: "+str(Oxidizer_name)+"\n"
-                        "Diluent: "+str(Diluent_name)+"\n"
-                        +MF_text+MO_text+
-                        "==============================\n\n"
-                        + cf.parameters_string(p, T, mix_params) +
+                        "and cases simulated\n\n" +
+                        + cf.parameters_string(p, T, mix_params, chem,
+                                               Fuel_name, Oxidizer_name,
+                                               Diluent_name) +
                         "\n\n======Flame Simulation Information======"
                         "\nMingrid = "+format(mg)+
                         "\nMult_Soret = "+format(ms)+
