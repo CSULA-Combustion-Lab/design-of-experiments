@@ -370,6 +370,9 @@ def file_saving(cond, fla_inf, p_list, s_info):
     s_time        = s_info[0]
     conv          = s_info[1]
     dur           = s_info[2]
+    print('dur is:')
+    print(format(dur, '0.5f'))
+    print(type(format(dur, '0.5f')))
 
     #Save Path/Parent Directory
     parent_dir = 'Flame_Sensitivity_Results'
@@ -401,19 +404,19 @@ def file_saving(cond, fla_inf, p_list, s_info):
     text_description = ("This file provides simulation information.\n"
                         "The following information are the parameters "
                         "and cases simulated\n\n" +
-                        + cf.parameters_string(p, T, mix_params, chem,
+                        cf.parameters_string(p, T, mix_params, chem,
                                                Fuel_name, Oxidizer_name,
                                                Diluent_name) +
                         "\n\n======Flame Simulation Information======"
-                        "\nMingrid = "+format(mg)+
-                        "\nMult_Soret = "+format(ms)+
+                        "\nMingrid = " + format(mg) +
+                        "\nMult_Soret = " + format(ms) +
                         "\n========================================\n"
                         "\n=============Time/Converged=============\n"
-                        "Total Cases: "+format(len(p_list))+"\n"
-                        "Sim time: "+format(s_time, '0.5f')+" [s]\n"
-                        "Cases Converged: "+str(conv)+"\n"
-                        "Run time: "+format(dur, '0.5f')+" [s]\n"
-                        "========================================")
+                        "Total Cases: " + format(len(p_list)) +
+                        "\nSim time: " + format(s_time, '0.5f') +
+                        " [s]\nCases Converged: " + str(conv) +
+                        "\nRun time: " + format(dur, '0.5f') +
+                        " [s]\n========================================")
 
     f.write(text_description)
     f.close()
