@@ -10,6 +10,7 @@ import os
 import cantera
 import gc
 import glob
+import sys
 from cantera import ck2cti
 
 
