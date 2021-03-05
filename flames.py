@@ -145,7 +145,11 @@ class Flame(object):
                     f.solve(loglevel=loglevel-1, refine_grid=True)
                 # Enable the energy equation for the following loop
                 f.energy_enabled = True
-                f.solve(loglevel=loglevel-1, refine_grid=True)
+                if loglevel > 1:
+                    f.solve(loglevel=loglevel-1, refine_grid=True, auto=True)
+                else:
+                    with HiddenPrints():
+                        f.solve(loglevel=loglevel-1, refine_grid=True, auto=True)
 
                 if mult_soret:
                     f.transport_model = 'Multi'  # 'Mix' is default
@@ -210,7 +214,7 @@ class Flame(object):
             log(msg.format(flame.flame.n_points, mingrid,
                            refine_criteria['slope'], refine_criteria['curve'],
                            refine_criteria['prune'], ), loglevel - 1)
-            flame.solve(loglevel=loglevel - 1, refine_grid=True)
+            flame.solve(loglevel=loglevel - 1, refine_grid=True, auto=False)
 
             grid = flame.flame.n_points  # Final number of points
 
@@ -601,3 +605,18 @@ def convert_mech(chemfile):
 def log(msg, level):
     if level > 0:
         print(msg)
+
+
+class HiddenPrints:
+    """Prevent certain functions from printing.
+
+    Taken from:
+    https://stackoverflow.com/questions/8391411/how-to-block-calls-to-print
+    """
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout

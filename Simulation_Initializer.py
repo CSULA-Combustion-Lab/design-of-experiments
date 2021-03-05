@@ -40,36 +40,32 @@ Mixture_type = 'Ox_Fuel'
 ### Equivalence: Dimensionless (<1:Fuel Lean, 1:Unity, >1:Fuel Rich)
 ### Temperature: Kelvin [K]
 ### Diluent_Percentage: Percent [%]
-Pressure           = [0.5, 1, 2]
-Temperature        = [373, 400, 1]
+Pressure           = [1, 1, 1]
+Temperature        = [300, 450, 1]
 
 # Mixture parameters. Not all of these will be used, depending on Mixture_type
 Equivalence        = [0.8, 1, 2]
 fraction_in_oxidizer_or_fuel = [0.5, 0.7, 2]  # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
-fuel_fraction      = [0.1, 0.5, 3]
-oxidizer_fraction  = [0.2, 0.6, 3]
+fuel_fraction      = [0.04, 0.5, 3]
+oxidizer_fraction  = [0.05, 0.9, 3]
 
 ### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
 ###             variables should vary in log- or linear- space
-Array_type = 'log'
+Array_type = 'lin'
 
 #Set experiment parameters
-Mechanism = 'Li_model_modified_trioxane.cti' #Mechanism file
+Mechanism = 'Li_Model.cti' #Mechanism file
 
 #Parameters for mixture (Fuel, Oxidizer, Diluent)
 # Fuel and Oxidizer can either be a single chemical string or multichemical list
 #  For multichemical follow structure ['Chemical1', % of Total, ...]
 #  The percentage following the chemical name should sum up to 1
 # Diluent should be a single chemical added to the mixture
-Fuel     = 'C3H6O3' #chemical formula of fuel
-# Fuel  = ['CH4', .50 , 'CH3OH', .50]
+Fuel     = 'H2' #chemical formula of fuel
+# Fuel  = ['NH3', .70 , 'H2', .30]
 Oxidizer = 'O2' #chemical formula of oxidizer
 # Oxidizer = ['O2', .35 , 'NO2', .65]
 Diluent  = 'N2' #chemical formula of diluent
-
-#################### Missing code here #########################
-#   Add code to define F_to_D and O_to_D. Or, are these necessary?
-#################################################################
 
 #Zero Dimensional Conditions
 SpecificSpecies = ['OH'] #Species of interest for rxn ranking data
@@ -81,7 +77,7 @@ PPM       = 1/1000000 #one ppm
 #Flame Conditions
 Mingrid   = 200
 Mul_soret = False
-Loglevel  = 0
+Loglevel  = -1
 
 #True/False statements
 Save_files = True # If true, save files for plotting script
@@ -97,14 +93,14 @@ if __name__ == "__main__":
         mix_params = (Mixture_type, oxidizer_fraction, fuel_fraction)
     else:
         raise ValueError('Mixture_type = {} is not supported'.format(Mixture_type))
-        
+
     # TODO: 0D needs to take in mix_params tuple as seen above.
     # Example of implementation can be seen in 1D code below.
     if Simulation_Type == '0D':
         print(cf.parameters_string(Pressure, Temperature, mix_params))
         zeroD.run_0d_simulation(Mechanism, Array_type, Pressure, Temperature,
                                 Fuel, Oxidizer, Diluent, mix_params,
-                                SpecificSpecies, Starttime, Endtime, 
+                                SpecificSpecies, Starttime, Endtime,
                                 Delta_T, PPM, Save_files, Save_time)
         print('Under-Construction!')
     elif Simulation_Type =='1D':

@@ -257,17 +257,17 @@ def flame_sens(p, T, mix, cond):
                                      Fuel_name, Oxidizer_name, Diluent_name,
                                      Fue_Percent, Oxi_Percent, Dil_Percent,
                                      at]}
-        return flame_info
-    f.sensitivity()
-    f_sens = f.sens #Rxn sensitivities
-    Su         = f.flame_result.u[0]  #Flame speed at the front
-    flame_T    = f.flame_result.T[-1] #Flame temperature at end
-    flame_rho  = f.flame_result.density_mass[0] #Flame density at the front
-    flame_info = {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
-                  'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
-                                 Fuel_name, Oxidizer_name, Diluent_name,
-                                 Fue_Percent, Oxi_Percent, Dil_Percent,
-                                 at]}
+    else:
+        f.sensitivity()
+        f_sens = f.sens  # Rxn sensitivities
+        Su = f.flame_result.velocity[0]  # Flame speed at the front
+        flame_T = f.flame_result.T[-1]  # Flame temperature at end
+        flame_rho = f.flame_result.density_mass[0]  # Flame density at the front
+        flame_info = {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+                      'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                                     Fuel_name, Oxidizer_name, Diluent_name,
+                                     Fue_Percent, Oxi_Percent, Dil_Percent,
+                                     at]}
     return flame_info
 
 
