@@ -245,7 +245,7 @@ def flame_sens(p, T, mix, cond):
     Oxidizer = 'unused'
     Fue_Percent = mixture_percentage(Fuel_name, mix)
     Oxi_Percent = mixture_percentage(Oxidizer_name, mix)
-    Dil_Percent = mix[Diluent_name]
+    Dil_Percent = mixture_percentage(Diluent_name, mix)
     mixture = flames.Mixture(mix, chem)  # Create mixture object
     phi = mixture.phi
 
@@ -324,12 +324,18 @@ def mixture_percentage(components, mix):
 
     """
     if type(components) is str:  # Single Component
-        return mix[components]
+        try:
+            return mix[components]
+        except KeyError:
+            return 0.0
     elif type(components) is list:
         # Format is [component1, quantity1, component2, quantity2, ...]
         Percentage = 0
         for n in range(0, len(components), 2):
-            Percentage += mix[components[n]]
+            try:
+                Percentage += mix[components[n]]
+            except KeyError:  # Component isn't in mixture
+                pass
         return Percentage
     else:
         raise TypeError
