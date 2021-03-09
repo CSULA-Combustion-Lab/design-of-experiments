@@ -12,7 +12,7 @@ import pickle
 import time, sys
 import numpy as np
 import cantera as ct
-from datetime import datetime
+import datetime
 
 import flames
 import common_functions as cf
@@ -373,12 +373,9 @@ def file_saving(cond, fla_inf, p_list, s_info):
     multio        = cond['T/F'][1]
     mg            = cond['Flame'][0]
     ms            = cond['Flame'][1]
-    s_time        = s_info[0]
+    s_time        = datetime.timedelta(seconds=s_info[0])
     conv          = s_info[1]
-    dur           = s_info[2]
-    print('dur is:')
-    print(format(dur, '0.5f'))
-    print(type(format(dur, '0.5f')))
+    dur           = datetime.timedelta(seconds=s_info[2])
 
     #Save Path/Parent Directory
     parent_dir = 'Flame_Sensitivity_Results'
@@ -390,7 +387,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
 
     #Create Directory Name
     print('Creating Directory...')
-    now = datetime.now()
+    now = datetime.datetime.now()
     dt_string = now.strftime("%Y_%m_%d %H.%M.%S Flame_Speed_Sens")
     directory = dt_string
     save_path = os.path.join(parent_dir, directory)
@@ -419,10 +416,10 @@ def file_saving(cond, fla_inf, p_list, s_info):
                         "\n========================================\n"
                         "\n=============Time/Converged=============\n"
                         "Total Cases: " + format(len(p_list)) +
-                        "\nSim time: " + format(s_time, '0.5f') +
-                        " [s]\nCases Converged: " + str(conv) +
-                        "\nRun time: " + format(dur, '0.5f') +
-                        " [s]\n========================================")
+                        "\nSim time: " + str(s_time) +
+                        "\nCases Converged: " + str(conv) +
+                        "\nRun time: " + str(dur) +
+                        "\n========================================")
 
     f.write(text_description)
     f.close()

@@ -82,6 +82,12 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     Su_threshold       = []
     Sens_str_threshold = []
     T_threshold        = []
+
+    species_of_interest = {}
+    for cond in conditions_a:
+        if cond not in ['T', 'F', 'Phi', 'O2', 'Su', 'P']:
+            species_of_interest[cond] = []
+
     for f in f_info:
         average_nrxns = rxn_average(f, nrxns)
         strength = f['Flame'][0][rxn_int][1]/average_nrxns
@@ -92,6 +98,16 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
         Fuel.append(f['Conditions'][9])
         Oxygen.append(f['Conditions'][10])
         Su.append(f['Flame'][1])
+        for cond in conditions_a:
+            if cond not in ['T', 'F', 'Phi', 'O2', 'Su', 'P']:
+                # This must be a species name. search for that species
+                try:
+                    species_of_interest[cond].append(f['Conditions'][5][cond])
+                except KeyError:
+                    species_of_interest[cond].append(0)
+
+    s_of_interest = {k: [v, k + ' Mole Fraction', None] for k, v in
+                     species_of_interest.items()}
 
     for n in range(len(Sens_strength)):
         if abs(Sens_strength[n]) >= threshold:
@@ -106,12 +122,13 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
     cond_dict = {'P': [Pressure, 'Pressure [atm]', P_threshold],
                  'F': [Fuel, 'Fuel Mole Fraction', F_threshold],
-                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
+                 'Phi': [Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
                  'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
                  'T': [Tint, 'Temperature [K]', T_threshold],
                  'Su': [Su, 'Flame Speed [m/s]', Su_threshold],
                  'Strength': [Sens_strength, r'$\hat S_{'+Rxn_Eq+'}$',
                               Sens_str_threshold]}
+    cond_dict = {**cond_dict, **s_of_interest}  # Add species mole fractions
 
     figa, axesa = plt.subplots(nrows=2, ncols=2, sharey=True)
     axa         = axesa.flatten()
@@ -435,8 +452,8 @@ if __name__ == "__main__":
     Rxn_interest = []
 
     # Which four items should be plotted?
-    # Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P'
-    Four_Plot = ['T', 'F', 'Phi', 'O2']
+    # Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P', or any species name.
+    Four_Plot = ['H2', 'NH3', 'Phi', 'O2']
 
 
     Min_speed    = 0 # Minimum flame speed for plotting, in m/s
