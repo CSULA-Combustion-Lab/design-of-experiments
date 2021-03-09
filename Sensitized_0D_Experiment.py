@@ -496,7 +496,8 @@ def specific_sens(specificspecies, rxns, t_SMol, SpecificSpecieNumbers,
     return SpecificSpecieSens
 
 
-def sensitivity_score():
+def sensitivity_score(SpecificSpecieSens, specificspecies, temp, pressure,
+                      rxns, senstime, score_T_P_MaxSensavg, scoretimes):
     """Ratio of sum of all maximum reaction values to number of reactions.
 
     This function obtains the maximum sensitivity from a complete simulation
@@ -566,7 +567,10 @@ def sensitivity_score():
     scoretimes.append([x for x in row1]) #what does this populate?
 
 
-def sensitivity_score2():
+def sensitivity_score2(SpecificSpecieSens, specificspecies, temp, pressure,
+                       mix, rxns, senstime, gas, score2_T_P_MaxSens,
+                       score2times, score2_Max_sens_rxn,
+                       score2_Params_MaxSens_Name_Params):
     """ Find the reaction with the highest absolute value of sensitivity for each species of interest.
     The maximum sensitivity is found for all time - not at a specific time step.
     This score will find spikes, but may not find a reaction that is sensitive for a longer time.
@@ -603,7 +607,9 @@ def sensitivity_score2():
     score2_Params_MaxSens_Name_Params.append([x for x in rxn_name])
 
 
-def sensitivity_score3():
+def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
+                       t_AllSpecieSens, SpecificSpeciesens, rxns, gas,
+                       score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params):
     num_spec = len(specificspecies)
     max_rxn = [None]*(num_spec+3)
     max_rxn[0] = mix
@@ -631,7 +637,8 @@ def sensitivity_score3():
     score3_Params_MaxSens_Name_Params.append([x for x in rxn_name])
 
 
-def rank_all(SpecificSpecieSens):
+def rank_all(SpecificSpecieSens, temp, pressure, mix, rxns, senstime,
+             specificspecies, ranking, all_ranks, All_Ranks, All_Ranks_Params):
     """ Creates a list of reaction rankings for all timesteps and all species.
         Needs work. Understanding output rank_mat: The lists cycle though the
         species list, and after every len(species) its a new time_step."""
