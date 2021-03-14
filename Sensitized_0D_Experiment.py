@@ -23,9 +23,8 @@ import common_functions as cf
 
 cantera.suppress_thermo_warnings()
 
-def run_0D_simulation(mech, arrtype, pres, temp, 
-                      fue, oxi, dilu, mix_params, s_species, stime, etime,
-                      dT, ppm, safi, sati):
+def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
+                      s_species, stime, etime, dT, ppm, safi, sati):
     """
     
 
@@ -56,15 +55,19 @@ def run_0D_simulation(mech, arrtype, pres, temp,
 
     """
     #start time
+    print('Start Time Here')
     tic = time.time()
     mechan = cf.model_folder(mech)
+    print('Mech found in folder')
     pack, s_lists = initialization(mechan, arrtype, pres, temp, 
                                    fue, oxi, dilu, mix_params, s_species,
                                    stime, etime, dT, ppm)
+    print('Initialization performed')
     paralist = cf.case_maker(pack)
-    zerod_info, siminfo = run_simulations(pack,
-                                                                 s_lists,
-                                                                 paralist)
+    print(paralist)
+    print('Parameter List created')
+    zerod_info, siminfo = run_simulations(pack, s_lists, paralist)
+    print('Simulation Complete')
     #end time
     toc       = time.time()
     duration  = toc-tic
@@ -80,7 +83,7 @@ def run_0D_simulation(mech, arrtype, pres, temp,
 def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
                    mix_params, s_species, stime, etime, dT, ppm):
     
-    print("Under Construction")
+    print("Initialization Under Construction")
     # DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, 
     #                                  phi={:.3g}, fuel={:.3g}'
     
@@ -110,7 +113,7 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
     All_time_Sens = []
     All_tTP_AMo   = []
     #create gas object
-    gas                   = cantera.Solution(mechanism)
+    gas                   = cantera.Solution(mechan)
     dup_reactions         = cf.duplicate_reactions(gas)
     Reactions             = range(0,len(gas.reaction_equations()))
     names                 = gas.species_names
@@ -125,27 +128,27 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
                    score3times, score3_Max_sens_rxn,
                    score3_Params_MaxSens_Name_Params, int_strength,
                    MoleFraction, All_time_Sens, All_tTP_AMo]
-    Packed = {'Parameters': [Press, Temperature, mix_params, array_type], 
+    Packed = {'Parameters': [pres, temp, mix_params, array_type], 
               'Mixture':[fuel_name, diluent_name, oxidizer_name, mixture_type],
-              'ZeroD': [SpecificSpecies, dup_reactions,
+              'ZeroD': [s_species, dup_reactions,
                         Reactions, SpecificSpecieNumbers],
               'Time_Info': [stime, etime, SCORE3_TIME],
-              'Files': [mechanism],
+              'Files': [mechan],
               'Limits': [dT, ppm]}
-    
     return Packed, Score_Lists
     
 def run_simulations(pack, slists, plist):
     
-    print("Under Construction")
-    dT = pack['Limits'][0]
+    print("Run Sim Under Construction")
+    dT  = pack['Limits'][0]
     ppm = pack['Limits'][1]
     sspecies = pack['ZeroD'][0]
     rxns     = pack['ZeroD'][2]
     sspecnum = pack['ZeroD'][3]
+    gas = cantera.Solution(pack['Files'][0])
     
-    sim_start   = time.time()
     print('Start of Simulations')
+    sim_start   = time.time()
     sim_package = cf.parallelize(plist, pack, reac_sens_parallel)
     sim_end     = time.time()
     sim_time    = sim_end - sim_start
@@ -185,11 +188,18 @@ def run_simulations(pack, slists, plist):
         sensitivities      = np.absolute(np.array([x[1] for x in t_AllSpecieSens])) #sensitivities
         molfrac_conditions = mole_fractions(t_SMol, plist, ppm,
                                             slists[16], sspecies)
-        specific_sens()
-        sensitivity_score()
-        sensitivity_score2()
-        sensitivity_score3()
-        rank_all(SpecificSpecieSens)
+        specific_sens(sspecies, rxns, t_SMol, sspecnum, molfrac_conditions,
+                      sensitivities, SpecificSpecieSens)
+        sensitivity_score(SpecificSpecieSens, sspecies, temp, pressure, rxns,
+                          senstime, slists[1], slists[2])
+        sensitivity_score2(SpecificSpecieSens, sspecies, temp, pressure, mix,
+                           rxns, senstime, gas, slists[7], slists[8],
+                           slists[9], slists[10])
+        sensitivity_score3(sspecies, mix, temp, pressure, pack['Time_Info'][2],
+                           t_AllSpecieSens, SpecificSpecieSens, rxns, gas,
+                           slists[13], slists[14])
+        rank_all(SpecificSpecieSens, temp, pressure, mix, rxns, senstime,
+                 sspecies, all_ranks, slists[5], slists[6])
         IS_norm = integrated(t_AllSpecieSens, sspecnum, len(rxns),
                               molfrac_conditions)
         slists[15].append([condition_info, IS_norm]) #List: int_strength
@@ -254,9 +264,9 @@ def reac_sens_parallel(pressure, temp, mix, pack):
     # diluent_name    = pack['Mixture'][1]
     # mix_type        = pack['Mixture_Info'][0]
     # a               = pack['Parameters'][5]
-    specificspecies = pack['ZeroD'][4]
-    mechanism       = pack['Files'][0]
-    dup_reactions   = pack['ZeroD'][5]
+    specificspecies = pack['ZeroD'][0]
+    mech            = pack['Files'][0]
+    dup_reactions   = pack['ZeroD'][1]
     starttime       = pack['Time_Info'][0]
     endtime         = pack['Time_Info'][1]
     SCORE3_TIME     = pack['Time_Info'][2]
@@ -264,7 +274,7 @@ def reac_sens_parallel(pressure, temp, mix, pack):
     # mix      = mixture_maker(gas1, phi, fuel, a,
     #                          mix_type, fuel_name, diluent_name)
     # mix = cf.case_maker(pack)
-    gas1 = cantera.Solution(mechanism)
+    gas1 = cantera.Solution(mech)
     gas1.TPX = temp, pressure*101325, mix
     rxns     = range(0,len(gas1.reaction_equations()))
 
@@ -608,7 +618,7 @@ def sensitivity_score2(SpecificSpecieSens, specificspecies, temp, pressure,
 
 
 def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
-                       t_AllSpecieSens, SpecificSpeciesens, rxns, gas,
+                       t_AllSpecieSens, SpecificSpecieSens, rxns, gas,
                        score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params):
     num_spec = len(specificspecies)
     max_rxn = [None]*(num_spec+3)
@@ -621,7 +631,7 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
 
     time = np.array([x[0] for x in t_AllSpecieSens])
     ind = np.argwhere(time > SCORE3_TIME)[0][0]
-    sens_at_t = SpecificSpeciesens[ind]
+    sens_at_t = SpecificSpecieSens[ind]
 
     for i in range(num_spec):
         unshuffled = sens_at_t[i::num_spec]
@@ -638,7 +648,7 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
 
 
 def rank_all(SpecificSpecieSens, temp, pressure, mix, rxns, senstime,
-             specificspecies, ranking, all_ranks, All_Ranks, All_Ranks_Params):
+             specificspecies, all_ranks, All_Ranks, All_Ranks_Params):
     """ Creates a list of reaction rankings for all timesteps and all species.
         Needs work. Understanding output rank_mat: The lists cycle though the
         species list, and after every len(species) its a new time_step."""
@@ -1038,9 +1048,9 @@ def file_saving(pack, slists, zerod_info, m_pram, plist, siminfo, sati):
 
 if __name__ == "__main__":
     ####Set experiment parameters
-    mech_name = 'mech-FFCM1_modified.cti' #Mechanism file
+    mechanism = 'mech-FFCM1_modified.cti' #Mechanism file
     # mechanism = cf.model_folder(mech_name)
-    mechanism = os.path.join('Models',mech_name)
+    # mechanism = os.path.join('Models',mech_name)
     #Parameters for main loop
     Temperature = [600, 2500, 4]    #Temperature [K]
     Press       = [.1, 100, 4]      #Pressure [atm]
@@ -1063,7 +1073,7 @@ if __name__ == "__main__":
     PPM       = 1/1000000 #one ppm
     
     save_files = False # If true, save files for plotting script
-    save_time  = True # If true, also save files for GUI. Not recommended for large runs
+    save_time  = False # If true, also save files for GUI. Not recommended for large runs
     debug = False  # If true, print lots of information for debugging.
     
     run_0D_simulation(mechanism, array_type, Press, Temperature, 
