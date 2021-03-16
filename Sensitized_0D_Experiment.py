@@ -12,19 +12,19 @@ pushing a change in the code.
 
 import os
 import math
+import time
 import errno
 import pickle
 import cantera
-import time, sys
 import numpy as np
-# import itertools as it
+from tqdm import tqdm
 from datetime import datetime
 import common_functions as cf
 
 cantera.suppress_thermo_warnings()
 
-def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
-                      s_species, stime, etime, dT, ppm, safi, sati):
+def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
+                      mix_params, s_species, stime, etime, dT, ppm, safi, sati):
     """
     
 
@@ -55,39 +55,57 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
 
     """
     #start time
-    print('Start Time Here')
     tic = time.time()
     mechan = cf.model_folder(mech)
-    print('Mech found in folder')
-    pack, s_lists = initialization(mechan, arrtype, pres, temp, 
-                                   fue, oxi, dilu, mix_params, s_species,
-                                   stime, etime, dT, ppm)
-    print('Initialization performed')
-    paralist = cf.case_maker(pack)
-    print(paralist)
-    print('Parameter List created')
-    zerod_info, siminfo = run_simulations(pack, s_lists, paralist)
-    print('Simulation Complete')
-    #end time
+    pack, paralist = initialization(mechan, arrtype, pres, temp, 
+                                    fue, oxi, dilu, m_type, mix_params,
+                                    s_species, stime, etime, dT, ppm)
+    zerod_info, siminfo, s_lists = run_simulations(pack, paralist)
     toc       = time.time()
+    #end time
     duration  = toc-tic
     siminfo.append(duration)
     print('Number of cases ran', len(paralist))
-    # print('Number of cases that meet all conditions', len(All_Ranks))
     print('Time it took to run all simulations and rank them was '
           +format(duration, '0.5f')+' seconds.\n')
     
     if safi:
         file_saving(pack, s_lists, zerod_info, paralist, siminfo, sati)
 
-def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
+def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
                    mix_params, s_species, stime, etime, dT, ppm):
     
     print("Initialization Under Construction")
-    # DEBUG_FMT = 'Removing condition: T={:.0f}, P={:.0f}, 
-    #                                  phi={:.3g}, fuel={:.3g}'
+    #create gas object
+    gas                   = cantera.Solution(mechan)
+    dup_reactions         = cf.duplicate_reactions(gas)
+    Reactions             = range(0,len(gas.reaction_equations()))
+    names                 = gas.species_names
+    SpecificSpecieNumbers = [names.index(speci) for speci in s_species]
+    SCORE3_TIME = stime + (etime - stime)*0.75 # time to evaluate score3
+
+    Packed = {'Parameters': [pres, temp, mix_params, array_type], 
+              'Mixture':[fue, dilu, oxi, m_type],
+              'ZeroD': [s_species, dup_reactions,
+                        Reactions, SpecificSpecieNumbers],
+              'Time_Info': [stime, etime, SCORE3_TIME],
+              'Files': [mechan],
+              'Limits': [dT, ppm]}
+    Parameter_List = cf.case_maker(Packed)
+    return Packed, Parameter_List
     
-    #initializing
+def run_simulations(pack, plist):
+    
+    print("Run Sim Under Construction")
+    dT  = pack['Limits'][0]
+    ppm = pack['Limits'][1]
+    sspecies = pack['ZeroD'][0]
+    rxns     = pack['ZeroD'][2]
+    sspecnum = pack['ZeroD'][3]
+    gas = cantera.Solution(pack['Files'][0])
+    score3time = pack['Time_Info'][2]
+    
+    #Lists
     Parameters      = []
     #first scoring criteria
     score_T_P_MaxSensavg = []
@@ -112,40 +130,6 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
     MoleFraction  = []
     All_time_Sens = []
     All_tTP_AMo   = []
-    #create gas object
-    gas                   = cantera.Solution(mechan)
-    dup_reactions         = cf.duplicate_reactions(gas)
-    Reactions             = range(0,len(gas.reaction_equations()))
-    names                 = gas.species_names
-    SpecificSpecieNumbers = [names.index(speci) for speci in s_species]
-    SCORE3_TIME = stime + (etime - stime)*0.75 # time to evaluate score3
-
-    #Package key parameters for simulations
-    Score_Lists = [Parameters, score_T_P_MaxSensavg, scoretimes, rank_score,
-                   rank_plot, All_Ranks, All_Ranks_Params, score2_T_P_MaxSens,
-                   score2times, score2_Max_sens_rxn,
-                   score2_Params_MaxSens_Name_Params, score3_T_P_MaxSens,
-                   score3times, score3_Max_sens_rxn,
-                   score3_Params_MaxSens_Name_Params, int_strength,
-                   MoleFraction, All_time_Sens, All_tTP_AMo]
-    Packed = {'Parameters': [pres, temp, mix_params, array_type], 
-              'Mixture':[fuel_name, diluent_name, oxidizer_name, mixture_type],
-              'ZeroD': [s_species, dup_reactions,
-                        Reactions, SpecificSpecieNumbers],
-              'Time_Info': [stime, etime, SCORE3_TIME],
-              'Files': [mechan],
-              'Limits': [dT, ppm]}
-    return Packed, Score_Lists
-    
-def run_simulations(pack, slists, plist):
-    
-    print("Run Sim Under Construction")
-    dT  = pack['Limits'][0]
-    ppm = pack['Limits'][1]
-    sspecies = pack['ZeroD'][0]
-    rxns     = pack['ZeroD'][2]
-    sspecnum = pack['ZeroD'][3]
-    gas = cantera.Solution(pack['Files'][0])
     
     print('Start of Simulations')
     sim_start   = time.time()
@@ -156,11 +140,8 @@ def run_simulations(pack, slists, plist):
     print('It took '+format(sim_time, '0.5f')+' seconds to simulate all cases')
 
     print('Start Ranking Process')
-    Cases = len(plist)
-    case  = 0
     rank_start = time.time()
-    update_progress(0)
-    for sims in sim_package:
+    for sims in tqdm(sim_package):
         [t_T_P_AMol, t_SMol, t_AllSpecieSens,
           All_time_Sens_test, All_tTP_AMo_test,
           temp, mix, pressure] = sims
@@ -170,48 +151,53 @@ def run_simulations(pack, slists, plist):
             #     print('T limit ' + DEBUG_FMT.format(temp, pressure, mix))
             del All_tTP_AMo_test[-1]
             del All_time_Sens_test[-1]
-            case +=1
-            update_progress(case/Cases)
             continue
         else:
-            slists[18].append(All_tTP_AMo_test) #List: All_tTP_AMo
-            slists[17].append(All_time_Sens_test) #List: All_time_Sens
+            All_tTP_AMo.append(All_tTP_AMo_test)
+            All_time_Sens.append(All_time_Sens_test)
             condition_info = {
                 'temperature': temp, 'pressure': pressure*101.325,
                 'mixture': mix}
-            slists[0].append(condition_info) #List: Parameters
+            Parameters.append(condition_info)
 
         #initialize parameters
-        SpecificSpecieSens = []   #list of sens of interest per rxn
+        SpecificSpecieSens = [] #list of sens of interest per rxn
         all_ranks          = []
-        senstime           = np.array([x[0] for x in t_AllSpecieSens])   #times for all specie sensitivities
+        senstime           = np.array([x[0] for x in t_AllSpecieSens]) #times for all specie sensitivities
         sensitivities      = np.absolute(np.array([x[1] for x in t_AllSpecieSens])) #sensitivities
-        molfrac_conditions = mole_fractions(t_SMol, plist, ppm,
-                                            slists[16], sspecies)
+        molfrac_conditions = mole_fractions(t_SMol, pressure, temp, mix, ppm,
+                                            MoleFraction, sspecies)
         specific_sens(sspecies, rxns, t_SMol, sspecnum, molfrac_conditions,
                       sensitivities, SpecificSpecieSens)
         sensitivity_score(SpecificSpecieSens, sspecies, temp, pressure, rxns,
-                          senstime, slists[1], slists[2])
+                          senstime, score_T_P_MaxSensavg, scoretimes)
         sensitivity_score2(SpecificSpecieSens, sspecies, temp, pressure, mix,
-                           rxns, senstime, gas, slists[7], slists[8],
-                           slists[9], slists[10])
-        sensitivity_score3(sspecies, mix, temp, pressure, pack['Time_Info'][2],
+                           rxns, senstime, gas, score2_T_P_MaxSens,
+                           score2times, score2_Max_sens_rxn,
+                           score2_Params_MaxSens_Name_Params)
+        sensitivity_score3(sspecies, mix, temp, pressure, score3time,
                            t_AllSpecieSens, SpecificSpecieSens, rxns, gas,
-                           slists[13], slists[14])
+                           score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params)
         rank_all(SpecificSpecieSens, temp, pressure, mix, rxns, senstime,
-                 sspecies, all_ranks, slists[5], slists[6])
+                 sspecies, all_ranks, All_Ranks, All_Ranks_Params)
         IS_norm = integrated(t_AllSpecieSens, sspecnum, len(rxns),
                               molfrac_conditions)
-        slists[15].append([condition_info, IS_norm]) #List: int_strength
-        case += 1
-        update_progress(case/Cases)
+        int_strength.append([condition_info, IS_norm]) #List: int_strength
+        
+    score_lists = [Parameters, score_T_P_MaxSensavg, scoretimes, rank_score,
+                    rank_plot, All_Ranks, All_Ranks_Params, score2_T_P_MaxSens,
+                    score2times, score2_Max_sens_rxn,
+                    score2_Params_MaxSens_Name_Params, score3_T_P_MaxSens,
+                    score3times, score3_Max_sens_rxn,
+                    score3_Params_MaxSens_Name_Params, int_strength,
+                    MoleFraction, All_time_Sens, All_tTP_AMo]
 
     rank_end  = time.time()
     rank_time = rank_end - rank_start
     print('End Ranking Process')
     print('It took '+format(rank_time, '0.5f')+' seconds to rank all cases')
     sim_info = [sim_time, rank_time]
-    return sim_package, sim_info
+    return sim_package, sim_info, score_lists
 
 
 def reac_sens_parallel(pressure, temp, mix, pack):
@@ -260,10 +246,6 @@ def reac_sens_parallel(pressure, temp, mix, pack):
 
     """
 
-    # fuel_name       = pack['Mixture'][0]
-    # diluent_name    = pack['Mixture'][1]
-    # mix_type        = pack['Mixture_Info'][0]
-    # a               = pack['Parameters'][5]
     specificspecies = pack['ZeroD'][0]
     mech            = pack['Files'][0]
     dup_reactions   = pack['ZeroD'][1]
@@ -271,9 +253,6 @@ def reac_sens_parallel(pressure, temp, mix, pack):
     endtime         = pack['Time_Info'][1]
     SCORE3_TIME     = pack['Time_Info'][2]
 
-    # mix      = mixture_maker(gas1, phi, fuel, a,
-    #                          mix_type, fuel_name, diluent_name)
-    # mix = cf.case_maker(pack)
     gas1 = cantera.Solution(mech)
     gas1.TPX = temp, pressure*101325, mix
     rxns     = range(0,len(gas1.reaction_equations()))
@@ -304,9 +283,7 @@ def reac_sens_parallel(pressure, temp, mix, pack):
     t_AllSpecieSens = [[rows[i][0],rows[i][5]] for i in range(0,pts)]
     All_time_Sens_test = t_AllSpecieSens
     All_tTP_AMo_test = t_T_P_AMol
-
-    # package = [t_T_P_AMol, t_SMol, t_AllSpecieSens, All_time_Sens_test,
-    #            All_tTP_AMo_test, temp, mix, pressure, phi, fuel]
+    
     package = [t_T_P_AMol, t_SMol, t_AllSpecieSens, All_time_Sens_test,
                All_tTP_AMo_test, temp, mix, pressure]
 
@@ -363,7 +340,8 @@ def T_limit(t_T_P_AMol,temp,delta_T):
     return temp_condition
 
 
-def mole_fractions(t_SMol, plist, ppm, MoleFraction, specificspecies):
+def mole_fractions(t_SMol, pressure, temp, mix,
+                   ppm, MoleFraction, specificspecies):
     """Function which zeros mole fractions values.
 
     This function is checking if the mole fractions from the t_SMol
@@ -406,7 +384,6 @@ def mole_fractions(t_SMol, plist, ppm, MoleFraction, specificspecies):
         to a different simulation or initial conditions.
 
     """
-    pressure, temp, mix = plist
     molefrac_time = np.array([x[0] for x in t_SMol])
     molfrac       = np.absolute(np.array([x[1] for x in t_SMol]))  #specific specie moles frac
 
@@ -763,90 +740,25 @@ def integrated(t_sens, spec_nums, num_rxns, mole_frac):
     return IS_norm
 
 
-def update_progress(progress):
-    barLength = 25 # Modify this to change the length of the progress bar
-    status = ""
-    if isinstance(progress, int):
-        progress = float(progress)
-    if not isinstance(progress, float):
-        progress = 0
-        status = "error: progress var must be float\r\n"
-    if progress < 0:
-        progress = 0
-        status = "Halt...\r\n"
-    if progress >= 1:
-        progress = 1
-        status = "Done...\r\n"
-    block = int(round(barLength*progress))
-    text = "\rPercent: [{0}] {1}% {2}".format( "#"*block +
-                       "-"*(barLength-block), progress*100, status)
-    sys.stdout.write(text)
-    sys.stdout.flush()
-
-
-# def flow_reactor_parallel(params, pack, fun):
-#     """Runs the simulation in Parallel by first determining the largest length
-#     of the four parameters. If all parameters are of equal length, the code will
-#     create a pool of temperatures to run. The code must be outside of ipython
-#     console, if not it will not parallize the simulation"""
-#     from multiprocessing import cpu_count, Pool
-#     #Find optimal number of cpus to use
-#     numcases = len(params) #Number of cases to run
-#     if cpu_count() == 2 or cpu_count() == 1:
-#         proc = 1 #Less Powerful Computer
-#     elif numcases > cpu_count():
-#         #Number of cases to run on each processor, rounded up
-#         loops = [np.ceil(numcases/proc) for proc in range(1, cpu_count())]
-#         # First entry in loops with the minumum number. Add one because
-#         # of 0-based indexing, add another in case one process is much slower.
-#         proc = loops.index(min(loops))+2
-#     else: # More cpus than cases
-#         proc = numcases
-
-#     pool = Pool(processes=proc)
-
-#     results = []
-#     for x in params:
-#         results.append(pool.apply_async(fun, args=(*x, pack)))
-#     pool.close()
-#     pool.join()
-
-#     # Get the results
-#     datadict = dict()
-#     casenum  = 0
-#     for p in results:
-#         try:
-#             # Assign it to datadict. This is ordered by the time when each
-#             # simulation starts, not when they end
-#             datadict[casenum] = p.get()
-#         except RuntimeError: # I'm not sure what this is
-#             print('\nUnknown Cody RunTimeError.')
-#             datadict[casenum] = None
-#         casenum += 1
-#     outlist = [datadict[k] for k in datadict.keys()] # Convert back to list
-#     return outlist
-
-
-# def reduce_cases(paramlist, a, debug=False):
-#     """ Reduces cases if the diluent is negative."""
-#     paramlist_condition = []
-#     parameters_list     = []
-#     for x in paramlist:
-#         (temp, pressure, phi, fuel) = x
-#         oxygen  = a/phi*fuel
-#         diluent = 1 - oxygen - fuel
-#         if diluent<0:
-#             paramlist_condition.append(1)
-#             if debug:
-#                 print('Diluent limit. ' + DEBUG_FMT.format(*x))
-#         else:
-#             paramlist_condition.append(0)
-
-#     Cases = range(0,len(paramlist))
-#     for x in Cases:
-#         if paramlist_condition[x] == 0:
-#             parameters_list.append(paramlist[x])
-#     return parameters_list
+# def update_progress(progress):
+#     barLength = 25 # Modify this to change the length of the progress bar
+#     status = ""
+#     if isinstance(progress, int):
+#         progress = float(progress)
+#     if not isinstance(progress, float):
+#         progress = 0
+#         status = "error: progress var must be float\r\n"
+#     if progress < 0:
+#         progress = 0
+#         status = "Halt...\r\n"
+#     if progress >= 1:
+#         progress = 1
+#         status = "Done...\r\n"
+#     block = int(round(barLength*progress))
+#     text = "\rPercent: [{0}] {1}% {2}".format( "#"*block +
+#                        "-"*(barLength-block), progress*100, status)
+#     sys.stdout.write(text)
+#     sys.stdout.flush()
 
 
 def sens_dup_filter(sens_information, duplicate_reactions):
@@ -927,7 +839,7 @@ def sens_dup_filter(sens_information, duplicate_reactions):
 #         mixture = gas.mole_fraction_dict()
 #     return mixture
 
-def file_saving(pack, slists, zerod_info, m_pram, plist, siminfo, sati):
+def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
     """
     
 
@@ -954,14 +866,18 @@ def file_saving(pack, slists, zerod_info, m_pram, plist, siminfo, sati):
 
     """
 
-    P = pack['Parameters'][0]
-    T = pack['Parameters'][1]
-    sspecies = pack['ZeroD'][0]
-    rxns     = pack['ZeroD'][2]
-    mech = pack['Files']
+    P           = pack['Parameters'][0]
+    T           = pack['Parameters'][1]
+    m_params    = pack['Parameters'][2]
+    sspecies    = pack['ZeroD'][0]
+    rxns        = pack['ZeroD'][2]
+    mech        = pack['Files']
     SCORE3_TIME = pack['Time_Info'][2]
-    dT  = pack['Limits'][0]
-    ppm = pack['Limit'][1]
+    dT          = pack['Limits'][0]
+    ppm         = pack['Limits'][1]
+    f_name      = pack['Mixture'][0]
+    d_name      = pack['Mixture'][1]
+    o_name      = pack['Mixture'][2]
     
     
     print('Creating Directory...')
@@ -988,15 +904,17 @@ def file_saving(pack, slists, zerod_info, m_pram, plist, siminfo, sati):
     #Text Description
     filename  = 'Case Description.txt'
     filename  = os.path.join(save_path, filename)
-    prams = cf.parameters_string(P, T, m_pram)
+    # prams = cf.parameters_string(P, T, m_params, mech,
+    #                              f_name, o_name, d_name)
     f         = open(filename, "w")
     text_description = ("This file provides a description of the parameters "
             "and specific species of interest investigated in the "
             "Flow Reactor Simulation.\r\n"
             "=======Species of Interest======="
             "\r"+format(sspecies)+"\r"
-            "=================================\r\n"
-            +prams+"\n"
+            "=================================\r\n" + 
+            cf.parameters_string(P, T, m_params, mech, f_name, o_name, d_name) 
+            + "\n"
             "==========Number of Cases==========\r"
             "Total Cases Simulated 	     = "+format(len(plist))+"\r"
             "Cases Meeting All Conditions = "+format(len(slists[5]))+"\r"
@@ -1052,19 +970,19 @@ if __name__ == "__main__":
     # mechanism = cf.model_folder(mech_name)
     # mechanism = os.path.join('Models',mech_name)
     #Parameters for main loop
-    Temperature = [600, 2500, 4]    #Temperature [K]
-    Press       = [.1, 100, 4]      #Pressure [atm]
+    Temperature = [600, 2500, 2]    #Temperature [K]
+    Press       = [.1, 100, 2]      #Pressure [atm]
     Phi         = [0.00025, 2.5, 4] #Equivalence ratio
     Fuel        = [0.00001, 0.1, 4] #Fuel mole fraction
-    Dilper       = [0.00001, 0.1, 4]
+    Dilper      = [0.00001, 0.1, 4]
 
     #Parameters for mixture
     fuel_name = 'H2' #chemical formula of fuel
     diluent_name = 'N2' #chemical formula of diluent
     oxidizer_name = 'O2'
-    mixture_type = 'phi_fuel'
+    Mixture_type = 'phi_fuel'
     array_type = 'lin'
-    Mix_params = (mixture_type, Phi, Fuel)
+    Mix_params = (Mixture_type, Phi, Fuel)
 
     SpecificSpecies = ['OH'] #Species of interest for rxn ranking data
     Starttime = 0     #in the case a reading is too early
@@ -1072,13 +990,13 @@ if __name__ == "__main__":
     Delta_T   = 100
     PPM       = 1/1000000 #one ppm
     
-    save_files = False # If true, save files for plotting script
+    save_files = True # If true, save files for plotting script
     save_time  = False # If true, also save files for GUI. Not recommended for large runs
-    debug = False  # If true, print lots of information for debugging.
+    debug      = False  # If true, print lots of information for debugging.
     
     run_0D_simulation(mechanism, array_type, Press, Temperature, 
-                      fuel_name, oxidizer_name, diluent_name, Mix_params, 
-                      SpecificSpecies, Starttime, Endtime,
+                      fuel_name, oxidizer_name, diluent_name, Mixture_type,
+                      Mix_params, SpecificSpecies, Starttime, Endtime,
                       Delta_T, PPM, save_files, save_time)
 
 
