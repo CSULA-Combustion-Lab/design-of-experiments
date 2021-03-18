@@ -319,7 +319,7 @@ if __name__ == "__main__":
     with open('last run 0d.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
-    Load_path   = 'Outputs'+Load_folder
+    Load_path   = '0D_Sensitivity_Results'+Load_folder
     Plot_path   = Load_path+'\\Figures'
 
     file = open(Load_path+'\\Case Description.txt','r')
