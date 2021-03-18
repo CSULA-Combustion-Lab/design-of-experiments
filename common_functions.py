@@ -330,3 +330,39 @@ def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
               " [atm]\n\tMixture Parameters:\n" + mixture_text +
               "\n==========================================================")
     return string
+
+
+def calculate_a(fuel, mech):
+    """
+    
+
+    Parameters
+    ----------
+    fuel : TYPE
+        DESCRIPTION.
+    mech : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    a : TYPE
+        DESCRIPTION.
+
+    """
+    #fuel C(x)H(y)O(z)
+    gas        = ct.Solution(mech)
+    fuel_index = gas.species(gas.species_index(fuel)).composition
+    if 'C' in fuel_index:
+        x = fuel_index['C']
+    else:
+        x = 0
+    if 'H' in fuel_index:
+        y = fuel_index['H']
+    else:
+        y = 0
+    if 'O' in fuel_index:
+        z = fuel_index['O']
+    else:
+        z = 0
+    a = x+y/4-z/2
+    return a
