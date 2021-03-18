@@ -146,3 +146,19 @@ def test_multi_f_o():
     nptest.assert_allclose(0.95 / 0.05, mixture['O2'] / mixture['AR'])
     assert all([x >= 0 for k, x in mixture.items()])
 
+def test_parameters_string():
+    P = [0.25, 5, 5]
+    T = [600, 2500, 5]
+    Phi = [0.01, 2, 5]
+    Fuel = [0.05, 0.9, 5]
+    M_type = 'phi_fuel'
+    mix_params = (M_type, Phi, Fuel)
+    
+    chem = 'mech-FFCM1_modified.cti'
+    fuel = 'H2'
+    oxidizer = 'O2'
+    diluent = 'N2'
+    
+    mixture_string = cf.parameters_string(P, T, mix_params, chem, 
+                                          fuel, oxidizer, diluent)
+    print(mixture_string)
