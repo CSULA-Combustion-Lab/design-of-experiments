@@ -871,7 +871,7 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
     m_params    = pack['Parameters'][2]
     sspecies    = pack['ZeroD'][0]
     rxns        = pack['ZeroD'][2]
-    mech        = pack['Files']
+    mech        = pack['Files'][0]
     SCORE3_TIME = pack['Time_Info'][2]
     dT          = pack['Limits'][0]
     ppm         = pack['Limits'][1]

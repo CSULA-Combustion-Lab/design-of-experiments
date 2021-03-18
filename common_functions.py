@@ -321,12 +321,12 @@ def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
         labels.extend(['Parameter 1', 'Parameter 2'])
     mixture_text = '\n'.join(['\t\t{}: {}'.format(k, v) for
                               k, v in zip(labels, mix_params)])
-    string = ("================Parameters================" +
+    string = ("========================Parameters========================" +
               "\nMechanism: " + chem + "\nFuel: " + str(fuel) +
               "\nOxidizer: " + str(oxidizer) + "\nDiluent: " +
               str(diluent) +
               "\n[Initial, Final, # of points]\n\tTemperature: " +
               format(T) + " [Kelvin]\n\tPressure Range: " + format(P) +
               " [atm]\n\tMixture Parameters:\n" + mixture_text +
-              "\n==========================================")
+              "\n==========================================================")
     return string
