@@ -16,19 +16,15 @@ import sys
 ## 0D Simulates a no flame condition tracking species concentraion in time
 ## 1D Simulates an adiabatic flame tracking species before, at, and after flame
 ## Burner Simulates a planar flame stabalized at some distance from burner
-Simulation_Type = '1D'
+Simulation_Type = '0D'
 
 # TODO: Check mix type names. Keep naming argument similar. Who reads this next must do it!
-#Mixture Type (Debug, Custom, Oxi_Dil, Fue_Dil)
-#Provide one of the four types of mixtures into
-# variable mixture_type as a string
-#  Debug is used for simulating a single flame to check code
-#  Custom is under construction
+#Provide one of types of mixtures into variable mixture_type as a string
 #  Oxi_Dil creates a mixture where the Diluent is a ratio of the Oxidizer used
 #  Fue_Dil creates a mixture where the Diluent is a ratio of the Fuel used
 #  phi_fuel specifies the equivalence ratio and fuel mole fraction
 #  Ox_Fuel specifies the oxidizer and fuel mole fractions
-Mixture_type = 'Ox_Fuel'
+Mixture_type = 'phi_fuel'
 
 #Parameters (Pressure, Equivalence, Temperature, Diluent Percentage)
 ## All parameters are lists of three numbers
@@ -40,13 +36,13 @@ Mixture_type = 'Ox_Fuel'
 ### Equivalence: Dimensionless (<1:Fuel Lean, 1:Unity, >1:Fuel Rich)
 ### Temperature: Kelvin [K]
 ### Diluent_Percentage: Percent [%]
-Pressure           = [1, 1, 1]
-Temperature        = [300, 450, 1]
+Pressure           = [.1, 100, 4]
+Temperature        = [600, 2500, 4]
 
 # Mixture parameters. Not all of these will be used, depending on Mixture_type
-Equivalence        = [0.8, 1, 2]
-fraction_in_oxidizer_or_fuel = [0.21, 0.5, 2]  # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
-fuel_fraction      = [0.01, 0.5, 15]
+Equivalence        = [0.00025, 2.5, 4]
+fraction_in_oxidizer_or_fuel = [0.00001, 0.1, 4]  # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
+fuel_fraction      = [0.00001, 0.1, 4]
 oxidizer_fraction  = [0.01, 0.9, 15]
 
 ### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
@@ -54,7 +50,7 @@ oxidizer_fraction  = [0.01, 0.9, 15]
 Array_type = 'lin'
 
 #Set experiment parameters
-Mechanism = 'Nakamura Ammonia.cti' #Mechanism file
+Mechanism = 'mech-FFCM1_modified.cti' #Mechanism file
 
 #Parameters for mixture (Fuel, Oxidizer, Diluent)
 # Fuel and Oxidizer can either be a single chemical string or multichemical list
@@ -62,7 +58,7 @@ Mechanism = 'Nakamura Ammonia.cti' #Mechanism file
 #  The percentage following the chemical name should sum up to 1
 # Diluent should be a single chemical added to the mixture
 # Fuel     = 'H2' #chemical formula of fuel
-Fuel  = ['NH3', .80 , 'H2', .20]
+Fuel  = 'H2'
 Oxidizer = 'O2' #chemical formula of oxidizer
 # Oxidizer = ['O2', .35 , 'NO2', .65]
 Diluent  = 'N2' #chemical formula of diluent
@@ -94,16 +90,13 @@ if __name__ == "__main__":
     else:
         raise ValueError('Mixture_type = {} is not supported'.format(Mixture_type))
 
-    # TODO: 0D needs to take in mix_params tuple as seen above.
-    # Example of implementation can be seen in 1D code below.
     if Simulation_Type == '0D':
         print(cf.parameters_string(Pressure, Temperature, mix_params,
                                    Mechanism, Fuel, Oxidizer, Diluent))
-        zeroD.run_0d_simulation(Mechanism, Array_type, Pressure, Temperature,
-                                Fuel, Oxidizer, Diluent, mix_params,
-                                SpecificSpecies, Starttime, Endtime,
-                                Delta_T, PPM, Save_files, Save_time)
-        print('Under-Construction!')
+        zeroD.run_0D_simulation(Mechanism, Array_type, Pressure, Temperature,
+                                Fuel, Oxidizer, Diluent, Mixture_type,
+                                mix_params, SpecificSpecies, Starttime, 
+                                Endtime, Delta_T, PPM, Save_files, Save_time)
     elif Simulation_Type =='1D':
         print(cf.parameters_string(Pressure, Temperature, mix_params,
                                    Mechanism, Fuel, Oxidizer, Diluent))
