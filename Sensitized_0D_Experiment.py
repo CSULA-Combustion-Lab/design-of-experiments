@@ -74,8 +74,6 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
 
 def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
                    mix_params, s_species, stime, etime, dT, ppm):
-    
-    print("Initialization Under Construction")
     #create gas object
     gas                   = cantera.Solution(mechan)
     dup_reactions         = cf.duplicate_reactions(gas)
@@ -84,7 +82,7 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
     SpecificSpecieNumbers = [names.index(speci) for speci in s_species]
     SCORE3_TIME = stime + (etime - stime)*0.75 # time to evaluate score3
 
-    Packed = {'Parameters': [pres, temp, mix_params, array_type], 
+    Packed = {'Parameters': [pres, temp, mix_params, arrtype], 
               'Mixture':[fue, dilu, oxi, m_type],
               'ZeroD': [s_species, dup_reactions,
                         Reactions, SpecificSpecieNumbers],
@@ -96,7 +94,6 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
     
 def run_simulations(pack, plist):
     
-    print("Run Sim Under Construction")
     dT  = pack['Limits'][0]
     ppm = pack['Limits'][1]
     sspecies = pack['ZeroD'][0]
@@ -740,27 +737,6 @@ def integrated(t_sens, spec_nums, num_rxns, mole_frac):
     return IS_norm
 
 
-# def update_progress(progress):
-#     barLength = 25 # Modify this to change the length of the progress bar
-#     status = ""
-#     if isinstance(progress, int):
-#         progress = float(progress)
-#     if not isinstance(progress, float):
-#         progress = 0
-#         status = "error: progress var must be float\r\n"
-#     if progress < 0:
-#         progress = 0
-#         status = "Halt...\r\n"
-#     if progress >= 1:
-#         progress = 1
-#         status = "Done...\r\n"
-#     block = int(round(barLength*progress))
-#     text = "\rPercent: [{0}] {1}% {2}".format( "#"*block +
-#                        "-"*(barLength-block), progress*100, status)
-#     sys.stdout.write(text)
-#     sys.stdout.flush()
-
-
 def sens_dup_filter(sens_information, duplicate_reactions):
     """
     
@@ -870,11 +846,11 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
             "PPM Limit     = "+format(ppm*1e6)+"\r"
             "delta_T Limit = "+format(dT)+"\r"
             "====================\r\n"
-            "====================Times====================\r"
+            "===============Times===============\r"
             "Simulation Time = "+format(siminfo[0], '0.2f')+" [seconds]\r"
             "Ranking Time    = "+format(siminfo[1], '0.2f')+" [seconds]\r"
             "Total Time      = "+format(siminfo[2], '0.2f')+" [seconds]\r"
-            "=============================================")
+            "===================================")
     f.write(text_description)
     f.close()
 
@@ -895,7 +871,7 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
         with open(file, 'wb') as f:
             pickle.dump(item[0], f)
 
-    if save_time:
+    if sati:
         Mole_Frac_fname = 'Mole_fractions.pkl'
         file = os.path.join(save_path, Mole_Frac_fname)
         with open(file, "wb") as f:
