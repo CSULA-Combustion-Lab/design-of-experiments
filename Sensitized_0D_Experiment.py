@@ -101,6 +101,9 @@ def run_simulations(pack, plist):
     sspecnum = pack['ZeroD'][3]
     gas = cantera.Solution(pack['Files'][0])
     score3time = pack['Time_Info'][2]
+    fuel     = pack['Mixture'][0]
+    diluent  = pack['Mixture'][1]
+    oxidizer = pack['Mixture'][2]
     
     #Lists
     Parameters      = []
@@ -152,9 +155,13 @@ def run_simulations(pack, plist):
         else:
             All_tTP_AMo.append(All_tTP_AMo_test)
             All_time_Sens.append(All_time_Sens_test)
+            gas.X = (mix)
             condition_info = {
                 'temperature': temp, 'pressure': pressure*101.325,
-                'mixture': mix}
+                'mixture': mix, 'phi':gas.get_equivalence_ratio(),
+                'fuel':cf.mixture_percentage(fuel,mix),
+                'oxidizer':cf.mixture_percentage(oxidizer,mix),
+                'diluent':cf.mixture_percentage(diluent,mix)}
             Parameters.append(condition_info)
 
         #initialize parameters
@@ -164,22 +171,31 @@ def run_simulations(pack, plist):
         sensitivities      = np.absolute(np.array([x[1] for x in t_AllSpecieSens])) #sensitivities
         molfrac_conditions = mole_fractions(t_SMol, pressure, temp, mix, ppm,
                                             MoleFraction, sspecies)
+        
         specific_sens(sspecies, rxns, t_SMol, sspecnum, molfrac_conditions,
                       sensitivities, SpecificSpecieSens)
+        
         sensitivity_score(SpecificSpecieSens, sspecies, temp, pressure, rxns,
                           senstime, score_T_P_MaxSensavg, scoretimes)
+        
         sensitivity_score2(SpecificSpecieSens, sspecies, temp, pressure, mix,
                            rxns, senstime, gas, score2_T_P_MaxSens,
                            score2times, score2_Max_sens_rxn,
-                           score2_Params_MaxSens_Name_Params)
+                           score2_Params_MaxSens_Name_Params,
+                           fuel, oxidizer, diluent)
+        
         sensitivity_score3(sspecies, mix, temp, pressure, score3time,
                            t_AllSpecieSens, SpecificSpecieSens, rxns, gas,
-                           score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params)
+                           score3_Max_sens_rxn,
+                           score3_Params_MaxSens_Name_Params,
+                           fuel, oxidizer, diluent)
+        
         rank_all(SpecificSpecieSens, temp, pressure, mix, rxns, senstime,
                  sspecies, all_ranks, All_Ranks, All_Ranks_Params)
+        
         IS_norm = integrated(t_AllSpecieSens, sspecnum, len(rxns),
                               molfrac_conditions)
-        int_strength.append([condition_info, IS_norm]) #List: int_strength
+        int_strength.append([condition_info, IS_norm])
         
     score_lists = [Parameters, score_T_P_MaxSensavg, scoretimes, rank_score,
                     rank_plot, All_Ranks, All_Ranks_Params, score2_T_P_MaxSens,
@@ -554,7 +570,8 @@ def sensitivity_score(SpecificSpecieSens, specificspecies, temp, pressure,
 def sensitivity_score2(SpecificSpecieSens, specificspecies, temp, pressure,
                        mix, rxns, senstime, gas, score2_T_P_MaxSens,
                        score2times, score2_Max_sens_rxn,
-                       score2_Params_MaxSens_Name_Params):
+                       score2_Params_MaxSens_Name_Params,
+                       fuel, oxidizer, diluent):
     """ Find the reaction with the highest absolute value of sensitivity for each species of interest.
     The maximum sensitivity is found for all time - not at a specific time step.
     This score will find spikes, but may not find a reaction that is sensitive for a longer time.
@@ -571,7 +588,10 @@ def sensitivity_score2(SpecificSpecieSens, specificspecies, temp, pressure,
     max_rxn[2] = pressure*101.325
     rxn_name   = [None]*(len(specificspecies)+1)
     rxn_name[0] = {'temperature': temp, 'pressure': pressure*101.325,
-                   'mixture': mix}
+                   'mixture': mix, 'phi':gas.get_equivalence_ratio(),
+                   'fuel':cf.mixture_percentage(fuel,mix),
+                   'oxidizer':cf.mixture_percentage(oxidizer,mix),
+                   'diluent':cf.mixture_percentage(diluent,mix)}
 
     max_sens = np.zeros(len(rxns))
     rxn_t    = np.zeros(len(rxns))
@@ -593,7 +613,8 @@ def sensitivity_score2(SpecificSpecieSens, specificspecies, temp, pressure,
 
 def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
                        t_AllSpecieSens, SpecificSpecieSens, rxns, gas,
-                       score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params):
+                       score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params,
+                       fuel, oxidizer, diluent):
     num_spec = len(specificspecies)
     max_rxn = [None]*(num_spec+3)
     max_rxn[0] = mix
@@ -601,7 +622,11 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
     max_rxn[2] = pressure*101.325
     rxn_name   = [None]*(num_spec+1)
     rxn_name[0] = {'temperature': temp, 'pressure': pressure*101.325,
-                   'mixture': mix, 'score3time': SCORE3_TIME}
+                   'mixture': mix, 'score3time': SCORE3_TIME,
+                   'phi':gas.get_equivalence_ratio(),
+                   'fuel':cf.mixture_percentage(fuel,mix),
+                   'oxidizer':cf.mixture_percentage(oxidizer,mix),
+                   'diluent':cf.mixture_percentage(diluent,mix)}
 
     time = np.array([x[0] for x in t_AllSpecieSens])
     ind = np.argwhere(time > SCORE3_TIME)[0][0]
@@ -732,7 +757,10 @@ def integrated(t_sens, spec_nums, num_rxns, mole_frac):
     IS_norm = []
     for spec in IS:
         top5 = spec[np.argsort(np.abs(spec))[-5:]]
-        IS_norm.append(spec / np.mean(np.abs(top5)))
+        if all([x == 0 for x in spec]):
+            IS_norm.append(0.0)
+        else:
+            IS_norm.append(spec / np.mean(np.abs(top5)))
 
     return IS_norm
 
@@ -890,13 +918,11 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
 if __name__ == "__main__":
     ####Set experiment parameters
     mechanism = 'mech-FFCM1_modified.cti' #Mechanism file
-    # mechanism = cf.model_folder(mech_name)
-    # mechanism = os.path.join('Models',mech_name)
     #Parameters for main loop
     Temperature = [600, 2500, 2]    #Temperature [K]
     Press       = [.1, 100, 2]      #Pressure [atm]
-    Phi         = [0.00025, 2.5, 4] #Equivalence ratio
-    Fuel        = [0.00001, 0.1, 4] #Fuel mole fraction
+    Phi         = [0.00025, 2.5, 3] #Equivalence ratio
+    Fuel        = [0.00001, 0.1, 3] #Fuel mole fraction
     Dilper      = [0.00001, 0.1, 4]
 
     #Parameters for mixture
@@ -913,7 +939,7 @@ if __name__ == "__main__":
     Delta_T   = 100
     PPM       = 1/1000000 #one ppm
     
-    save_files = True # If true, save files for plotting script
+    save_files = False # If true, save files for plotting script
     save_time  = False # If true, also save files for GUI. Not recommended for large runs
     debug      = False  # If true, print lots of information for debugging.
     
