@@ -145,20 +145,31 @@ def test_multi_f_o():
     nptest.assert_allclose(0.3 / 0.7, mixture['H2'] / mixture['CO'])
     nptest.assert_allclose(0.95 / 0.05, mixture['O2'] / mixture['AR'])
     assert all([x >= 0 for k, x in mixture.items()])
+    
+def test_mixture_percentage():
+    phi = [0.3 + rand(), 2, 1]
+    fuel = [0.2 + rand() / 5, 1, 1]
+    P = [rand(), 100, 1]
+    T = [500 * rand(), 1000, 1]
+    mix_params = ('phi_fuel', phi, fuel)
 
-def test_parameters_string():
-    P = [0.25, 5, 5]
-    T = [600, 2500, 5]
-    Phi = [0.01, 2, 5]
-    Fuel = [0.05, 0.9, 5]
-    M_type = 'phi_fuel'
-    mix_params = (M_type, Phi, Fuel)
+    multif = ['H2', .3, 'CO', 0.7]
+    singlf = 'H2'
+
+    list_conditions = {'Parameters': [P, T, mix_params, 'log'],
+                       'Mixture': [multif, 'N2', 'O2', 'phi_fuel'],
+                       'Files': [cf.model_folder('grimech30.cti'), None]}
+    stri_conditions = {'Parameters': [P, T, mix_params, 'log'],
+                       'Mixture': [singlf, 'N2', 'O2', 'phi_fuel'],
+                       'Files': [cf.model_folder('grimech30.cti'), None]}
+    list_paramlist = cf.case_maker(list_conditions)
+    list_case = list_paramlist[0]
+    list_mixture = list_case[2]
+    stri_paramlist = cf.case_maker(stri_conditions)
+    stri_case = stri_paramlist[0]
+    stri_mixture = stri_case[2]
     
-    chem = 'mech-FFCM1_modified.cti'
-    fuel = 'H2'
-    oxidizer = 'O2'
-    diluent = 'N2'
+    lst_comp = cf.misture_percentage(multif, list_mixture)
+    str_comp = cf.mixture_percentage(singlf, stri_mixture)
     
-    mixture_string = cf.parameters_string(P, T, mix_params, chem, 
-                                          fuel, oxidizer, diluent)
-    print(mixture_string)
+    #TODO: Add nptest bellow to check that mixture percentage is working.
