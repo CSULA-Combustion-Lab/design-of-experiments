@@ -386,3 +386,42 @@ def update_progress(progress):
                         "-"*(barLength-block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
+    
+def mixture_percentage(components, mix):
+    """
+
+
+    Parameters
+    ----------
+    components : TYPE
+        DESCRIPTION.
+    mix : TYPE
+        DESCRIPTION.
+
+    Raises
+    ------
+    TypeError
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    if type(components) is str:  # Single Component
+        try:
+            return mix[components]
+        except KeyError:
+            return 0.0
+    elif type(components) is list:
+        # Format is [component1, quantity1, component2, quantity2, ...]
+        Percentage = 0
+        for n in range(0, len(components), 2):
+            try:
+                Percentage += mix[components[n]]
+            except KeyError:  # Component isn't in mixture
+                pass
+        return Percentage
+    else:
+        raise TypeError

@@ -243,9 +243,9 @@ def flame_sens(p, T, mix, cond):
     # More summary parameters to save later
     Fuel = 'unused'
     Oxidizer = 'unused'
-    Fue_Percent = mixture_percentage(Fuel_name, mix)
-    Oxi_Percent = mixture_percentage(Oxidizer_name, mix)
-    Dil_Percent = mixture_percentage(Diluent_name, mix)
+    Fue_Percent = cf.mixture_percentage(Fuel_name, mix)
+    Oxi_Percent = cf.mixture_percentage(Oxidizer_name, mix)
+    Dil_Percent = cf.mixture_percentage(Diluent_name, mix)
     mixture = flames.Mixture(mix, chem)  # Create mixture object
     phi = mixture.phi
 
@@ -299,46 +299,6 @@ def flame_info_filter(flame_information, duplicate_reactions):
                      f['Flame'][0][n][1] = 0
                 f['Flame'][0][duplicate_reactions[d][0]][1] = sum
     return flame_information
-
-
-def mixture_percentage(components, mix):
-    """
-
-
-    Parameters
-    ----------
-    components : TYPE
-        DESCRIPTION.
-    mix : TYPE
-        DESCRIPTION.
-
-    Raises
-    ------
-    TypeError
-        DESCRIPTION.
-
-    Returns
-    -------
-    TYPE
-        DESCRIPTION.
-
-    """
-    if type(components) is str:  # Single Component
-        try:
-            return mix[components]
-        except KeyError:
-            return 0.0
-    elif type(components) is list:
-        # Format is [component1, quantity1, component2, quantity2, ...]
-        Percentage = 0
-        for n in range(0, len(components), 2):
-            try:
-                Percentage += mix[components[n]]
-            except KeyError:  # Component isn't in mixture
-                pass
-        return Percentage
-    else:
-        raise TypeError
 
 
 def file_saving(cond, fla_inf, p_list, s_info):
