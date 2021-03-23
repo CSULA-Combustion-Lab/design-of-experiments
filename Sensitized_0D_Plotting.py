@@ -15,6 +15,13 @@ plt.style.use(os.path.join(dirname, 'CSULA_Combustion_test.mplstyle'))
 #from tkinter import filedialog
 
 
+# info = {'P': ['Pressure [kPa]', Pressure, 'Pressure'],
+#         'phi': ['Equivalence Ratio [$\phi$]', Equivalence,'Equivalence'],
+#         'X': ['Fuel [mole fraction]', Fuel, 'Fuel'],
+#         'O': ['Oxidizer [mole fraction]', Oxidizer, 'Oxidizer'],
+#         'D': ['Diluent [mole fraction]', Diluent, 'Diluent'],
+#         'T': ['Temperature [K]', Temperature, 'Temperature']}
+
 def rxn_plots(max_rxns, species):
     for specie in species[0]:
         Temperature  = []
@@ -24,17 +31,21 @@ def rxn_plots(max_rxns, species):
         Rxns         = []
         num_ticks = 10
         for ents in max_rxns:
+            print(ents)
             rxn = ents[species[0].index(specie)+3]
+            print(rxn)
             if rxn is None:
                 continue
             entry = [k for k in ents[0].values()]
-            a     = species[2][0]
-            phi   = a*(entry[0]/entry[1])
+            print(entry)
+            # a     = species[2][0]
+            # phi   = a*(entry[0]/entry[1])
             Temperature.append(ents[1])
             Pressure.append(ents[2])
-            Equivalence.append(phi)
+            Equivalence.append(ents[3])
             Fuel.append(entry[0])
             Rxns.append(rxn)
+            
 
         # fs = 15 #Controls font size
         varnames = ['P', 'phi', 'X', 'T']
@@ -137,6 +148,8 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
             y = []
             key = info[var][1]
             for condition in int_strength:
+                print(condition)
+                print(condition[1])
                 x.append(condition[0][key])
                 norm_IS = condition[1][i]
                 y.append(norm_IS[rxn_num])
