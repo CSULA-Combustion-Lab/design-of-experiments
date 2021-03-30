@@ -173,7 +173,7 @@ def case_maker(cond):
     # I would understand to mean "X/diluent".
     # But, the quantity is actually "X/(X+diluent)", which I would call
     # "X% in X mixture," like "O2 % in oxidizer." I've started fixing this.
-    if mix_type == 'Oxi_Dil':
+    if mix_type == 'phi_oxi/dil':
         for equiv, ox_to_dil in mix_loop:
             if ox_to_dil > 1:
                 continue  # Impossible mixture
@@ -185,7 +185,7 @@ def case_maker(cond):
             gas.set_equivalence_ratio(equiv, Fuel, diluted_ox)
             mixlist.append(gas.mole_fraction_dict())
 
-    elif mix_type == 'Fue_Dil':
+    elif mix_type == 'phi_fuel/dil':
         for equiv, f_to_dil in mix_loop:
             if f_to_dil > 1:
                 continue  # Impossible mixture
@@ -197,18 +197,36 @@ def case_maker(cond):
             gas.set_equivalence_ratio(equiv, diluted_f, Oxidizer)
             mixlist.append(gas.mole_fraction_dict())
 
-    elif mix_type == 'phi_fuel':
-        for equiv, fuel_frac in mix_loop:
-            if fuel_frac > 1:
+    # elif mix_type == 'phi_fuel':
+    #     for equiv, fuel_frac in mix_loop:
+    #         if fuel_frac > 1:
+    #             continue  # Impossible mixture
+
+    #         gas.set_equivalence_ratio(equiv, Fuel, Oxidizer)  # Without diluent
+    #         initial_mix = gas.mole_fraction_dict()
+    #         fuel_total = sum([initial_mix[k] for k in Fuel])
+    #         if fuel_total < fuel_frac:
+    #             continue  # Cannot create mixture at this phi + fuel
+    #         mixture = {k: v*fuel_frac/fuel_total for k, v in initial_mix.items()}
+    #         mixture[Diluent_name] = 1 - fuel_frac / fuel_total
+    #         mixlist.append(mixture)
+            
+    elif mix_type == 'phi_fuel' or mix_type == 'phi_oxi':
+        for equiv, var_frac in mix_loop:
+            if var_frac > 1:
                 continue  # Impossible mixture
 
             gas.set_equivalence_ratio(equiv, Fuel, Oxidizer)  # Without diluent
             initial_mix = gas.mole_fraction_dict()
-            fuel_total = sum([initial_mix[k] for k in Fuel])
-            if fuel_total < fuel_frac:
-                continue  # Cannot create mixture at this phi + fuel
-            mixture = {k: v*fuel_frac/fuel_total for k, v in initial_mix.items()}
-            mixture[Diluent_name] = 1 - fuel_frac / fuel_total
+            if mix_type == 'phi_fuel':
+                Variable = Fuel
+            elif mix_type == 'ohi_oxi':
+                Variable = Oxidizer
+            var_total = sum([initial_mix[k] for k in Variable])
+            if var_total < var_frac:
+                continue  # Cannot create mixture at this phi + fuel or oxidizer
+            mixture = {k: v*var_frac/var_total for k, v in initial_mix.items()}
+            mixture[Diluent_name] = 1 - var_frac / var_total
             mixlist.append(mixture)
 
     elif mix_type == 'Ox_Fuel':
@@ -220,9 +238,38 @@ def case_maker(cond):
             mixture = {**reduced_fuel, **reduced_ox,
                        Diluent_name: 1 - fuel_frac - oxi_frac}
             mixlist.append(mixture)
+            
+    elif mix_type == 'fuel_dil' or mix_type == 'oxi_dil':
+        for var1_frac, dil_frac in mix_loop:
+            if var_frac + dil_frac > 1:
+                continue # Impossible mixture
+            elif mix_type == 'fuel_dil':
+                Variable1 = Fuel
+                Variable2 = Oxidizer
+            elif mix_type == 'oxi_dil':
+                Variable1 = Oxidizer
+                Variable2 = Fuel
+            var2_frac = 1 - var1_frac + dil_frac
+            reduced_var1 = {k: v*var1_frac for k, v in Variable1.item()}
+            reduced_var2 = {k: v*var2_frac for k, v in Variable2.item()}
+            mixture = {**reduced_var1, **reduced_var2, Diluent_name: dil_frac}
+            mixlist.append(mixture)
+            
+    elif mix_type == 'phi_dil':
+        for equiv, dil_frac in mix_loop:
+            if dil_frac > 1:
+                continue # Impossible mixture
+            gas.set_equivalence_ratio(equiv, Fuel, Oxidizer)  # Without diluent
+            initial_mix = gas.mole_fraction_dict()
+            fueloxi_frac = 1 - dil_frac
+            fuel_frac = sum([initial_mix[k] for k in Fuel])
+            oxi_frac  = sum([initial_mix[k] for k in Oxidizer])
+            reduced_fuel = {k: v*fueloxi_frac*fuel_frac for k, v in Fuel.item()}
+            reduced_oxi = {k: v*fueloxi_frac*oxi_frac for k, v in Oxidizer.item()}
+            mixture = {**reduced_fuel, **reduced_oxi, Diluent_name: dil_frac}
+            mixlist.append(mixture)
 
     # TODO: Following this example, add other mixture types.
-    # Rewrite 0D conditions dictionary so that is it formated similar to 1D
     else:
         print('Error creating mixtures. Check mixture_type variable.')
         sys.exit()
