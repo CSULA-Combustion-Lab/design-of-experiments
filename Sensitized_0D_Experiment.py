@@ -616,11 +616,12 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
                        score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params,
                        fuel, oxidizer, diluent):
     num_spec = len(specificspecies)
-    max_rxn = [None]*(num_spec+3)
-    max_rxn[0] = mix
-    max_rxn[1] = temp
-    max_rxn[2] = pressure*101.325
-    rxn_name   = [None]*(num_spec+1)
+    max_rxn = [None]*(num_spec+4)
+    max_rxn[0]  = mix
+    max_rxn[1]  = temp
+    max_rxn[2]  = pressure*101.325
+    max_rxn[3]  = gas.get_equivalence_ratio()
+    rxn_name    = [None]*(num_spec+1)
     rxn_name[0] = {'temperature': temp, 'pressure': pressure*101.325,
                    'mixture': mix, 'score3time': SCORE3_TIME,
                    'phi':gas.get_equivalence_ratio(),
@@ -636,11 +637,12 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
         unshuffled = sens_at_t[i::num_spec]
         max_sens_ind = np.argmax(unshuffled)
         if unshuffled[max_sens_ind] == 0:  # Below ppm limit
-            max_rxn[i+3] = None
+            max_rxn[i+4] = None
             rxn_name[i+1] = None
         else:
-            max_rxn[i+3] = rxns[max_sens_ind]  #rxn with max sensitivity
-            rxn_name[i+1] = gas.reaction_equations([rxns[max_sens_ind]])
+            max_rxn[i+4] = rxns[max_sens_ind]  #rxn with max sensitivity
+            rxn_name[i+1] = [rxns[max_sens_ind],
+                             gas.reaction_equations([rxns[max_sens_ind]])]
 
     score3_Max_sens_rxn.append([x for x in max_rxn])
     score3_Params_MaxSens_Name_Params.append([x for x in rxn_name])
@@ -758,7 +760,7 @@ def integrated(t_sens, spec_nums, num_rxns, mole_frac):
     for spec in IS:
         top5 = spec[np.argsort(np.abs(spec))[-5:]]
         if all([x == 0 for x in spec]):
-            IS_norm.append(0.0)
+            IS_norm.append(None)
         else:
             IS_norm.append(spec / np.mean(np.abs(top5)))
 
@@ -822,6 +824,7 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
     P           = pack['Parameters'][0]
     T           = pack['Parameters'][1]
     m_params    = pack['Parameters'][2]
+    a_type      = pack['Parameters'][3]
     sspecies    = pack['ZeroD'][0]
     rxns        = pack['ZeroD'][2]
     mech        = pack['Files'][0]
@@ -885,13 +888,14 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
     print('\nText File Created\nSaving Files...\n')
     #File saving
     gas_reactions = cantera.Solution(mech).reaction_equations()
-    species_rxn_file = [sspecies, [len(rxns)], [gas_reactions], [SCORE3_TIME]]
+    species_rxn_file = [sspecies, [len(rxns)], [gas_reactions],
+                        [SCORE3_TIME], [a_type]]
 
     # This loop can make the saving easier. Just put the thing to be
     # saved and the file name in the save_list
     save_list = [(slists[15], 'Integrated Strength.pkl'),
                  (slists[6], 'All_Ranks.pkl'),
-                 (slists[13], 'Max_Sens_Rxn.pkl'),
+                 (slists[14], 'Max_Sens_Rxn.pkl'),
                  (species_rxn_file, 'Species_Rxn.pkl'),
                  (slists[0], 'Case_Parameters.pkl')]
     for item in save_list:
@@ -939,9 +943,9 @@ if __name__ == "__main__":
     Delta_T   = 100
     PPM       = 1/1000000 #one ppm
     
-    save_files = False # If true, save files for plotting script
-    save_time  = False # If true, also save files for GUI. Not recommended for large runs
-    debug      = False  # If true, print lots of information for debugging.
+    save_files = True # If true, save files for plotting script
+    save_time  = True # If true, also save files for GUI. Not recommended for large runs
+    debug      = True  # If true, print lots of information for debugging.
     
     run_0D_simulation(mechanism, array_type, Press, Temperature, 
                       fuel_name, oxidizer_name, diluent_name, Mixture_type,
