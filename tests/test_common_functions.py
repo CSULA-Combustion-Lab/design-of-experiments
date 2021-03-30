@@ -60,15 +60,34 @@ def test_case_maker_phi_fuel():
     nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'])
     nptest.assert_allclose(phi[0], mixture['H2'] / mixture['O2'] * 0.5)
     assert all([x >= 0 for k, x in mixture.items()])
+    
+def test_case_maker_phi_oxi():
+    phi = [0.5 + rand(), 2, 1]
+    oxidizer = [0.2 + rand() / 5, 1, 1]
+    P = [rand(), 100, 1]
+    T = [500 * rand(), 1000, 1]
+    mix_params = ('phi_oxi', phi, oxidizer)
+    conditions = {'Parameters': [P, T, mix_params, 'log'],
+                  'Mixture': ['H2', 'N2', 'O2', 'phi_oxi'],
+                  'Files': [cf.model_folder('grimech30.cti'), None]}
+    paramlist = cf.case_maker(conditions)
+    case = paramlist[0]
+    mixture = case[2]
 
-def test_case_maker_oxi_dil():
+    nptest.assert_allclose(case[:2], [P[0], T[0]])
+    nptest.assert_allclose(mixture['O2'], oxidizer[0])
+    nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'])
+    nptest.assert_allclose(phi[0], mixture['H2'] / mixture['O2'] * 0.5)
+    assert all([x >= 0 for k, x in mixture.items()])
+
+def test_case_maker_phi_oxidil():
     phi = [0.3 + rand(), 2, 1]
     ox_in_oxidizer = [0.2 + rand() / 2, 1, 1]
     P = [rand(), 100, 1]
     T = [500 * rand(), 1000, 1]
-    mix_params = ('Oxi_Dil', phi, ox_in_oxidizer)
+    mix_params = ('phi_oxi/dil', phi, ox_in_oxidizer)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'Oxi_Dil'],
+                  'Mixture': ['H2', 'N2', 'O2', 'phi_oxi/dil'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -81,14 +100,14 @@ def test_case_maker_oxi_dil():
     nptest.assert_allclose(mixture['O2']/(mixture['N2'] + mixture['O2']),
                            ox_in_oxidizer[0])
 
-def test_case_maker_fue_dil():
+def test_case_maker_phi_fuedil():
     phi = [0.3 + rand(), 2, 1]
     f_in_fuel = [0.2 + rand() / 2, 1, 1]
     P = [rand(), 100, 1]
     T = [500 * rand(), 1000, 1]
-    mix_params = ('Fue_Dil', phi, f_in_fuel)
+    mix_params = ('phi_fuel/dil', phi, f_in_fuel)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'Oxi_Dil'],
+                  'Mixture': ['H2', 'N2', 'O2', 'phi_fuel/dil'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -121,6 +140,36 @@ def test_case_maker_Ox_Fuel():
     nptest.assert_allclose(ox[0], mixture['O2'])
     nptest.assert_allclose(fuel[0], mixture['H2'])
 
+def test_case_maker_fuel_dil():
+    fuel = [rand() / 2, 1, 1]
+    dil = [rand()/2, 1, 1]
+    P = [rand(), 100, 1]
+    T = [500 * rand(), 1000, 1]
+    mix_params = ('fuel_dil', fuel, dil)
+    conditions = {'Parameters': [P, T, mix_params, 'log'],
+                  'Mixture': ['H2', 'N2', 'O2', 'fuel_dil'],
+                  'Files': [cf.model_folder('grimech30.cti'), None]}
+    paramlist = cf.case_maker(conditions)
+    case = paramlist[0]
+    mixture = case[2]
+    print(mixture)
+    #TODO: Add nptest below to check that function is working.
+    
+def test_case_maker_oxi_fuel():
+    oxi = [rand() / 2, 1, 1]
+    dil = [rand()/2, 1, 1]
+    P = [rand(), 100, 1]
+    T = [500 * rand(), 1000, 1]
+    mix_params = ('oxi_dil', oxi, dil)
+    conditions = {'Parameters': [P, T, mix_params, 'log'],
+                  'Mixture': ['H2', 'N2', 'O2', 'oxi_dil'],
+                  'Files': [cf.model_folder('grimech30.cti'), None]}
+    paramlist = cf.case_maker(conditions)
+    case = paramlist[0]
+    mixture = case[2]
+    print(mixture)
+    #TODO: Add nptest below to check that function is working.
+
 def test_multi_f_o():
     phi = [0.3 + rand(), 2, 1]
     fuel = [0.2 + rand() / 5, 1, 1]
@@ -144,8 +193,8 @@ def test_multi_f_o():
     nptest.assert_allclose(phi[0], (mixture['H2'] + mixture['CO']) / mixture['O2'] * 0.5)
     nptest.assert_allclose(0.3 / 0.7, mixture['H2'] / mixture['CO'])
     nptest.assert_allclose(0.95 / 0.05, mixture['O2'] / mixture['AR'])
-    assert all([x >= 0 for k, x in mixture.items()])
-    
+    assert all([x >= 0 for k, x in mixture.items()])   
+ 
 def test_mixture_percentage():
     phi = [0.3 + rand(), 2, 1]
     fuel = [0.2 + rand() / 5, 1, 1]
