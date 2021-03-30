@@ -15,13 +15,6 @@ plt.style.use(os.path.join(dirname, 'CSULA_Combustion_test.mplstyle'))
 #from tkinter import filedialog
 
 
-# info = {'P': ['Pressure [kPa]', Pressure, 'Pressure'],
-#         'phi': ['Equivalence Ratio [$\phi$]', Equivalence,'Equivalence'],
-#         'X': ['Fuel [mole fraction]', Fuel, 'Fuel'],
-#         'O': ['Oxidizer [mole fraction]', Oxidizer, 'Oxidizer'],
-#         'D': ['Diluent [mole fraction]', Diluent, 'Diluent'],
-#         'T': ['Temperature [K]', Temperature, 'Temperature']}
-
 def rxn_plots(max_rxns, species):
     for specie in species[0]:
         Temperature  = []
@@ -31,20 +24,22 @@ def rxn_plots(max_rxns, species):
         Rxns         = []
         num_ticks = 10
         for ents in max_rxns:
-            print(ents)
-            rxn = ents[species[0].index(specie)+3]
-            print(rxn)
-            if rxn is None:
+            if ents[1] is None:
                 continue
-            entry = [k for k in ents[0].values()]
-            print(entry)
+            else:
+                Rxns.append(ents[1][0])
+            # entry = [k for k in ents[0].values()]
             # a     = species[2][0]
             # phi   = a*(entry[0]/entry[1])
-            Temperature.append(ents[1])
-            Pressure.append(ents[2])
-            Equivalence.append(ents[3])
-            Fuel.append(entry[0])
-            Rxns.append(rxn)
+            # Temperature.append(ents[1])
+            # Pressure.append(ents[2])
+            # Equivalence.append(ents[3])
+            # Fuel.append(entry[0])
+            # Rxns.append(rxn)
+            Temperature.append(ents[0]['temperature'])
+            Pressure.append(ents[0]['pressure'])
+            Equivalence.append(ents[0]['phi'])
+            Fuel.append(ents[0]['fuel'])
             
 
         # fs = 15 #Controls font size
@@ -61,7 +56,7 @@ def rxn_plots(max_rxns, species):
         #Four subplots of rxn versus independant variables
         for var, ax, string in zip(varnames, axes.flatten(), 
                                    ['(a)', '(b)', '(c)', '(d)']):
-            if var != 'T':
+            if Array_Type == 'log':
                 ax.set_xscale('log')
             # ax.plot(info[var][1], Rxns, ls='none',
             #         marker='o', mfc='none', mec='k')
@@ -79,9 +74,9 @@ def rxn_plots(max_rxns, species):
                                         step=int(max(Rxns)/num_ticks)))
             ax.grid(True)
 
-        # fig.suptitle('Time Instance: '+format(species[4][0])+
+        # fig.suptitle('Time Instance: '+format(species[3][0])+
         #              ' s    Species: '+ specie, fontsize=12)
-        fig.suptitle('Time Instance: '+format(species[4][0])+
+        fig.suptitle('Time Instance: '+format(species[3][0])+
                      ' s    Species: '+ specie)
         # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fig.savefig(Plot_path+'\\['+format(specie)+
@@ -93,7 +88,7 @@ def rxn_plots(max_rxns, species):
             # plt.figure("Sensitivity of "+specie+" to "+info[var][2],
             #            figsize=(15,10))
             plt.figure("Sensitivity of "+specie+" to "+info[var][2])
-            if var != 'T':
+            if Array_Type == 'log':
                 plt.xscale('log')
             # plt.plot(info[var][1], Rxns, ls='none',
             #          marker='o', mfc='none', mec='k')
@@ -110,7 +105,7 @@ def rxn_plots(max_rxns, species):
                 plt.yticks(np.arange(0,max(Rxns), step=int(max(Rxns)/20)))
             handles = [mpl_patches.Rectangle((0, 0), 1, 1, fc="white",
                                              ec="white", lw=0, alpha=0)] * 2
-            labels = ['Time: '+format(species[4][0])+' s','Species: '+specie]
+            labels = ['Time: '+format(species[3][0])+' s','Species: '+specie]
             plt.legend(handles, labels, loc='best', fontsize='small',
                        fancybox=True, framealpha=0.7,
                        handlelength=0, handletextpad=0)
@@ -126,7 +121,7 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
     # info is a dictionary with an entry for each figure. The entries are
     # [x label, key for int_strength]
     info = {'P': ['Pressure [kPa]', 'pressure'],
-            'phi': ['Equivalence Ratio', 'equivalence'],
+            'phi': ['Equivalence Ratio', 'phi'],
             'X': ['Fuel Mole Fraction', 'fuel'],
             'T': ['Temperature [K]', 'temperature']}
     file_format = '[{:}] Normalized Integrated Strength.png'.format
@@ -141,18 +136,19 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
                                    ['(a)', '(b)', '(c)', '(d)']):
             # ax.set_xlabel(info[var][0], fontsize=15)
             ax.set_xlabel(info[var][0])
-            if var != 'T':
+            if Array_Type == 'log':
                 ax.set_xscale('log')
             ax.grid(True)
             x = []
             y = []
             key = info[var][1]
             for condition in int_strength:
-                print(condition)
-                print(condition[1])
-                x.append(condition[0][key])
-                norm_IS = condition[1][i]
-                y.append(norm_IS[rxn_num])
+                if condition[1][0] is None:
+                    continue
+                else:
+                    x.append(condition[0][key])
+                    norm_IS = condition[1][i]
+                    y.append(norm_IS[rxn_num])
             # ax.plot(x, y, ls='none', marker='o', mfc='none', mec='k')
             ax.plot(x, y)
             # if var != 'T':
@@ -164,7 +160,7 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
             #     plt.xlim([bx-x_perc, tx+x_perc])
             ax.axhline(0, c='gray', ls='--', marker="None")
             ax.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
-        fig.suptitle(species[3][0][rxn_num])
+        fig.suptitle(species[2][0][rxn_num])
         # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fname = file_format(spec)
         fig.savefig(os.path.join(Plot_path, fname))
@@ -193,9 +189,8 @@ def integrated_strength_rxn_plots(int_strength, species, Plot_path,
             ax.set_xlabel(info[condition[0]][0])
             # ax.set_ylabel(info[condition[1]][0], fontsize=fs)
             ax.set_ylabel(info[condition[1]][0])
-            if condition[0] != 'T':
+            if Array_Type == 'log':
                 ax.set_xscale('log')
-            if condition[1] != 'T':
                 ax.set_yscale('Log')
             ax.grid(True)
             x = []
@@ -203,14 +198,15 @@ def integrated_strength_rxn_plots(int_strength, species, Plot_path,
             x_key = info[condition[0]][1]
             y_key = info[condition[1]][1]
             for cond in int_strength:
-                norm_IS = cond[1][i]
-                if abs(norm_IS[rxn_num]) >= threshold:
+                if cond[1][0] is None:
+                    continue
+                elif abs(cond[1][i][rxn_num]) >= threshold:
                     x.append(cond[0][x_key])
                     y.append(cond[0][y_key])
             # ax.plot(x, y, ls='none', marker='o', mfc='none', mec='k')
             ax.plot(x, y)
             ax.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
-        fig.suptitle(species[3][0][rxn_num]+
+        fig.suptitle(species[2][0][rxn_num]+
                      '    Threshold >='+format(threshold))
         # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fname = file_format(spec)
@@ -225,14 +221,20 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
         Equivalence  = []
         Fuel         = []
         for ents in max_rxns:
-            if ents[species[0].index(specie)+3] == rxn_number:
-                entry = [k for k in ents[0].values()]
-                a     = species[2][0]
-                phi   = a*(entry[0]/entry[1])
-                Temperature.append(ents[1])
-                Pressure.append(ents[2])
-                Equivalence.append(phi)
-                Fuel.append(entry[0])
+            if ents[1] is None:
+                continue
+            elif ents[1][0] == rxn_number:
+                # entry = [k for k in ents[0].values()]
+                # a     = species[2][0]
+                # phi   = a*(entry[0]/entry[1])
+                # Temperature.append(ents[1])
+                # Pressure.append(ents[2])
+                # Equivalence.append(ents[3])
+                # Fuel.append(entry[0])
+                Temperature.append(ents[0]['temperature'])
+                Pressure.append(ents[0]['pressure'])
+                Equivalence.append(ents[0]['phi'])
+                Fuel.append(ents[0]['fuel'])
 
         # fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
         fig, axes = plt.subplots(nrows=2, ncols=3)
@@ -261,15 +263,14 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
             a.set_xlabel(cond_dict[x_key][1])
             # a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
             a.set_ylabel(cond_dict[y_key][1])
-            if x_key != 'T':
+            if Array_Type == 'log':
                 a.set_xscale('log')
-            if y_key != 'T':
                 a.set_yscale('log')
             a.grid(True)
 
         fig.suptitle('Reaction Number '+format(rxn_number)+
-                      ' '+species[3][0][rxn_number]+
-                      '\nTime Instance: '+format(species[4][0])+' s')
+                      ' '+species[2][0][rxn_number]+
+                      '\nTime Instance: '+format(species[3][0])+' s')
         # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.savefig(Plot_path+'\\['+specie+'] Reaction Number '
                     +format(rxn_number)+'.png')
@@ -288,13 +289,12 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
             plt.xlabel(cond_dict[x_key][1])
             # plt.ylabel(cond_dict[y_key][1], fontsize=fs)
             plt.ylabel(cond_dict[y_key][1])
-            if x_key != 'T':
+            if Array_Type == 'log':
                 plt.xscale('log')
-            if y_key != 'T':
                 plt.yscale('log')
             handles = [mpl_patches.Rectangle((0, 0), 1, 1, fc="white",
                                              ec="white", lw=0, alpha=0)] * 2
-            labels = ['Time: '+format(species[4][0]) + ' s','Species: '+specie]
+            labels = ['Time: '+format(species[3][0]) + ' s','Species: '+specie]
             plt.legend(handles, labels, loc='best', fontsize='small',
                        fancybox=True, framealpha=0.7,
                        handlelength=0, handletextpad=0)
@@ -333,7 +333,7 @@ if __name__ == "__main__":
         pickle.dump(Folder_name, f)
 
     Load_path   = '0D_Sensitivity_Results'+Load_folder
-    Plot_path   = Load_path+'\\Figures'
+    Plot_path   = Load_path+'\\ZeroD_Sensitivity_Plots'
 
     file = open(Load_path+'\\Case Description.txt','r')
     Description = file.read()
@@ -346,13 +346,14 @@ if __name__ == "__main__":
     
     Threshold = 2
     Reaction_of_Interest = [15]
+    Array_Type = Species_Rxn[4][0]
 
     with open(os.path.join(Load_path, 'Integrated Strength.pkl'), 'rb') as f:
-        int_strength = pickle.load(f)
+        Int_Strength = pickle.load(f)
 
     rxn_plots(Max_Sens_Rxn, Species_Rxn)
     for roi in Reaction_of_Interest:
         reaction_of_interest_plot(Max_Sens_Rxn, Species_Rxn, roi)
-        integrated_strength_plots(int_strength, Species_Rxn, Plot_path, roi)
-        integrated_strength_rxn_plots(int_strength, Species_Rxn,
+        integrated_strength_plots(Int_Strength, Species_Rxn, Plot_path, roi)
+        integrated_strength_rxn_plots(Int_Strength, Species_Rxn,
                                       Plot_path, roi, Threshold)
