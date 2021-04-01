@@ -229,7 +229,7 @@ def case_maker(cond):
             mixture[Diluent_name] = 1 - var_frac / var_total
             mixlist.append(mixture)
 
-    elif mix_type == 'Ox_Fuel':
+    elif mix_type == 'oxi_fuel':
         for oxi_frac, fuel_frac in mix_loop:
             if fuel_frac + oxi_frac > 1:
                 continue  # Impossible mixture
@@ -269,7 +269,6 @@ def case_maker(cond):
             mixture = {**reduced_fuel, **reduced_oxi, Diluent_name: dil_frac}
             mixlist.append(mixture)
 
-    # TODO: Following this example, add other mixture types.
     else:
         print('Error creating mixtures. Check mixture_type variable.')
         sys.exit()
