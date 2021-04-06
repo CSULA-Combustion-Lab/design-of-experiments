@@ -165,14 +165,6 @@ def case_maker(cond):
     mixlist = []
     mix_loop = it.product(param1, param2)  # Two parameters for looping.
 
-    # TODO: The quantity that the code is referring to as "X to diluent ratio"
-    # is very confusing.
-    # Initializer calls it "Diluent_Percentage" which I would think of as
-    # "diluent / (X+diluent).
-    # The rest of the code (and outputs) call it "X to diluent ratio", which
-    # I would understand to mean "X/diluent".
-    # But, the quantity is actually "X/(X+diluent)", which I would call
-    # "X% in X mixture," like "O2 % in oxidizer." I've started fixing this.
     if mix_type == 'phi_oxi/dil':
         for equiv, ox_to_dil in mix_loop:
             if ox_to_dil > 1:
@@ -196,20 +188,6 @@ def case_maker(cond):
 
             gas.set_equivalence_ratio(equiv, diluted_f, Oxidizer)
             mixlist.append(gas.mole_fraction_dict())
-
-    # elif mix_type == 'phi_fuel':
-    #     for equiv, fuel_frac in mix_loop:
-    #         if fuel_frac > 1:
-    #             continue  # Impossible mixture
-
-    #         gas.set_equivalence_ratio(equiv, Fuel, Oxidizer)  # Without diluent
-    #         initial_mix = gas.mole_fraction_dict()
-    #         fuel_total = sum([initial_mix[k] for k in Fuel])
-    #         if fuel_total < fuel_frac:
-    #             continue  # Cannot create mixture at this phi + fuel
-    #         mixture = {k: v*fuel_frac/fuel_total for k, v in initial_mix.items()}
-    #         mixture[Diluent_name] = 1 - fuel_frac / fuel_total
-    #         mixlist.append(mixture)
             
     elif mix_type in('phi_fuel', 'phi_oxi'):
         for equiv, var_frac in mix_loop:
