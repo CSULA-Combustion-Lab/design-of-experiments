@@ -253,7 +253,7 @@ def test_mixture_percentage():
     stri_case = stri_paramlist[0]
     stri_mixture = stri_case[2]
     
-    lst_comp = cf.misture_percentage(multif, list_mixture)
+    lst_comp = cf.mixture_percentage(multif, list_mixture)
     str_comp = cf.mixture_percentage(singlf, stri_mixture)
     
     nptest.assert_allclose(list_case[:2], [P[0], T[0]])

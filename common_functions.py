@@ -220,7 +220,7 @@ def case_maker(cond):
             initial_mix = gas.mole_fraction_dict()
             if mix_type == 'phi_fuel':
                 Variable = Fuel
-            elif mix_type == 'ohi_oxi':
+            elif mix_type == 'phi_oxi':
                 Variable = Oxidizer
             var_total = sum([initial_mix[k] for k in Variable])
             if var_total < var_frac:
@@ -241,7 +241,7 @@ def case_maker(cond):
             
     elif mix_type in ('fuel_dil', 'oxi_dil'):
         for var1_frac, dil_frac in mix_loop:
-            if var_frac + dil_frac > 1:
+            if var1_frac + dil_frac > 1:
                 continue # Impossible mixture
             elif mix_type == 'fuel_dil':
                 Variable1 = Fuel
@@ -250,8 +250,8 @@ def case_maker(cond):
                 Variable1 = Oxidizer
                 Variable2 = Fuel
             var2_frac = 1 - var1_frac - dil_frac
-            reduced_var1 = {k: v*var1_frac for k, v in Variable1.item()}
-            reduced_var2 = {k: v*var2_frac for k, v in Variable2.item()}
+            reduced_var1 = {k: v*var1_frac for k, v in Variable1.items()}
+            reduced_var2 = {k: v*var2_frac for k, v in Variable2.items()}
             mixture = {**reduced_var1, **reduced_var2, Diluent_name: dil_frac}
             mixlist.append(mixture)
             
@@ -264,8 +264,8 @@ def case_maker(cond):
             fueloxi_frac = 1 - dil_frac
             fuel_frac = sum([initial_mix[k] for k in Fuel])
             oxi_frac  = sum([initial_mix[k] for k in Oxidizer])
-            reduced_fuel = {k: v*fueloxi_frac*fuel_frac for k, v in Fuel.item()}
-            reduced_oxi = {k: v*fueloxi_frac*oxi_frac for k, v in Oxidizer.item()}
+            reduced_fuel = {k: v*fueloxi_frac*fuel_frac for k, v in Fuel.items()}
+            reduced_oxi = {k: v*fueloxi_frac*oxi_frac for k, v in Oxidizer.items()}
             mixture = {**reduced_fuel, **reduced_oxi, Diluent_name: dil_frac}
             mixlist.append(mixture)
 
