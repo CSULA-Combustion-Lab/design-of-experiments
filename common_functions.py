@@ -211,7 +211,7 @@ def case_maker(cond):
     #         mixture[Diluent_name] = 1 - fuel_frac / fuel_total
     #         mixlist.append(mixture)
             
-    elif mix_type == 'phi_fuel' or mix_type == 'phi_oxi':
+    elif mix_type in('phi_fuel', 'phi_oxi'):
         for equiv, var_frac in mix_loop:
             if var_frac > 1:
                 continue  # Impossible mixture
@@ -239,7 +239,7 @@ def case_maker(cond):
                        Diluent_name: 1 - fuel_frac - oxi_frac}
             mixlist.append(mixture)
             
-    elif mix_type == 'fuel_dil' or mix_type == 'oxi_dil':
+    elif mix_type in ('fuel_dil', 'oxi_dil'):
         for var1_frac, dil_frac in mix_loop:
             if var_frac + dil_frac > 1:
                 continue # Impossible mixture
