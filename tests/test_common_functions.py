@@ -256,4 +256,9 @@ def test_mixture_percentage():
     lst_comp = cf.misture_percentage(multif, list_mixture)
     str_comp = cf.mixture_percentage(singlf, stri_mixture)
     
-    #TODO: Add nptest bellow to check that mixture percentage is working.
+    nptest.assert_allclose(list_case[:2], [P[0], T[0]])
+    nptest.assert_allclose(stri_case[:2], [P[0], T[0]])
+    nptest.assert_allclose(lst_comp, fuel[0])
+    nptest.assert_allclose(str_comp, fuel[0])
+    assert all([x >= 0 for k, x in list_mixture.items()])
+    assert all([x >= 0 for k, x in stri_mixture.items()]) 
