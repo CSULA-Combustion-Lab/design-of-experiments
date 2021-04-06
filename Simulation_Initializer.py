@@ -18,12 +18,15 @@ import sys
 ## Burner Simulates a planar flame stabalized at some distance from burner
 Simulation_Type = '0D'
 
-# TODO: Check mix type names. Keep naming argument similar. Who reads this next must do it!
 #Provide one of types of mixtures into variable mixture_type as a string
-#  Oxi_Dil creates a mixture where the Diluent is a ratio of the Oxidizer used
-#  Fue_Dil creates a mixture where the Diluent is a ratio of the Fuel used
+#  phi_oxi/dil specifies the equivalence ration and oxidizer to diluent ratio
+#  phi_fuel/dil specifies the equivalence ration and fuel to diluent ratio
 #  phi_fuel specifies the equivalence ratio and fuel mole fraction
-#  Ox_Fuel specifies the oxidizer and fuel mole fractions
+#  phi_oxi specifies the equivalence ratio and oxidizer mole fraction
+#  phi_fil specifies the equivalence ratio and diluent mole fraction
+#  fuel_dil specifies the fuel and diluent mole fractions
+#  oxi_dil specifies the oxidizer and diluent mole fractions
+#  oxi_fuel specifies the oxidizer and fuel mole fractions
 Mixture_type = 'phi_fuel'
 
 #Parameters (Pressure, Equivalence, Temperature, Diluent Percentage)
@@ -36,13 +39,13 @@ Mixture_type = 'phi_fuel'
 ### Equivalence: Dimensionless (<1:Fuel Lean, 1:Unity, >1:Fuel Rich)
 ### Temperature: Kelvin [K]
 ### Diluent_Percentage: Percent [%]
-Pressure           = [.1, 100, 4]
-Temperature        = [600, 2500, 4]
+Pressure           = [.1, 100, 8]
+Temperature        = [600, 2500, 8]
 
 # Mixture parameters. Not all of these will be used, depending on Mixture_type
-Equivalence        = [0.00025, 2.5, 4]
+Equivalence        = [0.00025, 2.5, 10]
 fraction_in_oxidizer_or_fuel = [0.00001, 0.1, 4]  # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
-fuel_fraction      = [0.00001, 0.1, 4]
+fuel_fraction      = [0.00001, 0.1, 10]
 oxidizer_fraction  = [0.01, 0.9, 15]
 
 ### Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
@@ -78,14 +81,15 @@ Loglevel  = 0
 #True/False statements
 Save_files = True # If true, save files for plotting script
 Save_time  = True # Only used for zeroD. If true, saves time for GUI
+
 if __name__ == "__main__":
 
     # Package the mixture parameters. Each mixture type requires two variables
-    if Mixture_type in ('Oxi_Dil', 'Fue_Dil'):
+    if Mixture_type in ('phi_oxi/dil', 'phi_fuel/dil'):
         mix_params = (Mixture_type, Equivalence, fraction_in_oxidizer_or_fuel)
     elif Mixture_type == 'phi_fuel':
         mix_params = (Mixture_type, Equivalence, fuel_fraction)
-    elif Mixture_type == 'Ox_Fuel':
+    elif Mixture_type == 'oxi_fuel':
         mix_params = (Mixture_type, oxidizer_fraction, fuel_fraction)
     else:
         raise ValueError('Mixture_type = {} is not supported'.format(Mixture_type))
