@@ -249,7 +249,7 @@ def case_maker(cond):
             elif mix_type == 'oxi_dil':
                 Variable1 = Oxidizer
                 Variable2 = Fuel
-            var2_frac = 1 - var1_frac + dil_frac
+            var2_frac = 1 - var1_frac - dil_frac
             reduced_var1 = {k: v*var1_frac for k, v in Variable1.item()}
             reduced_var2 = {k: v*var2_frac for k, v in Variable2.item()}
             mixture = {**reduced_var1, **reduced_var2, Diluent_name: dil_frac}
