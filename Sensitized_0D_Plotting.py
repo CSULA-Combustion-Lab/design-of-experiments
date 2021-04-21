@@ -40,7 +40,7 @@ def rxn_plots(max_rxns, species):
             Pressure.append(ents[0]['pressure'])
             Equivalence.append(ents[0]['phi'])
             Fuel.append(ents[0]['fuel'])
-            
+
 
         # fs = 15 #Controls font size
         varnames = ['P', 'phi', 'X', 'T']
@@ -54,7 +54,7 @@ def rxn_plots(max_rxns, species):
         # fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10))
         fig, axes = plt.subplots(nrows=2, ncols=2)
         #Four subplots of rxn versus independant variables
-        for var, ax, string in zip(varnames, axes.flatten(), 
+        for var, ax, string in zip(varnames, axes.flatten(),
                                    ['(a)', '(b)', '(c)', '(d)']):
             if Array_Type == 'log':
                 ax.set_xscale('log')
@@ -82,7 +82,7 @@ def rxn_plots(max_rxns, species):
         fig.savefig(Plot_path+'\\['+format(specie)+
                                   '] Most Sensitive Reactions.png')
         plt.close(fig)
-        
+
         #Individual plots of Rxn versus independant variable
         for var in varnames:
             # plt.figure("Sensitivity of "+specie+" to "+info[var][2],
@@ -132,7 +132,7 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
         #     subplot_kw={'ylabel': r'$\hat{IS}_{' + spec + ', j}$'})
         fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True,
             subplot_kw={'ylabel': r'$\hat{IS}_{' + spec + ', j}$'})
-        for var, ax, string in zip(varnames, axes.flatten(), 
+        for var, ax, string in zip(varnames, axes.flatten(),
                                    ['(a)', '(b)', '(c)', '(d)']):
             # ax.set_xlabel(info[var][0], fontsize=15)
             ax.set_xlabel(info[var][0])
@@ -197,6 +197,8 @@ def integrated_strength_rxn_plots(int_strength, species, Plot_path,
             y = []
             x_key = info[condition[0]][1]
             y_key = info[condition[1]][1]
+            if y_key == 'equivalence':
+                y_key = 'phi'
             for cond in int_strength:
                 if cond[1][0] is None:
                     continue
@@ -248,9 +250,9 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
                              'Equivalence Ratio']}
         conditions = [('T', 'P'), ('T', 'X'), ('T', 'phi'),
                       ('P', 'X'), ('P', 'phi'), ('X', 'phi')]
-        
+
         #Six subplots of unique paired independent variables
-        for a, condition, string in zip(ax, conditions, 
+        for a, condition, string in zip(ax, conditions,
                                         ['(a)', '(b)', '(c)',
                                          '(d)', '(e)', '(f)']):
             x_key = condition[0]
@@ -275,14 +277,14 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
         plt.savefig(Plot_path+'\\['+specie+'] Reaction Number '
                     +format(rxn_number)+'.png')
         plt.close(fig)
-        
+
         #Individual plots for unique paired independant variables
         for cond in conditions:
             x_key = cond[0]
             y_key = cond[1]
             # plt.figure(figsize=(15,10))
             plt.figure()
-            # plt.plot(cond_dict[x_key][0], cond_dict[y_key][0], 
+            # plt.plot(cond_dict[x_key][0], cond_dict[y_key][0],
             #          ls='none', marker='o', mfc='none', mec='k')
             plt.plot(cond_dict[x_key][0], cond_dict[y_key][0])
             # plt.xlabel(cond_dict[x_key][1], fontsize=fs)
@@ -323,6 +325,8 @@ def create_csv(int_strength, out_path, rxn_num, spec=0):
 
 
 if __name__ == "__main__":
+    #TODO: use same file opening method as 1D plotting, where it can use the
+    # last folder *simulated*, too.
     Folder_name = input('Please type name of folder. if blank, use last folder:\n')
     if Folder_name == '':
         with open('last run 0d.pkl', 'rb') as f:
@@ -343,7 +347,7 @@ if __name__ == "__main__":
     Species_Rxn  = pickle.load(open(Load_path+'\\Species_Rxn.pkl', 'rb'))
     Max_Sens_Rxn = pickle.load(open(Load_path+'\\Max_Sens_Rxn.pkl', 'rb'))
     Case_Params  = pickle.load(open(Load_path+'\\Case_Parameters.pkl', 'rb'))
-    
+
     Threshold = 2
     Reaction_of_Interest = [15]
     Array_Type = Species_Rxn[4][0]
