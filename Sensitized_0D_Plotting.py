@@ -325,18 +325,42 @@ def create_csv(int_strength, out_path, rxn_num, spec=0):
 
 
 if __name__ == "__main__":
-    #TODO: use same file opening method as 1D plotting, where it can use the
-    # last folder *simulated*, too.
-    Folder_name = input('Please type name of folder. if blank, use last folder:\n')
-    if Folder_name == '':
-        with open('last run 0d.pkl', 'rb') as f:
-            Folder_name = pickle.load(f)
-        print('Loading ' + Folder_name)
-    Load_folder = '\\'+Folder_name
+    # User-defined items #################################
+    # Reaction numbers of interest. If blank, only plot top Nrxns.
+    Rxn_interest = [15]
+
+    #TODO: add Four_Plot variable similar to the 1D plotting
+    # Update information below according to 0D specification and ability.
+    ## Which four items should be plotted?
+    ## Options are 'T', 'F', 'Phi', 'O2', 'P', or any species name.
+    ## Four_Plot = ['H2', 'NH3', 'Phi', 'O2']
+
+    Threshold    = 2 #Threshold for rxn_interst to be above in average strength
+    # ##########################################
+             
+    Folder_name = input('Please type name of folder, 1, or 2.\n'
+                        ' 1 or blank: Use the last folder that was analyzed.\n'
+                        ' 2: Use the last folder that was simulated:')
+
+    if Folder_name == '' or Folder_name == '1':
+        try:
+            with open('last run 0d.pkl', 'rb') as f:
+                Folder_name = pickle.load(f)
+        except FileNotFoundError:
+            print('last run 0d.pkl is missing - I do not know which folder was analyzed most recently.')
+            Folder_name = '2'
+    if Folder_name == '2':
+        print('Plotting the most recent simulations.')
+        folders = os.listdir('0D_Sensitivity_Results')
+        # Assuming this is always sorted in ascending order...
+        Folder_name = [x for x in folders if x[:2] == '20'][-1]
+    print('Loading ' + Folder_name)
+
+    # Save the loaded folder name
     with open('last run 0d.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
-    Load_path   = '0D_Sensitivity_Results'+Load_folder
+    Load_path   = '0D_Sensitivity_Results\\'+Folder_name
     Plot_path   = Load_path+'\\ZeroD_Sensitivity_Plots'
 
     file = open(Load_path+'\\Case Description.txt','r')
@@ -347,17 +371,14 @@ if __name__ == "__main__":
     Species_Rxn  = pickle.load(open(Load_path+'\\Species_Rxn.pkl', 'rb'))
     Max_Sens_Rxn = pickle.load(open(Load_path+'\\Max_Sens_Rxn.pkl', 'rb'))
     Case_Params  = pickle.load(open(Load_path+'\\Case_Parameters.pkl', 'rb'))
-
-    Threshold = 2
-    Reaction_of_Interest = [15]
     Array_Type = Species_Rxn[4][0]
 
     with open(os.path.join(Load_path, 'Integrated Strength.pkl'), 'rb') as f:
         Int_Strength = pickle.load(f)
 
-    rxn_plots(Max_Sens_Rxn, Species_Rxn)
-    for roi in Reaction_of_Interest:
-        reaction_of_interest_plot(Max_Sens_Rxn, Species_Rxn, roi)
-        integrated_strength_plots(Int_Strength, Species_Rxn, Plot_path, roi)
-        integrated_strength_rxn_plots(Int_Strength, Species_Rxn,
-                                      Plot_path, roi, Threshold)
+    # rxn_plots(Max_Sens_Rxn, Species_Rxn)
+    # for roi in Reaction_of_Interest:
+    #     reaction_of_interest_plot(Max_Sens_Rxn, Species_Rxn, roi)
+    #     integrated_strength_plots(Int_Strength, Species_Rxn, Plot_path, roi)
+    #     integrated_strength_rxn_plots(Int_Strength, Species_Rxn,
+    #                                   Plot_path, roi, Threshold)
