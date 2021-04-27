@@ -71,7 +71,7 @@ SpecificSpecies = ['OH'] #Species of interest for rxn ranking data
 Starttime = 0     #in the case a reading is too early
 Endtime   = 0.001 #one milisecond
 Delta_T   = 100
-PPM       = 1/1000000 #one ppm
+threshold       = 1/1000000 # Ignore measurements below this mole fraction
 
 #Flame Conditions
 Mingrid   = 200
@@ -99,8 +99,8 @@ if __name__ == "__main__":
                                    Mechanism, Fuel, Oxidizer, Diluent))
         zeroD.run_0D_simulation(Mechanism, Array_type, Pressure, Temperature,
                                 Fuel, Oxidizer, Diluent, Mixture_type,
-                                mix_params, SpecificSpecies, Starttime, 
-                                Endtime, Delta_T, PPM, Save_files, Save_time)
+                                mix_params, SpecificSpecies, Starttime,
+                                Endtime, Delta_T, threshold, Save_files, Save_time)
     elif Simulation_Type =='1D':
         print(cf.parameters_string(Pressure, Temperature, mix_params,
                                    Mechanism, Fuel, Oxidizer, Diluent))

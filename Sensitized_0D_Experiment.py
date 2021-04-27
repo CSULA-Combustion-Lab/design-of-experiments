@@ -25,8 +25,13 @@ cantera.suppress_thermo_warnings()
 
 def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
                       mix_params, s_species, stime, etime, dT, ppm, safi, sati):
+    #TODO: The document strings (stuff in triple quotes) need to be completed,
+    # or removed. This is a problem in many of the files, not just this one.
+    # They shouldn't be half-finished like they are here.
+    # For examples, see https://numpydoc.readthedocs.io/en/latest/format.html
+    # Or you can just look at the actual code behind any function in numpy
     """
-    
+
 
     Parameters
     ----------
@@ -57,7 +62,7 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
     #start time
     tic = time.time()
     mechan = cf.model_folder(mech)
-    pack, paralist = initialization(mechan, arrtype, pres, temp, 
+    pack, paralist = initialization(mechan, arrtype, pres, temp,
                                     fue, oxi, dilu, m_type, mix_params,
                                     s_species, stime, etime, dT, ppm)
     zerod_info, siminfo, s_lists = run_simulations(pack, paralist)
@@ -68,7 +73,7 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
     print('Number of cases ran', len(paralist))
     print('Time it took to run all simulations and rank them was '
           +format(duration, '0.5f')+' seconds.\n')
-    
+
     if safi:
         file_saving(pack, s_lists, zerod_info, paralist, siminfo, sati)
 
@@ -82,7 +87,7 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
     SpecificSpecieNumbers = [names.index(speci) for speci in s_species]
     SCORE3_TIME = stime + (etime - stime)*0.75 # time to evaluate score3
 
-    Packed = {'Parameters': [pres, temp, mix_params, arrtype], 
+    Packed = {'Parameters': [pres, temp, mix_params, arrtype],
               'Mixture':[fue, dilu, oxi, m_type],
               'ZeroD': [s_species, dup_reactions,
                         Reactions, SpecificSpecieNumbers],
@@ -91,9 +96,9 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
               'Limits': [dT, ppm]}
     Parameter_List = cf.case_maker(Packed)
     return Packed, Parameter_List
-    
+
 def run_simulations(pack, plist):
-    
+
     dT  = pack['Limits'][0]
     ppm = pack['Limits'][1]
     sspecies = pack['ZeroD'][0]
@@ -104,7 +109,7 @@ def run_simulations(pack, plist):
     fuel     = pack['Mixture'][0]
     diluent  = pack['Mixture'][1]
     oxidizer = pack['Mixture'][2]
-    
+
     #Lists
     Parameters      = []
     #first scoring criteria
@@ -130,7 +135,7 @@ def run_simulations(pack, plist):
     MoleFraction  = []
     All_time_Sens = []
     All_tTP_AMo   = []
-    
+
     print('Start of Simulations')
     sim_start   = time.time()
     sim_package = cf.parallelize(plist, pack, reac_sens_parallel)
@@ -171,32 +176,32 @@ def run_simulations(pack, plist):
         sensitivities      = np.absolute(np.array([x[1] for x in t_AllSpecieSens])) #sensitivities
         molfrac_conditions = mole_fractions(t_SMol, pressure, temp, mix, ppm,
                                             MoleFraction, sspecies)
-        
+
         specific_sens(sspecies, rxns, t_SMol, sspecnum, molfrac_conditions,
                       sensitivities, SpecificSpecieSens)
-        
+
         sensitivity_score(SpecificSpecieSens, sspecies, temp, pressure, rxns,
                           senstime, score_T_P_MaxSensavg, scoretimes)
-        
+
         sensitivity_score2(SpecificSpecieSens, sspecies, temp, pressure, mix,
                            rxns, senstime, gas, score2_T_P_MaxSens,
                            score2times, score2_Max_sens_rxn,
                            score2_Params_MaxSens_Name_Params,
                            fuel, oxidizer, diluent)
-        
+
         sensitivity_score3(sspecies, mix, temp, pressure, score3time,
                            t_AllSpecieSens, SpecificSpecieSens, rxns, gas,
                            score3_Max_sens_rxn,
                            score3_Params_MaxSens_Name_Params,
                            fuel, oxidizer, diluent)
-        
+
         rank_all(SpecificSpecieSens, temp, pressure, mix, rxns, senstime,
                  sspecies, all_ranks, All_Ranks, All_Ranks_Params)
-        
+
         IS_norm = integrated(t_AllSpecieSens, sspecnum, len(rxns),
                               molfrac_conditions)
         int_strength.append([condition_info, IS_norm])
-        
+
     score_lists = [Parameters, score_T_P_MaxSensavg, scoretimes, rank_score,
                     rank_plot, All_Ranks, All_Ranks_Params, score2_T_P_MaxSens,
                     score2times, score2_Max_sens_rxn,
@@ -296,7 +301,7 @@ def reac_sens_parallel(pressure, temp, mix, pack):
     t_AllSpecieSens = [[rows[i][0],rows[i][5]] for i in range(0,pts)]
     All_time_Sens_test = t_AllSpecieSens
     All_tTP_AMo_test = t_T_P_AMol
-    
+
     package = [t_T_P_AMol, t_SMol, t_AllSpecieSens, All_time_Sens_test,
                All_tTP_AMo_test, temp, mix, pressure]
 
@@ -769,7 +774,7 @@ def integrated(t_sens, spec_nums, num_rxns, mole_frac):
 
 def sens_dup_filter(sens_information, duplicate_reactions):
     """
-    
+
 
     Parameters
     ----------
@@ -796,7 +801,7 @@ def sens_dup_filter(sens_information, duplicate_reactions):
 
 def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
     """
-    
+
 
     Parameters
     ----------
@@ -834,8 +839,8 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
     f_name      = pack['Mixture'][0]
     d_name      = pack['Mixture'][1]
     o_name      = pack['Mixture'][2]
-    
-    
+
+
     print('Creating Directory...')
     #Save Path/Parent Directory
     parent_dir = '0D_Sensitivity_Results'
@@ -844,7 +849,7 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
-            
+
     #Create Directory Name
     now = datetime.now()
     dt_string = now.strftime("%d_%m_%Y %H.%M.%S")
@@ -866,8 +871,8 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
             "Flow Reactor Simulation.\r\n"
             "=======Species of Interest======="
             "\r"+format(sspecies)+"\r"
-            "=================================\r\n" + 
-            cf.parameters_string(P, T, m_params, mech, f_name, o_name, d_name) 
+            "=================================\r\n" +
+            cf.parameters_string(P, T, m_params, mech, f_name, o_name, d_name)
             + "\n"
             "==========Number of Cases==========\r"
             "Total Cases Simulated 	     = "+format(len(plist))+"\r"
@@ -942,12 +947,12 @@ if __name__ == "__main__":
     Endtime   = 0.001 #one milisecond
     Delta_T   = 100
     PPM       = 1/1000000 #one ppm
-    
+
     save_files = True # If true, save files for plotting script
     save_time  = True # If true, also save files for GUI. Not recommended for large runs
     debug      = True  # If true, print lots of information for debugging.
-    
-    run_0D_simulation(mechanism, array_type, Press, Temperature, 
+
+    run_0D_simulation(mechanism, array_type, Press, Temperature,
                       fuel_name, oxidizer_name, diluent_name, Mixture_type,
                       Mix_params, SpecificSpecies, Starttime, Endtime,
                       Delta_T, PPM, save_files, save_time)
