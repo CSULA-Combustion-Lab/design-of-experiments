@@ -270,8 +270,10 @@ def parallelize(param, cond, fun):
 
     Returns
     -------
-    outlist : Dictionary
-        DESCRIPTION.
+    outlist : List
+        Results of the function are orderd in a list decending in the time
+        that each simulation started. Results information depend on the
+        function.
 
     """
     #Find optimal number of cpus to use

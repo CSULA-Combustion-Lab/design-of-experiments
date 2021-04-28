@@ -31,34 +31,63 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
     # For examples, see https://numpydoc.readthedocs.io/en/latest/format.html
     # Or you can just look at the actual code behind any function in numpy
     """
-
+    Takes information from initializer and runs necessary functions to perform
+    a zero-dimensional simulation. Simulation results will be saved if booleans
+    are set to True.
 
     Parameters
     ----------
-    mech : TYPE
-        DESCRIPTION.
-    arrtype : TYPE
-        DESCRIPTION.
-    pres : TYPE
-        DESCRIPTION.
-    temp : TYPE
-        DESCRIPTION.
-    fue : TYPE
-        DESCRIPTION.
-    oxi : TYPE
-        DESCRIPTION.
-    dilu : TYPE
-        DESCRIPTION.
-    mix_params : TYPE
-        DESCRIPTION.
-    safi : TYPE
-        DESCRIPTION.
+    mech : str
+        A .cti mechanism file containing all reaction and species information.
+    arrtype : str
+        Defines the scale that conditions are in. Either linear or logarithmic
+    pres : list
+        A list of pressure conditions to test over [initial, final, number of points].
+    temp : list
+        A list of temperature conditions to test over [initial, final, number of points].
+    fue : str or list
+        As a string the variable represents a single species of fuel being used.
+        As a list the variable represents multicomponent fuel species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    oxi : str or list
+        As a string the variable represents a single species of oxidizer being used.
+        As a list the variable represents multicomponent oxidizer species
+        followed by the percentage to the total oxidizer [Component1, % of total, ...]
+    dilu : str or list
+        As a string the variable represents a single species of diluent being used.
+        As a list the variable represents multicomponent diluent species
+        followed by the percentage to the total diluent [Component1, % of total, ...]
+    m_type : str
+        A string providing the mixture type being used to create a mixture.
+    mix_params : list
+        A list of the two mixture parameters and mixtrue type used in creating
+        a mixture.
+    s_species : list
+        A list of specific species of interest in which the sensitivity to 
+        each reaction per time step is calculated.
+    stime : int
+        Default set to zero in case the sim.time starts before 0.
+    etime : float
+        Sets the end time for the sim.time to be performed.
+    dT : int
+        An integer to check that the temperature did not change above the given
+        limit. If the temperature change does exceed dT then the simulation
+        assumes a flame was created and the case is thrown out of the results.
+    ppm : float
+        A limit set by the experimental device that measures the mole fractions.
+        If a species mole fraction is set below this limit the species mole
+        fraction is set 0.
+    safi : bool
+        If true simulation conditions and ranking results will be saved.
+    sati : bool
+        If true mole fraction sensitivities in time will be saved.
 
     Returns
     -------
     None.
 
-    """
+    """   
+
     #start time
     tic = time.time()
     mechan = cf.model_folder(mech)
@@ -774,14 +803,14 @@ def integrated(t_sens, spec_nums, num_rxns, mole_frac):
 
 def sens_dup_filter(sens_information, duplicate_reactions):
     """
-
+    Sums the sensitivites of duplicate reactions.
 
     Parameters
     ----------
-    sens_information : TYPE
-        DESCRIPTION.
-    duplicate_reactions : TYPE
-        DESCRIPTION.
+    sens_information : List
+        List of sensitivites per reaction.
+    duplicate_reactions : Dictionary
+        Dictionary of duplicate reactions from the mechanism file.
 
     Returns
     -------
