@@ -147,6 +147,8 @@ def case_maker(cond):
         Fuel = {}
         for fl in range(0, len(Fuel_name), 2):
             Fuel[Fuel_name[fl]] = Fuel_name[fl+1]
+    elif type(Fuel_name) is dict:
+        Fuel = Fuel_name
     else:
         raise ValueError(msg)
 
@@ -156,6 +158,8 @@ def case_maker(cond):
         Oxidizer = {}
         for ox in range(0, len(Oxidizer_name), 2):
             Oxidizer[Oxidizer_name[ox]] = Oxidizer_name[ox+1]
+    elif type(Oxidizer_name) is dict:
+        Oxidizer = Oxidizer_name
     else:
         raise ValueError(msg)
 
@@ -188,7 +192,7 @@ def case_maker(cond):
 
             gas.set_equivalence_ratio(equiv, diluted_f, Oxidizer)
             mixlist.append(gas.mole_fraction_dict())
-            
+
     elif mix_type in('phi_fuel', 'phi_oxi'):
         for equiv, var_frac in mix_loop:
             if var_frac > 1:
@@ -216,7 +220,7 @@ def case_maker(cond):
             mixture = {**reduced_fuel, **reduced_ox,
                        Diluent_name: 1 - fuel_frac - oxi_frac}
             mixlist.append(mixture)
-            
+
     elif mix_type in ('fuel_dil', 'oxi_dil'):
         for var1_frac, dil_frac in mix_loop:
             if var1_frac + dil_frac > 1:
@@ -232,7 +236,7 @@ def case_maker(cond):
             reduced_var2 = {k: v*var2_frac for k, v in Variable2.items()}
             mixture = {**reduced_var1, **reduced_var2, Diluent_name: dil_frac}
             mixlist.append(mixture)
-            
+
     elif mix_type == 'phi_dil':
         for equiv, dil_frac in mix_loop:
             if dil_frac > 1:
@@ -360,7 +364,7 @@ def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
 
 def calculate_a(fuel, mech):
     """
-    
+
 
     Parameters
     ----------
@@ -412,7 +416,7 @@ def update_progress(progress):
                         "-"*(barLength-block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
-    
+
 def mixture_percentage(components, mix):
     """
 
@@ -437,7 +441,7 @@ def mixture_percentage(components, mix):
     """
     if type(components) is str:  # Single Component
         try:
-            return mix[components]
+            Percentage =  mix[components]
         except KeyError:
             return 0.0
     elif type(components) is list:
@@ -448,6 +452,9 @@ def mixture_percentage(components, mix):
                 Percentage += mix[components[n]]
             except KeyError:  # Component isn't in mixture
                 pass
-        return Percentage
+    elif type(components) is dict:
+        Percentage = sum((mix[key] for key in components))
     else:
         raise TypeError
+
+    return Percentage

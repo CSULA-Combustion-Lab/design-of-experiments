@@ -2,7 +2,7 @@
 """
 To use these tests, go to the module directory (design-of-experiments)
  in the anaconda prompt and type "pytest"
- 
+
 Make sure you have downloaded module pytet before attempting to use it.
 
 Instructions:
@@ -66,7 +66,7 @@ def test_case_maker_phi_fuel():
     nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'])
     nptest.assert_allclose(phi[0], mixture['H2'] / mixture['O2'] * 0.5)
     assert all([x >= 0 for k, x in mixture.items()])
-    
+
 def test_case_maker_phi_oxi():
     phi = [0.5 + rand(), 2, 1]
     oxidizer = [0.2 + rand() / 5, 1, 1]
@@ -178,13 +178,13 @@ def test_case_maker_fuel_dil():
     case = paramlist[0]
     mixture = case[2]
     print(mixture)
-    
+
     nptest.assert_allclose(case[:2], [P[0], T[0]])
     assert all([x >= 0 for k, x in mixture.items()])
     nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'])
     nptest.assert_allclose(dil[0], mixture['N2'])
     nptest.assert_allclose(fuel[0], mixture['H2'])
-    
+
 def test_case_maker_oxi_dil():
     oxi = [rand() / 2, 1, 1]
     dil = [rand()/2, 1, 1]
@@ -198,7 +198,7 @@ def test_case_maker_oxi_dil():
     case = paramlist[0]
     mixture = case[2]
     print(mixture)
-    
+
     nptest.assert_allclose(case[:2], [P[0], T[0]])
     assert all([x >= 0 for k, x in mixture.items()])
     nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'])
@@ -212,24 +212,27 @@ def test_multi_f_o():
     T = [500 * rand(), 1000, 1]
     mix_params = ('phi_fuel', phi, fuel)
 
-    multif = ['H2', .3, 'CO', 0.7]
-    multio = ['O2', 0.95, 'AR', 0.05]
+    multif_1 = ['H2', .3, 'CO', 0.7]
+    multif_2 = {'H2': .3, 'CO': 0.7}
+    multio_1 = ['O2', 0.95, 'AR', 0.05]
+    multio_2 = {'O2': 0.95, 'AR': 0.05}
 
-    conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': [multif, 'N2', multio, 'phi_fuel'],
-                  'Files': [cf.model_folder('grimech30.cti'), None]}
-    paramlist = cf.case_maker(conditions)
-    case = paramlist[0]
-    mixture = case[2]
+    for f, o in [[multif_1, multio_1], [multif_2, multio_2]]:
+        conditions = {'Parameters': [P, T, mix_params, 'log'],
+                      'Mixture': [f, 'N2', o, 'phi_fuel'],
+                      'Files': [cf.model_folder('grimech30.cti'), None]}
+        paramlist = cf.case_maker(conditions)
+        case = paramlist[0]
+        mixture = case[2]
 
-    nptest.assert_allclose(case[:2], [P[0], T[0]])
-    nptest.assert_allclose(mixture['H2'] + mixture['CO'], fuel[0])
-    nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'] + mixture['AR'] + mixture['CO'])
-    nptest.assert_allclose(phi[0], (mixture['H2'] + mixture['CO']) / mixture['O2'] * 0.5)
-    nptest.assert_allclose(0.3 / 0.7, mixture['H2'] / mixture['CO'])
-    nptest.assert_allclose(0.95 / 0.05, mixture['O2'] / mixture['AR'])
-    assert all([x >= 0 for k, x in mixture.items()])   
- 
+        nptest.assert_allclose(case[:2], [P[0], T[0]])
+        nptest.assert_allclose(mixture['H2'] + mixture['CO'], fuel[0])
+        nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'] + mixture['AR'] + mixture['CO'])
+        nptest.assert_allclose(phi[0], (mixture['H2'] + mixture['CO']) / mixture['O2'] * 0.5)
+        nptest.assert_allclose(0.3 / 0.7, mixture['H2'] / mixture['CO'])
+        nptest.assert_allclose(0.95 / 0.05, mixture['O2'] / mixture['AR'])
+        assert all([x >= 0 for k, x in mixture.items()])
+
 def test_mixture_percentage():
     phi = [0.3 + rand(), 2, 1]
     fuel = [0.2 + rand() / 5, 1, 1]
@@ -252,13 +255,13 @@ def test_mixture_percentage():
     stri_paramlist = cf.case_maker(stri_conditions)
     stri_case = stri_paramlist[0]
     stri_mixture = stri_case[2]
-    
+
     lst_comp = cf.mixture_percentage(multif, list_mixture)
     str_comp = cf.mixture_percentage(singlf, stri_mixture)
-    
+
     nptest.assert_allclose(list_case[:2], [P[0], T[0]])
     nptest.assert_allclose(stri_case[:2], [P[0], T[0]])
     nptest.assert_allclose(lst_comp, fuel[0])
     nptest.assert_allclose(str_comp, fuel[0])
     assert all([x >= 0 for k, x in list_mixture.items()])
-    assert all([x >= 0 for k, x in stri_mixture.items()]) 
+    assert all([x >= 0 for k, x in stri_mixture.items()])

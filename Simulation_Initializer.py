@@ -59,7 +59,8 @@ Mechanism = 'mech-FFCM1_modified.cti' #Mechanism file
 
 #Parameters for mixture (Fuel, Oxidizer, Diluent)
 # Fuel and Oxidizer can either be a single chemical string or multichemical list
-#  For multichemical follow structure ['Chemical1', % of Total, ...]
+#  For multichemical follow structure ['Chemical1', % of Total, ...] or use
+#  a dictionary.
 #  The percentage following the chemical name should sum up to 1
 # Diluent should be a single chemical added to the mixture
 Fuel     = 'H2' # Chemical formula of fuel

@@ -63,14 +63,14 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
         A list of the two mixture parameters and mixtrue type used in creating
         a mixture.
     s_species : list
-        A list of specific species of interest in which the sensitivity to 
+        A list of specific species of interest in which the sensitivity to
         each reaction per time step is calculated.
-    stime : int
+    stime : float
         Default set to zero in case the sim.time starts before 0.
     etime : float
         Sets the end time for the sim.time to be performed.
-    dT : int
-        An integer to check that the temperature did not change above the given
+    dT : float
+        A float to check that the temperature did not change above the given
         limit. If the temperature change does exceed dT then the simulation
         assumes a flame was created and the case is thrown out of the results.
     ppm : float
@@ -86,7 +86,7 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
     -------
     None.
 
-    """   
+    """
 
     #start time
     tic = time.time()
