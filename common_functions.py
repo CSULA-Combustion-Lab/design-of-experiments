@@ -266,9 +266,11 @@ def parallelize(param, cond, fun):
     Parameters
     ----------
     param : List
-        DESCRIPTION.
-    cond : Dictionry
-        DESCRIPTION.
+        Simulation case information with the following structure:
+        [[Pressure, Temperature, Mixture], ...]
+    cond : dict
+        A dictionary of the simulation information specific to the type of 
+        simulation being performed.
     fun : Function
         Name of the function being used per simulation
 
@@ -364,19 +366,21 @@ def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
 
 def calculate_a(fuel, mech):
     """
-
+    Calculates the stoichiometric ratio for a given mixture of fuel.
 
     Parameters
     ----------
-    fuel : TYPE
-        DESCRIPTION.
-    mech : TYPE
-        DESCRIPTION.
+    fuel : str or list
+        As a string the variable represents a single species of fuel being used.
+        As a list the variable represents multicomponent fuel species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    mech : str
+        A .cti mechanism file containing all reaction and species information.
 
     Returns
     -------
-    a : TYPE
-        DESCRIPTION.
+    a : float
+        The stoichiometric ratio of the given fuel mixture
 
     """
     #fuel C(x)H(y)O(z)
@@ -398,6 +402,20 @@ def calculate_a(fuel, mech):
     return a
 
 def update_progress(progress):
+    """
+    A progress bar used in for loops to show haw many iterations have completed
+    and how many are left.
+
+    Parameters
+    ----------
+    progress : int or float
+        A value of the current iteration being performed or just finished.
+
+    Returns
+    -------
+    None.
+
+    """
     barLength = 25 # Modify this to change the length of the progress bar
     status = ""
     if isinstance(progress, int):
@@ -419,24 +437,29 @@ def update_progress(progress):
 
 def mixture_percentage(components, mix):
     """
-
+    
 
     Parameters
     ----------
-    components : TYPE
-        DESCRIPTION.
+    components : str, list, or dict
+        As a string the variable represents a single species of a component.
+        As a list the variable represents multiple species in componet .
+        As a dictionary species are listed as the key with no given value.
     mix : TYPE
         DESCRIPTION.
 
     Raises
     ------
+    KeyError
+        If components are missing in the mixture a 0.0 is returned if the 
+        components is a string and a pass is used if the components is a list
     TypeError
-        DESCRIPTION.
+        Component type is not listed. Function cannot be used with this type.
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
+    Percentage : float
+        The sum percentage of requested components in the mixture.
 
     """
     if type(components) is str:  # Single Component

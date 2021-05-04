@@ -25,11 +25,6 @@ cantera.suppress_thermo_warnings()
 
 def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
                       mix_params, s_species, stime, etime, dT, ppm, safi, sati):
-    #TODO: The document strings (stuff in triple quotes) need to be completed,
-    # or removed. This is a problem in many of the files, not just this one.
-    # They shouldn't be half-finished like they are here.
-    # For examples, see https://numpydoc.readthedocs.io/en/latest/format.html
-    # Or you can just look at the actual code behind any function in numpy
     """
     Takes information from initializer and runs necessary functions to perform
     a zero-dimensional simulation. Simulation results will be saved if booleans
@@ -108,6 +103,68 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
 
 def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
                    mix_params, s_species, stime, etime, dT, ppm):
+    """
+    Creates a list and dictionary of simulation information that will be used
+    the simulation calculations and ranking.
+
+    Parameters
+    ----------
+    mechan : str
+        A .cti mechanism file containing all reaction and species information.
+    arrtype : str
+        Defines the scale that conditions are in. Either linear or logarithmic
+    pres : list
+        A list of pressure conditions to test over [initial, final, number of points].
+    temp : list
+        A list of temperature conditions to test over [initial, final, number of points].
+    fue : str or list
+        As a string the variable represents a single species of fuel being used.
+        As a list the variable represents multicomponent fuel species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    oxi : str or list
+        As a string the variable represents a single species of oxidizer being used.
+        As a list the variable represents multicomponent oxidizer species
+        followed by the percentage to the total oxidizer [Component1, % of total, ...]
+    dilu : str or list
+        As a string the variable represents a single species of diluent being used.
+        As a list the variable represents multicomponent diluent species
+        followed by the percentage to the total diluent [Component1, % of total, ...]
+    m_type : str
+        A string providing the mixture type being used to create a mixture.
+    mix_params : list
+        A list of the two mixture parameters and mixtrue type used in creating
+    s_species : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated.
+    stime : float
+        Default set to zero in case the sim.time starts before 0.
+    etime : float
+        Sets the end time for the sim.time to be performed.
+    dT : float
+        A float to check that the temperature did not change above the given
+        limit. If the temperature change does exceed dT then the simulation
+        assumes a flame was created and the case is thrown out of the results.
+    ppm : float
+        A limit set by the experimental device that measures the mole fractions.
+        If a species mole fraction is set below this limit the species mole
+        fraction is set 0.
+
+    Returns
+    -------
+    Packed : dict
+        A dictionary of the following simulation information with the
+        following structure:
+            {'Parameters': [Press, Temperature, mix_params, array_type],
+             'Mixture':[fuel_name, diluent_name, oxidizer_name],
+             'ZeroD': [SpecificSpecies, dup_reactions],
+             'Time_Info': [starttime, endtime, SCORE3_TIME],
+             'Files': [mechanism],
+             'Limits': [delta_T, ppm]}
+    Parameter_List : list
+        Simulation case information the following structure:
+        [[Pressure, Temperature, Mixture], ...]
+
+    """
     #create gas object
     gas                   = cantera.Solution(mechan)
     dup_reactions         = cf.duplicate_reactions(gas)
@@ -127,6 +184,45 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
     return Packed, Parameter_List
 
 def run_simulations(pack, plist):
+    """
+    Runs the simulation through all functions inlcuding the simulation
+    calculations and the rankings.
+
+    Parameters
+    ----------
+    pack : dict
+        A dictionary of the following simulation information with the
+        following structure:
+            {'Parameters': [Press, Temperature, mix_params, array_type],
+             'Mixture':[fuel_name, diluent_name, oxidizer_name],
+             'ZeroD': [SpecificSpecies, dup_reactions],
+             'Time_Info': [starttime, endtime, SCORE3_TIME],
+             'Files': [mechanism],
+             'Limits': [delta_T, ppm]}
+    plist : list
+        Simulation case information the following structure:
+        [[Pressure, Temperature, Mixture], ...]
+
+    Returns
+    -------
+    sim_package : list
+        A list of simulation results for each case with the following
+        sturcture:
+            [t_T_P_AMol, t_SMol, t_AllSpecieSens, All_time_Sens_test,
+            All_tTP_AMo_test, temp, mix, pressure]
+    sim_info : list
+        Simulation time and ranking time are recorded as floats.
+    score_lists : list
+        List of ranked simulation results with the following structure:
+            [Parameters, score_T_P_MaxSensavg, scoretimes, rank_score,
+             rank_plot, All_Ranks, All_Ranks_Params, score2_T_P_MaxSens,
+             score2times, score2_Max_sens_rxn,
+             score2_Params_MaxSens_Name_Params, score3_T_P_MaxSens,
+             score3times, score3_Max_sens_rxn,
+             score3_Params_MaxSens_Name_Params, int_strength,
+             MoleFraction, All_time_Sens, All_tTP_AMo]
+
+    """
 
     dT  = pack['Limits'][0]
     ppm = pack['Limits'][1]
@@ -378,6 +474,26 @@ def reduce_resolution(mylist, maxlength, time_of_interest):
 
 
 def T_limit(t_T_P_AMol,temp,delta_T):
+    """
+    Determines if the temperature change per time-step is greater than the 
+    maximum allowable temperautre change
+
+    Parameters
+    ----------
+    t_T_P_AMol : list
+        Temperatures of the previous time-step.
+    temp : float
+        Temperature of the current time-step.
+    delta_T : int or float
+        Maximum allowable tempearture change.
+
+    Returns
+    -------
+    temp_condition : int
+        A integer of either 1 or 0. If 0 the temperature change did not surpass
+        the limit. If 1 the temperatue did surpass the limit.
+
+    """
 
     max_temp = t_T_P_AMol[-1][1] #temp of the last time step for condition
     if max_temp-temp > delta_T:
@@ -606,9 +722,70 @@ def sensitivity_score2(SpecificSpecieSens, specificspecies, temp, pressure,
                        score2times, score2_Max_sens_rxn,
                        score2_Params_MaxSens_Name_Params,
                        fuel, oxidizer, diluent):
-    """ Find the reaction with the highest absolute value of sensitivity for each species of interest.
+    """
+    Find the reaction with the highest absolute value of sensitivity for each species of interest.
     The maximum sensitivity is found for all time - not at a specific time step.
     This score will find spikes, but may not find a reaction that is sensitive for a longer time.
+
+    Parameters
+    ----------
+    SpecificSpecieSens : list
+        List which contains the sensitivities of 'SpecificSpecies.' This
+        list is dependent on the 'mole_fractions' function, if the mole
+        fractions are not above the predefined ppm value then the
+        sensitivites get replaced with zero, otherwise they are
+        not changed. This list is unique and depends on initial
+        conditions or mixture of current simulation. The size of this
+        list should be len(SpecificSpecies)*len(rxns).
+        Format of this list: It contains one list for each time step, so
+        SpecificSpecieSens[0] and SpecificSpecieSens[1] are different tiems.
+        These lists are then ordered as sensitivity of: [species1 to rxn1,
+        species2 to rxn 1, species3 to rxn 1.... species1 to rxn2, species2
+        to rxn2....]
+    specificspecies : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated.
+    temp : float
+        Temperature in Kelvin of the current case.
+    pressure : float
+        Pressure in atmospheres of the current case.
+    mix : list
+        Molefraction of species in the mixture.
+    rxns : ndarray
+        Array containing the number of available Chemical Reactions based
+        on GRI-Mech 3.0, an optimized mechanism designed to model natural
+        gas combustion, including NO formation and reburn chemistry.
+    senstime : array
+        Times for all specie sensitivities.
+    gas : object
+        Cantera generated gas object created using user provided mechanism.
+    score2_T_P_MaxSens : list
+        Thermodynamic properties and maximum sensitivity.
+    score2times : list
+        Times of maximum sensitivity occurances.
+    score2_Max_sens_rxn : list
+        Simulation information appended as well as the reaction with the 
+        maximum sensitivity
+    score2_Params_MaxSens_Name_Params : list
+        Simulation information stored as a dictionary as well as a list of 
+        reaction number and equation that was most sensitive.
+    fuel : str or list
+        As a string the variable represents a single species of fuel being used.
+        As a list the variable represents multicomponent fuel species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    oxidizer : str or list
+        As a string the variable represents a single species of oxidizer being used.
+        As a list the variable represents multicomponent oxidizer species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    diluent : str or list
+        As a string the variable represents a single species of diluent being used.
+        As a list the variable represents multicomponent diluent species
+        followed by the percentage to the total diluent [Component1, % of total, ...]
+
+    Returns
+    -------
+    None.
+
     """
     dataa2  = np.absolute(np.array([x[:] for x in SpecificSpecieSens]))
     ss      = [None]*(len(specificspecies)+2)  #ss-sensititvity score
@@ -649,6 +826,70 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
                        t_AllSpecieSens, SpecificSpecieSens, rxns, gas,
                        score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params,
                        fuel, oxidizer, diluent):
+    """
+    Determines what reactions was most sensitivty and appends the simulation 
+    case information, reaction information, and simulation results
+
+    Parameters
+    ----------
+    specificspecies : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated.
+    mix : list
+        Molefraction of species in the mixture.
+    temp : float
+        Temperature in Kelvin of the current case.
+    pressure : float
+        Pressure in atmospheres of the current case.
+    SCORE3_TIME : float
+        A specified time near the end of the simulation case to capture
+        information about the reaction about.
+    t_AllSpecieSens : list
+        All species sensitivty information including thermodynamic information,
+        molefractions, and time-steps.
+    SpecificSpecieSens : list
+        List which contains the sensitivities of 'SpecificSpecies.' This
+        list is dependent on the 'mole_fractions' function, if the mole
+        fractions are not above the predefined ppm value then the
+        sensitivites get replaced with zero, otherwise they are
+        not changed. This list is unique and depends on initial
+        conditions or mixture of current simulation. The size of this
+        list should be len(SpecificSpecies)*len(rxns).
+        Format of this list: It contains one list for each time step, so
+        SpecificSpecieSens[0] and SpecificSpecieSens[1] are different tiems.
+        These lists are then ordered as sensitivity of: [species1 to rxn1,
+        species2 to rxn 1, species3 to rxn 1.... species1 to rxn2, species2
+        to rxn2....]
+    rxns : ndarray
+        Array containing the number of available Chemical Reactions based
+        on GRI-Mech 3.0, an optimized mechanism designed to model natural
+        gas combustion, including NO formation and reburn chemistry.
+    gas : object
+        Cantera generated gas object created using user provided mechanism.
+    score3_Max_sens_rxn : list
+        Simulation information appended as well as the reaction with the 
+        maximum sensitivity
+    score3_Params_MaxSens_Name_Params : list
+        Simulation information stored as a dictionary as well as a list of 
+        reaction number and equation that was most sensitive.
+    fuel : str or list
+        As a string the variable represents a single species of fuel being used.
+        As a list the variable represents multicomponent fuel species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    oxidizer : str or list
+        As a string the variable represents a single species of oxidizer being used.
+        As a list the variable represents multicomponent oxidizer species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    diluent : str or list
+        As a string the variable represents a single species of diluent being used.
+        As a list the variable represents multicomponent diluent species
+        followed by the percentage to the total diluent [Component1, % of total, ...]
+
+    Returns
+    -------
+    None.
+
+    """
     num_spec = len(specificspecies)
     max_rxn = [None]*(num_spec+4)
     max_rxn[0]  = mix
@@ -684,9 +925,53 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
 
 def rank_all(SpecificSpecieSens, temp, pressure, mix, rxns, senstime,
              specificspecies, all_ranks, All_Ranks, All_Ranks_Params):
-    """ Creates a list of reaction rankings for all timesteps and all species.
-        Needs work. Understanding output rank_mat: The lists cycle though the
-        species list, and after every len(species) its a new time_step."""
+    """
+    Creates a list of reaction rankings for all timesteps and all species.
+    Needs work. Understanding output rank_mat: The lists cycle though the
+    species list, and after every len(species) its a new time_step.
+
+    Parameters
+    ----------
+    SpecificSpecieSens : list
+        List which contains the sensitivities of 'SpecificSpecies.' This
+        list is dependent on the 'mole_fractions' function, if the mole
+        fractions are not above the predefined ppm value then the
+        sensitivites get replaced with zero, otherwise they are
+        not changed. This list is unique and depends on initial
+        conditions or mixture of current simulation. The size of this
+        list should be len(SpecificSpecies)*len(rxns).
+        Format of this list: It contains one list for each time step, so
+        SpecificSpecieSens[0] and SpecificSpecieSens[1] are different tiems.
+        These lists are then ordered as sensitivity of: [species1 to rxn1,
+        species2 to rxn 1, species3 to rxn 1.... species1 to rxn2, species2
+        to rxn2....]
+    temp : float
+        Temperature in Kelvin of the current case.
+    pressure : float
+        Pressure in atmospheres of the current case.
+    mix : list
+        Molefraction of species in the mixture.
+    rxns : ndarray
+        Array containing the number of available Chemical Reactions based
+        on GRI-Mech 3.0, an optimized mechanism designed to model natural
+        gas combustion, including NO formation and reburn chemistry.
+    senstime : array
+        Times for all specie sensitivities.
+    specificspecies : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated.
+    all_ranks : list
+        An empty list filled with ranking information from ranking_per_step
+    All_Ranks : list
+        A list of list of all_ranks information per case.
+    All_Ranks_Params : list
+        A list of dictinaries of simulation information per case.
+
+    Returns
+    -------
+    None.
+
+    """
     data3 = np.absolute(np.array([x[:] for x in SpecificSpecieSens]))
     all_ranks_params    = [None]*1
     all_ranks_params[0] = {'temperature': temp, 'pressure': pressure*101.325,
@@ -705,8 +990,20 @@ def rank_all(SpecificSpecieSens, temp, pressure, mix, rxns, senstime,
 
 
 def ranking_per_step(sval):
-    """ Assigns a rank to each reaction sensitivity per time-step and species
     """
+    Assigns a rank to each reaction sensitivity per time-step and species
+
+    Parameters
+    ----------
+    sval : list
+        A list of specie sensitivites per reactions.
+
+    Returns
+    -------
+    step_rank : list
+        Rank given to each reaction sensitivity per time-step and species.
+    """
+
     sval  = np.array(sval)   #sval = step from above per time, per specie
     order = np.argsort(sval) #orders sval from smallest to largeest by listing indices which sval elements should be arranged in
     ranks = ranks_possible(sval)
@@ -717,8 +1014,21 @@ def ranking_per_step(sval):
 
 
 def ranks_possible(sval):
-    """ Determines how many ranks there will be for a given time-step, since
-    sensitivities can tie if they are equal"""
+    """
+    Determines how many ranks there will be for a given time-step, since
+    sensitivities can tie if they are equal
+
+    Parameters
+    ----------
+    sval : list
+        A list of specie sensitivites per reactions..
+
+    Returns
+    -------
+    ranks : list
+        A list of possible ranks.
+
+    """
     sval  = np.sort(sval)        #orders elements from smallest to largest
     sval  = np.flip(sval,axis=0) #re-orders from largest to smallest
     ranks = [None]*len(sval)
@@ -814,8 +1124,10 @@ def sens_dup_filter(sens_information, duplicate_reactions):
 
     Returns
     -------
-    sens_information : TYPE
-        DESCRIPTION.
+    sens_information : list
+        A reformated list of parameter sens_information which represents the
+        sensitivity analysis of all reactions. Any duplicate reactions are 
+        summed together into one reaciton.
 
     """
     for s in sens_information:
@@ -830,24 +1142,42 @@ def sens_dup_filter(sens_information, duplicate_reactions):
 
 def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
     """
-
+    Information from the simulation is pickled and saved in a generated folder
+    with a text document filled with details of the simulation performed.
 
     Parameters
     ----------
-    pack : TYPE
-        DESCRIPTION.
-    slists : TYPE
-        DESCRIPTION.
-    zerod_info : TYPE
-        DESCRIPTION.
-    m_pram : TYPE
-        DESCRIPTION.
-    plist : TYPE
-        DESCRIPTION.
-    siminfo : TYPE
-        DESCRIPTION.
-    sati : TYPE
-        DESCRIPTION.
+    pack : dict
+        A dictionary of the following simulation information with the
+        following structure:
+            {'Parameters': [Press, Temperature, mix_params, array_type],
+             'Mixture':[fuel_name, diluent_name, oxidizer_name],
+             'ZeroD': [SpecificSpecies, dup_reactions],
+             'Time_Info': [starttime, endtime, SCORE3_TIME],
+             'Files': [mechanism],
+             'Limits': [delta_T, ppm]}
+    slists : list
+        List of ranked simulation results with the following structure:
+            [Parameters, score_T_P_MaxSensavg, scoretimes, rank_score,
+             rank_plot, All_Ranks, All_Ranks_Params, score2_T_P_MaxSens,
+             score2times, score2_Max_sens_rxn,
+             score2_Params_MaxSens_Name_Params, score3_T_P_MaxSens,
+             score3times, score3_Max_sens_rxn,
+             score3_Params_MaxSens_Name_Params, int_strength,
+             MoleFraction, All_time_Sens, All_tTP_AMo]
+    zerod_info : list
+        A list of simulation results for each case with the following
+        sturcture:
+            [t_T_P_AMol, t_SMol, t_AllSpecieSens, All_time_Sens_test,
+            All_tTP_AMo_test, temp, mix, pressure]
+    plist : list
+        Simulation case information the following structure:
+        [[Pressure, Temperature, Mixture], ...].
+    siminfo : list
+        Simulation time and ranking time are recorded as floats
+    sati : boolean
+        If true molefraction time sensitivity information is pickeled.
+        Note: Time senstivity information list may become to large to pickle.
 
     Returns
     -------

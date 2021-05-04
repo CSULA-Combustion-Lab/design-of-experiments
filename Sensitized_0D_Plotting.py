@@ -11,11 +11,29 @@ import numpy as np
 import os
 import matplotlib.patches as mpl_patches
 dirname = os.path.normpath(os.path.dirname(__file__))
-plt.style.use(os.path.join(dirname, 'CSULA_Combustion_test.mplstyle'))
+plt.style.use(os.path.join(dirname, 'CSULA_Combustion.mplstyle'))
 #from tkinter import filedialog
 
 
 def rxn_plots(max_rxns, species):
+    """
+    Plots and saves figures of the reactions that were most sensitive per
+    simulation case per independant variable.
+
+    Parameters
+    ----------
+    max_rxns : list
+        Simulation information appended as well as the reaction with the 
+        maximum sensitivity
+    species : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated
+
+    Returns
+    -------
+    None.
+
+    """
     for specie in species[0]:
         Temperature  = []
         Pressure     = []
@@ -28,21 +46,11 @@ def rxn_plots(max_rxns, species):
                 continue
             else:
                 Rxns.append(ents[1][0])
-            # entry = [k for k in ents[0].values()]
-            # a     = species[2][0]
-            # phi   = a*(entry[0]/entry[1])
-            # Temperature.append(ents[1])
-            # Pressure.append(ents[2])
-            # Equivalence.append(ents[3])
-            # Fuel.append(entry[0])
-            # Rxns.append(rxn)
             Temperature.append(ents[0]['temperature'])
             Pressure.append(ents[0]['pressure'])
             Equivalence.append(ents[0]['phi'])
             Fuel.append(ents[0]['fuel'])
 
-
-        # fs = 15 #Controls font size
         varnames = ['P', 'phi', 'X', 'T']
         # info is a dictionary with an entry for each figure. The entries are
         # [x label, x points, name]
@@ -51,20 +59,16 @@ def rxn_plots(max_rxns, species):
                         'Equivalence'],
                 'X': ['Fuel [mole fraction]', Fuel, 'Fuel'],
                 'T': ['Temperature [K]', Temperature, 'Temperature']}
-        # fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10))
+        
         fig, axes = plt.subplots(nrows=2, ncols=2)
         #Four subplots of rxn versus independant variables
         for var, ax, string in zip(varnames, axes.flatten(),
                                    ['(a)', '(b)', '(c)', '(d)']):
             if Array_Type == 'log':
                 ax.set_xscale('log')
-            # ax.plot(info[var][1], Rxns, ls='none',
-            #         marker='o', mfc='none', mec='k')
             ax.plot(info[var][1], Rxns)
             ax.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
-            # ax.set_xlabel(info[var][0], fontsize=fs)
             ax.set_xlabel(info[var][0])
-            # ax.set_ylabel('Reaction #', fontsize=fs)
             ax.set_ylabel('Reaction #')
             ax.set_ylim([0, int(max(Rxns))+1])
             if max(Rxns) <= num_ticks:
@@ -74,29 +78,19 @@ def rxn_plots(max_rxns, species):
                                         step=int(max(Rxns)/num_ticks)))
             ax.grid(True)
 
-        # fig.suptitle('Time Instance: '+format(species[3][0])+
-        #              ' s    Species: '+ specie, fontsize=12)
         fig.suptitle('Time Instance: '+format(species[3][0])+
                      ' s    Species: '+ specie)
-        # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fig.savefig(Plot_path+'\\['+format(specie)+
                                   '] Most Sensitive Reactions.png')
         plt.close(fig)
 
         #Individual plots of Rxn versus independant variable
         for var in varnames:
-            # plt.figure("Sensitivity of "+specie+" to "+info[var][2],
-            #            figsize=(15,10))
             plt.figure("Sensitivity of "+specie+" to "+info[var][2])
             if Array_Type == 'log':
                 plt.xscale('log')
-            # plt.plot(info[var][1], Rxns, ls='none',
-            #          marker='o', mfc='none', mec='k')
             plt.plot(info[var][1], Rxns)
-            # plt.xlabel(info[var][0], fontsize=fs)
             plt.xlabel(info[var][0])
-            # plt.ylabel('Most Sensitive Reaction Number for '+specie,
-            #            fontsize=10)
             plt.ylabel('Most Sensitive Reaction Number for '+specie)
             plt.ylim([0,int(max(Rxns))+1])
             if max(Rxns) <= 25:
@@ -110,13 +104,36 @@ def rxn_plots(max_rxns, species):
                        fancybox=True, framealpha=0.7,
                        handlelength=0, handletextpad=0)
             plt.grid(True)
-            # plt.tight_layout()
             plt.savefig(Plot_path+'\\['+format(specie)+
                         '] '+info[var][2]+' Most Sensitive Reaction.png')
             plt.close()
 
 
 def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
+    """
+    Plots and saves figures of the integrated senstivities of reactions of
+    interests against each indpendant varaible.
+
+    Parameters
+    ----------
+    int_strength : list
+        This is a list of lists. Each list is the result for one species.
+        Within each species is a list of normalized integrated strength for each
+        reaction in order. In the future, it may be beneficial to also return
+        IS, the non-normalized integrated strength.
+    species : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated
+    Plot_path : str
+        A string of the save path to the plots folder.
+    rxn_num : list
+        Reaction of interest to plot the senstivities of.
+
+    Returns
+    -------
+    None.
+
+    """
     varnames = ['P', 'phi', 'X', 'T']
     # info is a dictionary with an entry for each figure. The entries are
     # [x label, key for int_strength]
@@ -127,14 +144,10 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
     file_format = '[{:}] Normalized Integrated Strength.png'.format
     for i in range(len(species[0])):
         spec = species[0][i]
-        # fig, axes = plt.subplots(
-        #     nrows=2, ncols=2, sharey=True, figsize=(15, 10),
-        #     subplot_kw={'ylabel': r'$\hat{IS}_{' + spec + ', j}$'})
         fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True,
             subplot_kw={'ylabel': r'$\hat{IS}_{' + spec + ', j}$'})
         for var, ax, string in zip(varnames, axes.flatten(),
                                    ['(a)', '(b)', '(c)', '(d)']):
-            # ax.set_xlabel(info[var][0], fontsize=15)
             ax.set_xlabel(info[var][0])
             if Array_Type == 'log':
                 ax.set_xscale('log')
@@ -149,19 +162,10 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
                     x.append(condition[0][key])
                     norm_IS = condition[1][i]
                     y.append(norm_IS[rxn_num])
-            # ax.plot(x, y, ls='none', marker='o', mfc='none', mec='k')
             ax.plot(x, y)
-            # if var != 'T':
-            #     by, ty = plt.ylim()
-            #     y_perc = (ty-by)*0.01
-            #     plt.ylim([by-y_perc, ty+y_perc])
-            #     bx, tx = plt.xlim()
-            #     x_perc = (tx-bx)*0.01
-            #     plt.xlim([bx-x_perc, tx+x_perc])
             ax.axhline(0, c='gray', ls='--', marker="None")
             ax.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
         fig.suptitle(species[2][0][rxn_num])
-        # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fname = file_format(spec)
         fig.savefig(os.path.join(Plot_path, fname))
         plt.close(fig)
@@ -169,6 +173,32 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num):
 
 def integrated_strength_rxn_plots(int_strength, species, Plot_path,
                                   rxn_num, threshold):
+    """
+    Plots and saves figures of the integrated senstivities of reactions of
+    interests that are above the threshold against each indpendant varaible.
+
+    Parameters
+    ----------
+    int_strength : list
+        This is a list of lists. Each list is the result for one species.
+        Within each species is a list of normalized integrated strength for each
+        reaction in order. In the future, it may be beneficial to also return
+        IS, the non-normalized integrated strength.
+    species : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated
+    Plot_path : str
+        A string of the save path to the plots folder.
+    rxn_num : list
+        Reaction of interest to plot the senstivities of.
+    threshold : float
+        Minimum sensitivity strength defined by user
+
+    Returns
+    -------
+    None.
+
+    """
     # info is a dictionary with an entry for each figure. The entries are
     # [x label, key for int_strength]
     info = {'P': ['Pressure [kPa]', 'pressure'],
@@ -179,15 +209,12 @@ def integrated_strength_rxn_plots(int_strength, species, Plot_path,
     conditions = [ ('T', 'phi'), ('X', 'phi'), ('P', 'phi'),
                   ('T', 'P'), ('T', 'X'), ('P', 'X')]
     anlabel = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)']
-    # fs = 15
+
     for i in range(len(species[0])):
         spec = species[0][i]
-        # fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
         fig, axes = plt.subplots(nrows=2, ncols=3)
         for condition, ax, string in zip(conditions, axes.flatten(), anlabel):
-            # ax.set_xlabel(info[condition[0]][0], fontsize=fs)
             ax.set_xlabel(info[condition[0]][0])
-            # ax.set_ylabel(info[condition[1]][0], fontsize=fs)
             ax.set_ylabel(info[condition[1]][0])
             if Array_Type == 'log':
                 ax.set_xscale('log')
@@ -205,18 +232,36 @@ def integrated_strength_rxn_plots(int_strength, species, Plot_path,
                 elif abs(cond[1][i][rxn_num]) >= threshold:
                     x.append(cond[0][x_key])
                     y.append(cond[0][y_key])
-            # ax.plot(x, y, ls='none', marker='o', mfc='none', mec='k')
             ax.plot(x, y)
             ax.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
         fig.suptitle(species[2][0][rxn_num]+
                      '    Threshold >='+format(threshold))
-        # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fname = file_format(spec)
         fig.savefig(os.path.join(Plot_path, fname))
         plt.close(fig)
 
 
 def reaction_of_interest_plot(max_rxns, species, rxn_number):
+    """
+    Plots and saves figures comparing independant variables that were most 
+    senstivity.
+
+    Parameters
+    ----------
+    max_rxns : list
+        Simulation information appended as well as the reaction with the 
+        maximum sensitivity
+    species : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated
+    rxn_num : list
+        Reaction of interest to plot the senstivities of.
+
+    Returns
+    -------
+    None.
+
+    """
     for specie in species[0]:
         Temperature  = []
         Pressure     = []
@@ -226,22 +271,13 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
             if ents[1] is None:
                 continue
             elif ents[1][0] == rxn_number:
-                # entry = [k for k in ents[0].values()]
-                # a     = species[2][0]
-                # phi   = a*(entry[0]/entry[1])
-                # Temperature.append(ents[1])
-                # Pressure.append(ents[2])
-                # Equivalence.append(ents[3])
-                # Fuel.append(entry[0])
                 Temperature.append(ents[0]['temperature'])
                 Pressure.append(ents[0]['pressure'])
                 Equivalence.append(ents[0]['phi'])
                 Fuel.append(ents[0]['fuel'])
 
-        # fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
         fig, axes = plt.subplots(nrows=2, ncols=3)
         ax = axes.flatten()
-        # fs = 15 #Controls font size
 
         cond_dict = {'T': [Temperature, 'Temperature [K]', 'Temperature'],
                      'P': [Pressure, 'Pressure [kPa]', 'Pressure'],
@@ -257,13 +293,9 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
                                          '(d)', '(e)', '(f)']):
             x_key = condition[0]
             y_key = condition[1]
-            # a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
-            #        marker='o', mfc='none', mec='k')
             a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
             a.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
-            # a.set_xlabel(cond_dict[x_key][1], fontsize=fs)
             a.set_xlabel(cond_dict[x_key][1])
-            # a.set_ylabel(cond_dict[y_key][1], fontsize=fs)
             a.set_ylabel(cond_dict[y_key][1])
             if Array_Type == 'log':
                 a.set_xscale('log')
@@ -273,7 +305,6 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
         fig.suptitle('Reaction Number '+format(rxn_number)+
                       ' '+species[2][0][rxn_number]+
                       '\nTime Instance: '+format(species[3][0])+' s')
-        # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.savefig(Plot_path+'\\['+specie+'] Reaction Number '
                     +format(rxn_number)+'.png')
         plt.close(fig)
@@ -282,14 +313,9 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
         for cond in conditions:
             x_key = cond[0]
             y_key = cond[1]
-            # plt.figure(figsize=(15,10))
             plt.figure()
-            # plt.plot(cond_dict[x_key][0], cond_dict[y_key][0],
-            #          ls='none', marker='o', mfc='none', mec='k')
             plt.plot(cond_dict[x_key][0], cond_dict[y_key][0])
-            # plt.xlabel(cond_dict[x_key][1], fontsize=fs)
             plt.xlabel(cond_dict[x_key][1])
-            # plt.ylabel(cond_dict[y_key][1], fontsize=fs)
             plt.ylabel(cond_dict[y_key][1])
             if Array_Type == 'log':
                 plt.xscale('log')
@@ -301,15 +327,37 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number):
                        fancybox=True, framealpha=0.7,
                        handlelength=0, handletextpad=0)
             plt.grid(True)
-            # plt.tight_layout()
             plt.savefig(Plot_path+'\\['+specie+'] Reaction Number '
                         +format(rxn_number)+' '+cond_dict[y_key][2]+
                         ' vs '+cond_dict[x_key][2]+'.png')
             plt.close()
 
 
-def create_csv(int_strength, out_path, rxn_num, spec=0):
-    """ Save the integrated strength in a sorted csv file"""
+def create_csv(int_strength, out_path, rxn_num, spec):
+    """
+    Creates a csv of integrated sensitivity for requested species with 
+    thermodynamic properties and mixture information.
+
+    Parameters
+    ----------
+    int_strength : list
+        This is a list of lists. Each list is the result for one species.
+        Within each species is a list of normalized integrated strength for each
+        reaction in order. In the future, it may be beneficial to also return
+        IS, the non-normalized integrated strength.
+    out_path : str
+        A string of the save path to the simulation folder.
+    rxn_num : list
+        Reaction of interest to plot the senstivities of.
+    spec : list
+        A list of specific species of interest in which the sensitivity to
+        each reaction per time step is calculated
+
+    Returns
+    -------
+    None.
+
+    """
     output = []
     for item in int_strength:
         mix = item[0]
@@ -376,9 +424,9 @@ if __name__ == "__main__":
     with open(os.path.join(Load_path, 'Integrated Strength.pkl'), 'rb') as f:
         Int_Strength = pickle.load(f)
 
-    # rxn_plots(Max_Sens_Rxn, Species_Rxn)
-    # for roi in Reaction_of_Interest:
-    #     reaction_of_interest_plot(Max_Sens_Rxn, Species_Rxn, roi)
-    #     integrated_strength_plots(Int_Strength, Species_Rxn, Plot_path, roi)
-    #     integrated_strength_rxn_plots(Int_Strength, Species_Rxn,
-    #                                   Plot_path, roi, Threshold)
+    rxn_plots(Max_Sens_Rxn, Species_Rxn)
+    for roi in Rxn_interest:
+        reaction_of_interest_plot(Max_Sens_Rxn, Species_Rxn, roi)
+        integrated_strength_plots(Int_Strength, Species_Rxn, Plot_path, roi)
+        integrated_strength_rxn_plots(Int_Strength, Species_Rxn,
+                                      Plot_path, roi, Threshold)

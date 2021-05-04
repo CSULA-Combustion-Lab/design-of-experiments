@@ -22,34 +22,44 @@ ct.suppress_thermo_warnings() #Suppress cantera warnings!
 def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
                          mgrid, msoret, loglev, safi):
     """
-
+    Takes information from initializer and runs necessary functions to perform
+    a one-dimensional simulation. Simulation results will be saved if booleans
+    are set to True.
 
     Parameters
     ----------
-    mech : TYPE
-        DESCRIPTION.
-    arrtype : TYPE
-        DESCRIPTION.
-    pres : TYPE
-        DESCRIPTION.
-    temp : TYPE
-        DESCRIPTION.
-    fue : TYPE
-        DESCRIPTION.
-    oxi : TYPE
-        DESCRIPTION.
-    dilu : TYPE
-        DESCRIPTION.
-    mix_params : TYPE
-        DESCRIPTION.
-    mgrid : TYPE
-        DESCRIPTION.
-    msoret : TYPE
-        DESCRIPTION.
-    loglev : TYPE
-        DESCRIPTION.
-    safi : TYPE
-        DESCRIPTION.
+    mech : str
+        A .cti mechanism file containing all reaction and species information.
+    arrtype : str
+        Defines the scale that conditions are in. Either linear or logarithmic
+    pres : list
+        A list of pressure conditions to test over [initial, final, number of points].
+    temp : list
+        A list of temperature conditions to test over [initial, final, number of points].
+    fue : str or list
+        As a string the variable represents a single species of fuel being used.
+        As a list the variable represents multicomponent fuel species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    oxi : str or list
+        As a string the variable represents a single species of oxidizer being used.
+        As a list the variable represents multicomponent oxidizer species
+        followed by the percentage to the total oxidizer [Component1, % of total, ...]
+    dilu : str or list
+        As a string the variable represents a single species of diluent being used.
+        As a list the variable represents multicomponent diluent species
+        followed by the percentage to the total diluent [Component1, % of total, ...]
+    mix_params : list
+        A list of the two mixture parameters and mixtrue type used in creating
+        a mixture.
+    mgrid : int
+        Number of points to be solved in the simulation
+    msoret : boolean
+        Multicomponent diffuction and Soret effect are calculated if true
+    loglev : int
+        A number from 1 to 10. The larger the number the more information that
+        is printed during the simulation to the user.
+    safi : boolean
+        If true simulation conditions and ranking results will be saved.
 
     Returns
     -------
@@ -70,37 +80,51 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
 def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
                    diluent, mix_params, mingrid, mul_soret, loglevel):
     """
-
+    
 
     Parameters
     ----------
-    mechanism : TYPE
-        DESCRIPTION.
-    array_type : TYPE
-        DESCRIPTION.
-    Press : TYPE
-        DESCRIPTION.
-    Temperature : TYPE
-        DESCRIPTION.
-    fuel : TYPE
-        DESCRIPTION.
-    oxidizer : TYPE
-        DESCRIPTION.
-    diluent : TYPE
-        DESCRIPTION.
-    mix_params : TYPE
-        DESCRIPTION.
-    mingrid : TYPE
-        DESCRIPTION.
-    mul_soret : TYPE
-        DESCRIPTION.
-    loglevel : TYPE
-        DESCRIPTION.
+    mechanism : str
+        A .cti mechanism file containing all reaction and species information.
+    array_type : str
+        Defines the scale that conditions are in. Either linear or logarithmic
+    Press : list
+        A list of pressure conditions to test over [initial, final, number of points].
+    Temperature : list
+        A list of temperature conditions to test over [initial, final, number of points].
+    fuel : str or list
+        As a string the variable represents a single species of fuel being used.
+        As a list the variable represents multicomponent fuel species
+        followed by the percentage to the total fuel [Component1, % of total, ...]
+    oxidizer : str or list
+        As a string the variable represents a single species of oxidizer being used.
+        As a list the variable represents multicomponent oxidizer species
+        followed by the percentage to the total oxidizer [Component1, % of total, ...]
+    diluent : str or list
+        As a string the variable represents a single species of diluent being used.
+        As a list the variable represents multicomponent diluent species
+        followed by the percentage to the total diluent [Component1, % of total, ...]
+    mix_params : list
+        A list of the two mixture parameters and mixtrue type used in creating
+        a mixture.
+    mingrid : int
+        Number of points to be solved in the simulation
+    mul_soret : boolean
+        Multicomponent diffuction and Soret effect are calculated if true
+    loglev : int
+        A number from 1 to 10. The larger the number the more information that
+        is printed during the simulation to the user.
 
     Returns
     -------
-    conditions : TYPE
-        DESCRIPTION.
+    conditions : dict
+        Simulation information organized into a dictionary with the following
+        structure:
+            {'Parameters': [Press, Temperature, mix_params, array_type],
+             'Mixture': [fuel, diluent, oxidizer],
+             'Flame': [mingrid, mul_soret, loglevel],
+             'Files': [mechanism, flame_temp],
+             'T/F': [multifuel, multioxidizer]}
 
     """
     #Working directory
@@ -154,23 +178,39 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
 
 def run_simulations(conditions, paramlist):
     """
-
+    Runs the simulation through all functions inlcuding the simulation
+    calculations and the rankings.
 
     Parameters
     ----------
-    conditions : TYPE
-        DESCRIPTION.
-    paramlist : TYPE
-        DESCRIPTION.
+    conditions : dict
+        Simulation information organized into a dictionary with the following
+        structure:
+            {'Parameters': [Press, Temperature, mix_params, array_type],
+             'Mixture': [fuel, diluent, oxidizer],
+             'Flame': [mingrid, mul_soret, loglevel],
+             'Files': [mechanism, flame_temp],
+             'T/F': [multifuel, multioxidizer]}
+    paramlist : list
+        Simulation case information the following structure:
+        [[Pressure, Temperature, Mixture], ...]
 
     Returns
     -------
-    flame_info_filtered : TYPE
-        DESCRIPTION.
-    flame_info_unfiltered : TYPE
-        DESCRIPTION.
-    sim_info : TYPE
-        DESCRIPTION.
+    flame_info_filtered : list
+        A filtered list where duplicate reactions in f_sens are summed together
+    flame_info_unfiltered : list
+        Unfiltered list of dictionary information iof the results of the 
+        simulation and conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]}   
+    sim_info : list
+        A list of information of from performing the simulation including
+        the time it took to run the simulations, the number of cases that 
+        converged, and the duration of the function.
 
     """
     tic = time.time()
@@ -210,26 +250,37 @@ def run_simulations(conditions, paramlist):
 
 def flame_sens(p, T, mix, cond):
     """
-    Run one flame simulation.
+    Runs a single flame simulation.
 
     Parameters
     ----------
-    p : float
-        Pressure in atmospheres.
-    T : float
-        Temperature in Kelvin.
+    P : list
+        A list of pressure conditions to test over [initial, final, number of points].
+    T : list
+        A list of temperature conditions to test over [initial, final, number of points].
     mix : dict
         Dictionary where keys are mixture components, values are mole fracs.
     cond : dict
-        Dictionary with detailed information on the condition.
+        Simulation information organized into a dictionary with the following
+        structure:
+            {'Parameters': [Press, Temperature, mix_params, array_type],
+             'Mixture': [fuel, diluent, oxidizer],
+             'Flame': [mingrid, mul_soret, loglevel],
+             'Files': [mechanism, flame_temp],
+             'T/F': [multifuel, multioxidizer]}
 
     Returns
     -------
-    flame_info : TYPE
-        DESCRIPTION.
+    flame_info : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]}   
 
     """
-    """[Fill in information]"""
     at            = cond['Parameters'][3]
     chem          = cond['Files'][0]
     tempfile      = cond['Files'][1]
@@ -273,19 +324,30 @@ def flame_sens(p, T, mix, cond):
 
 def flame_info_filter(flame_information, duplicate_reactions):
     """
-
+    Takes the sensitivty of duplicate reactions and summs them togther to get
+    a total sensitivity of the reaction.
 
     Parameters
     ----------
-    flame_information : TYPE
-        DESCRIPTION.
-    duplicate_reactions : TYPE
-        DESCRIPTION.
+    flame_information : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]}  
+    duplicate_reactions : dict
+        Dictionary containing duplicate reactions of the following format:
+        dup_rxns = {'Reaction Equation 1': [Rxn Number_a, Rxn Number_b]
+                            :
+                            :
+                    'Reaction Equation N': [Rxn Number_a, Rxn Number_b]}
 
     Returns
     -------
-    flame_information : TYPE
-        DESCRIPTION.
+    flame_information : dict
+        A filtered list where duplicate reactions in f_sens are summed together.
 
     """
     for f in flame_information:
@@ -303,18 +365,34 @@ def flame_info_filter(flame_information, duplicate_reactions):
 
 def file_saving(cond, fla_inf, p_list, s_info):
     """
-
+    Information from the simulation is pickled and saved in a generated folder
+    with a text document filled with details of the simulation performed.
 
     Parameters
     ----------
-    cond : TYPE
-        DESCRIPTION.
-    fla_inf : TYPE
-        DESCRIPTION.
-    p_list : TYPE
-        DESCRIPTION.
-    s_info : TYPE
-        DESCRIPTION.
+    cond : dict
+        Simulation information organized into a dictionary with the following
+        structure:
+            {'Parameters': [Press, Temperature, mix_params, array_type],
+             'Mixture': [fuel, diluent, oxidizer],
+             'Flame': [mingrid, mul_soret, loglevel],
+             'Files': [mechanism, flame_temp],
+             'T/F': [multifuel, multioxidizer]}
+    fla_inf : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    p_list : list
+        Simulation case information the following structure:
+        [[Pressure, Temperature, Mixture], ...]
+    s_info : list
+        A list of information of from performing the simulation including
+        the time it took to run the simulations, the number of cases that 
+        converged, and the duration of the function.
 
     Returns
     -------
@@ -329,8 +407,6 @@ def file_saving(cond, fla_inf, p_list, s_info):
     Fuel_name     = cond['Mixture'][0]
     Diluent_name  = cond['Mixture'][1]
     Oxidizer_name = cond['Mixture'][2]
-    multif        = cond['T/F'][0]
-    multio        = cond['T/F'][1]
     mg            = cond['Flame'][0]
     ms            = cond['Flame'][1]
     s_time        = datetime.timedelta(seconds=s_info[0])
@@ -396,8 +472,6 @@ def file_saving(cond, fla_inf, p_list, s_info):
 
 
 if __name__ == "__main__":
-    ###########################Initializing####################################
-    """[Fill in information]"""
     #Set experiment parameters
     mech_name = 'Li_model_modified_trioxane.cti' #Mechanism file
     Mechanism = cf.model_folder(mech_name)
