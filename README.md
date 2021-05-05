@@ -2,6 +2,8 @@
 Optimally design flow reactor experimental conditions with Sensiztized_0D_Experiment.py
 Optimally design flame experimental conditions with Sensitized_Flame_Experiment.py
 
+Version 1.0, companion to the manuscript submitted to Frontiers in Mechanical Engineering.
+
 ## Simulation Initializer Usage
 The file `Simulation_Initializer.py` contains options that control the simulations. This is the major file that a typical user will modify.
 
