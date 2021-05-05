@@ -78,7 +78,6 @@ def rxn_plots(f_info, save_path, log):
         a.set_ylabel(cond_dict[y_key][1])
         if log:
             a.set_xscale('log')
-
         fig.suptitle('Initial Temperature: {:.0f} K'.format(Tint))
         plt.savefig(save_path +
                     '\\Max Reactions with Initial Temperature {:.0f} K.png'.format(Tint))

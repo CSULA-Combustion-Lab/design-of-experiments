@@ -19,6 +19,7 @@ import common_functions as cf
 
 ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
+
 def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
                          mgrid, msoret, loglev, safi):
     """
@@ -522,3 +523,4 @@ if __name__ == "__main__":
     run_flame_simulation(Mechanism, Array_type, Press, E_Ratio, F_to_D,
                          O_to_D, Tint, Fuel, Oxidizer, Diluent, Air, Mingrid,
                          Mul_soret, Loglevel, Mixture_type, Save_files)
+
