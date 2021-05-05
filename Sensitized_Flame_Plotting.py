@@ -12,11 +12,36 @@ import numpy
 import pickle
 from operator import itemgetter
 import matplotlib.pyplot as plt
-plt.style.use('CSULA_Combustion')
+dirname = os.path.normpath(os.path.dirname(__file__))
+plt.style.use(os.path.join(dirname, 'CSULA_Combustion.mplstyle'))
 #from tkinter import filedialog
 
 def rxn_plots(f_info, save_path, log):
-    """[Insert Information]"""
+    """
+    Plots and saves figures of the reactions that were most sensitive per
+    simulation case per independant variable
+
+    Parameters
+    ----------
+    f_info : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    save_path : str
+        A string of the save path to the plots folder.
+    log : boolean
+        If true plots will use a logarithmic scale.
+        If false plots will use a linear scale
+
+    Returns
+    -------
+    None.
+
+    """
     Tint     = f_info[0]['Conditions'][0]
     Fue      = f_info[0]['Conditions'][6]
     Oxi      = f_info[0]['Conditions'][7]
@@ -33,7 +58,7 @@ def rxn_plots(f_info, save_path, log):
         Phi.append(f['Conditions'][2])
         Fuel.append(f['Conditions'][9])
         Oxidizer.append(f['Conditions'][10])
-        
+
     fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
     ax        = axes.flatten()
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
@@ -41,27 +66,61 @@ def rxn_plots(f_info, save_path, log):
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
                  'Oxi': [Oxidizer, 'Oxygen Mole Fraction '+str(Oxi)],
                  'T': [Tint, 'Temperature [K]'],
-                 'Rxn': [Max_rxn, 'Rxn Number']}
+                 'Rxn': [Max_rxn, 'Reaction #']}
     conditions = ['P', 'F', 'Phi', 'Oxi']
-    for a, condition in zip(ax, conditions):
+    for a, condition, string in zip(ax, conditions,
+                                    ['(a)', '(b)', '(c)', '(d)']):
         x_key = condition
         y_key = 'Rxn'
         a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
+        a.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
         a.set_xlabel(cond_dict[x_key][1])
         a.set_ylabel(cond_dict[y_key][1])
         if log:
             a.set_xscale('log')
-
-        fig.suptitle('Initial Temperature: '+format(Tint)+' [K]')
-        plt.savefig(save_path+'\\Max Reactions with Initial Temperature '
-                    +format(Tint)+'K.png')
+        fig.suptitle('Initial Temperature: {:.0f} K'.format(Tint))
+        plt.savefig(save_path +
+                    '\\Max Reactions with Initial Temperature {:.0f} K.png'.format(Tint))
     plt.close(fig)
 
-    
+
 def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                        conditions_a=['P', 'F', 'Phi', 'O2']):
-    """[Insert Information]"""
-    Tint       = f_info[0]['Conditions'][0]
+    """
+    Plots and saves figures of a specific reactions with its normalized 
+    sensitivity versus four specified conditions.
+
+    Parameters
+    ----------
+    f_info : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    rxn_int : list
+        A list of reactions of interest to plot.
+    nrxns : int
+        An integer that defines the top n-reactions that are used to define the
+        normalized sensitivity
+    threshold : float
+        An integer representing the minimum normalize sensitiity.
+    save_path : str
+        A string of the save path to the plots folder.
+    log : boolean
+        If true plots will use a logarithmic scale.
+        If false plots will use a linear scale
+    conditions_a : list, optional
+        A list of variables to plot the sensitivities agains
+        The default is ['P', 'F', 'Phi', 'O2'].
+
+    Returns
+    -------
+    None.
+
+    """
     Rxn_Eq     = format(f_info[0]['Flame'][0][rxn_int][2])
     Rxn_Number = format(f_info[0]['Flame'][0][rxn_int][0]+1)
     #List for strengths
@@ -71,6 +130,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     Oxygen        = []
     Su            = []
     Sens_strength = []
+    Tint          = []
     #Lists for above threshold
     P_threshold        = []
     Phi_threshold      = []
@@ -78,16 +138,34 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     Oxygen_threshold   = []
     Su_threshold       = []
     Sens_str_threshold = []
+    T_threshold        = []
+
+    species_of_interest = {}
+    for cond in conditions_a:
+        if cond not in ['T', 'F', 'Phi', 'O2', 'Su', 'P']:
+            species_of_interest[cond] = []
+
     for f in f_info:
         average_nrxns = rxn_average(f, nrxns)
         strength = f['Flame'][0][rxn_int][1]/average_nrxns
         Sens_strength.append(strength)
+        Tint.append(f['Conditions'][0])
         Pressure.append(f['Conditions'][1])
         Phi.append(f['Conditions'][2])
         Fuel.append(f['Conditions'][9])
         Oxygen.append(f['Conditions'][10])
         Su.append(f['Flame'][1])
-        
+        for cond in conditions_a:
+            if cond not in ['T', 'F', 'Phi', 'O2', 'Su', 'P']:
+                # This must be a species name. search for that species
+                try:
+                    species_of_interest[cond].append(f['Conditions'][5][cond])
+                except KeyError:
+                    species_of_interest[cond].append(0)
+
+    s_of_interest = {k: [v, k + ' Mole Fraction', None] for k, v in
+                     species_of_interest.items()}
+
     for n in range(len(Sens_strength)):
         if abs(Sens_strength[n]) >= threshold:
             P_threshold.append(f_info[n]['Conditions'][1])
@@ -96,19 +174,24 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
             Oxygen_threshold.append(f_info[n]['Conditions'][10])
             Su_threshold.append(f['Flame'][1])
             Sens_str_threshold.append(Sens_strength[n])
-            
+            T_threshold.append(f_info[n]['Conditions'][0])
+
     #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
     cond_dict = {'P': [Pressure, 'Pressure [atm]', P_threshold],
                  'F': [Fuel, 'Fuel Mole Fraction', F_threshold],
-                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
+                 'Phi': [Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
                  'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
-                 'T': [Tint, 'Temperature [K]'],
-                 'Su': [Su, 'Flame Speed [m/s]', Su_threshold], 
+                 'T': [Tint, 'Temperature [K]', T_threshold],
+                 'Su': [Su, 'Flame Speed [m/s]', Su_threshold],
                  'Strength': [Sens_strength, r'$\hat S_{'+Rxn_Eq+'}$',
                               Sens_str_threshold]}
-    
+    cond_dict = {**cond_dict, **s_of_interest}  # Add species mole fractions
+
     figa, axesa = plt.subplots(nrows=2, ncols=2, sharey=True)
     axa         = axesa.flatten()
+
+    T_initials = set(Tint)
+    T_fmt = 'Initial Temperature = ' + ', '.join(['{:.0f} K' for x in T_initials])
     for a, condition, string in zip(axa, conditions_a,
                                     ['(a)', '(b)', '(c)', '(d)']):
         x_key = condition
@@ -120,13 +203,11 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
         if log:
             a.set_xscale('log')
 
-        figa.suptitle('Reaction '+Rxn_Eq+'\nInitial Temperature: '
-                      +format(Tint)+' [K]')
+        figa.suptitle(('Reaction {}\n' + T_fmt).format(Rxn_Eq, *T_initials))
         plt.savefig(save_path+'\\Reaction '+Rxn_Number+
-                    ' Average Strength against top '+format(nrxns)+' rxns'
-                    ' with Initial Temperature '+format(Tint)+'K.png')
+                    ' Average Strength against top '+format(nrxns)+' rxns.png')
     plt.close(figa)
-    
+
     if not len(Sens_str_threshold) == 0:
         figb, axesb  = plt.subplots(nrows=2, ncols=3)
         axb          = axesb.flatten()
@@ -142,20 +223,16 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                 a.set_xscale('log')
             if log:
                 a.set_yscale('log')
-    
-            figb.suptitle('Reaction '+Rxn_Eq+
-                          '\n Threshold >= '+format(threshold)+
-                          ' Initial Temperature: '+format(Tint)+' [K]')
-            plt.savefig(save_path+'\\Reaction '
-                        +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
-                        ' Average Strength above_equal to '+format(threshold)+
-                        ' with Initial Temperature '+format(Tint)+'K.png')
+
+            figb.suptitle(('Reaction {}\n Threshold >= {:.1f}, ' + T_fmt).format(Rxn_Eq, threshold, *T_initials))
+            fname = ('Reaction {} Average Strength with ' + T_fmt + '.png').format(Rxn_Number, *T_initials)
+            plt.savefig(os.path.join(save_path, fname))
         plt.close(figb)
     else:
         print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
               ' shows no cases where the sensitiviy is above threshold '+
               str(threshold))
-        
+
     figc, axc = plt.subplots(nrows=1, ncols=1)
     x_key = 'Su'
     y_key = 'Strength'
@@ -163,15 +240,39 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     axc.set(xlabel=cond_dict[x_key][1], ylabel=cond_dict[y_key][1],
             title='Normalized Sensitivity of Reaction '+Rxn_Eq+
             ' vs. Flame Speed')
-    figc.savefig(save_path+'\\Reaction '
-                 +format(f_info[0]['Flame'][0][rxn_int][0]+1)+
-                 ' Normalized Sensitivity vs Flame Speed '+
-                 ' with Initial Temperature '+format(Tint)+'K.png')
+    fname = ('Reaction {} Normalized Sensitivity vs Flame speed with ' + T_fmt + '.png').format(Rxn_Number, *T_initials)
+    figc.savefig(os.path.join(save_path, fname))
     plt.close(figc)
 
-      
+
 def rxn_interest_plots(f_info, rxn_int, save_path, log):
-    """[Insert Information]"""
+    """
+    Plots and save figures where reactions of interest where most senstivity
+    per independant varaible
+
+    Parameters
+    ----------
+    f_info : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    rxn_int : list
+        A list of reactions of interest to plot.
+    save_path : str
+        A string of the save path to the plots folder.
+    log : boolean
+        If true plots will use a logarithmic scale.
+        If false plots will use a linear scale
+
+    Returns
+    -------
+    None.
+
+    """
     Pressure = []
     Phi      = []
     Fuel     = []
@@ -187,7 +288,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
             Phi.append(f['Conditions'][2])
             Fuel.append(f['Conditions'][9])
             Oxygen.append(f['Conditions'][10])
-    if not len(Phi) == 0:       
+    if not len(Phi) == 0:
         fig, axes = plt.subplots(nrows=2, ncols=3)
         ax        = axes.flatten()
         #Dictionary organized as follow 'Key': [Data, axis-label]
@@ -198,7 +299,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
                      'T': [Tint, 'Temperature [K]']}
         conditions = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
                       ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
-        
+
         #Three subplots of unique paired independent variables
         for a, condition in zip(ax, conditions):
             x_key = condition[0]
@@ -212,18 +313,43 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
                 a.set_yscale('log')
             fig.suptitle('Reaction Number: '+format(Rxn_num)+
                           ' Reaction Name: '+Rxn_name+
-                          '\nInitial Temperature: '+format(Tint)+' [K]')
+                          '\nInitial Temperature: '+format(Tint, '.0f')+' K')
             plt.savefig(save_path+'\\Reaction Number '+format(Rxn_num)+
                         ' Max Sensitivity for Parameters with'
-                        ' Initial Temperature '+format(Tint)+'K.png')
+                        ' Initial Temperature '+format(Tint, '.0f')+'K.png')
         plt.close(fig)
     else:
         print('Reaction Number '+str(Rxn_num)+', Reaction: '+str(Rxn_name)+
               ' shows no cases where it is most sensitive reaction')
-    
-    
+
+
 def flame_speed_plots(f_info, save_path, log):
-    """[Insert Information]"""
+    """
+    Plots and saves figures of simulations where the flame speed is above
+    the minumum flame speed defined by the user. The plots show two independant
+    variables where the conditions have been met.
+
+    Parameters
+    ----------
+    f_info : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    save_path : str
+        A string of the save path to the plots folder.
+    log : boolean
+        If true plots will use a logarithmic scale.
+        If false plots will use a linear scale
+
+    Returns
+    -------
+    None.
+
+    """
     Tint     = f_info[0]['Conditions'][0]
     Pressure = []
     Phi      = []
@@ -238,7 +364,7 @@ def flame_speed_plots(f_info, save_path, log):
         Oxidizer.append(s['Conditions'][10])
         Su.append(s['Flame'][1])
         Flame_T.append(s['Flame'][3])
-        
+
     fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
     ax        = axes.flatten()
     #Dictionary organized as follow 'Key': [Data, axis-label]
@@ -260,14 +386,45 @@ def flame_speed_plots(f_info, save_path, log):
         a.set_ylabel(cond_dict[y_key][1])
         if log:
             a.set_xscale('log')
-        fig.suptitle('Initial Temperature: '+format(Tint)+' [K]')
+        fig.suptitle('Initial Temperature: '+format(Tint, '.0f')+' K')
         plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
-                    ' Initial Temperature '+format(Tint)+'K.png')
+                    ' Initial Temperature '+format(Tint, '.0f')+'K.png')
     plt.close(fig)
 
 
 def max_rxn_csv(f_info, save_path):
-    """[Insert Information]"""
+    """
+    Creates a two csv files. The Maximum Rxns.csv stores information about
+    reactions that were most sensitivy and the number of cases this was true.
+    The Maximum Rxns Parameters.csv stores information of the reactions that
+    was most sensitivy per case with case information.
+
+    Parameters
+    ----------
+    f_info : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    save_path : str
+        A string of the save path to the plots folder.
+
+    Returns
+    -------
+    Max_rxn_params : dict
+        Information of the reaction that was most sensitivy and the parameters
+        are stored per case in a list.
+    Max_rxns : list
+        A list of the most sensitive reactions numbers and the number of cases
+        where they were the most sensitive.
+    Max_rxn : list
+        A list of the reaction that was most sensitive providing its reaction
+        number, reaction equation, and sensitivity per case.
+
+    """
     Tint     = f_info[0]['Conditions'][0]
     Pressure = []
     Phi      = []
@@ -319,15 +476,43 @@ def max_rxn_csv(f_info, save_path):
                                 'Oxygen Mole Fraction'])
             for p in range(1,len(Max_rxn_params[keys])):
                 rp_writer.writerow(['', '', Max_rxn_params[keys][p][0],
-                                    Max_rxn_params[keys][p][1], 
+                                    Max_rxn_params[keys][p][1],
                                     Max_rxn_params[keys][p][2],
                                     Max_rxn_params[keys][p][3]])
-        
+
     return Max_rxn_params, Max_rxns, Max_rxn
 
 
 def top_nrxns_csv(f_info, nrxns, save_path):
-    """[Insert Information]"""
+    """
+    Creates a csv file the provides information about the most sensitivy 
+    reaction and the parameters per simulation case.
+
+    Parameters
+    ----------
+    f_info : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    nrxns : int
+        An integer that defines the top n-reactions that are used to define the
+        normalized sensitivity
+    save_path : str
+        A string of the save path to the plots folder.
+
+    Returns
+    -------
+    Top_Rxns_List : list
+        An appened list of per simulation case information with the structure:
+            [[f['Conditions'][1], f['Conditions'][2],
+             f['Conditions'][9], f['Conditions'][10],
+             top_rxns(f, nrxns)], [...], ...]
+
+    """
     Tint          = f_info[0]['Conditions'][0]
     Top_Rxns_List = []
     for f in f_info:
@@ -351,7 +536,37 @@ def top_nrxns_csv(f_info, nrxns, save_path):
 
 
 def average_sens_csv(flame, nrxns, save_path):
-    """[Insert Information]"""
+    """
+    Creates a csv providing the average sensitivity of reactions across the 
+    entire simulation from the first to last case. Two csvs are created one 
+    of just the top n-reactions and the other of all reactions in the flame
+    information sorted in a descending order.
+
+    Parameters
+    ----------
+    flame : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    nrxns : int
+        An integer that defines the top n-reactions that are used to define the
+        normalized sensitivity
+    save_path : str
+        A string of the save path to the plots folder.
+
+    Returns
+    -------
+    sens_average : list
+        A list of reaction information in a descending order of average 
+        sensitivity.
+    topnrxnnumbers : list
+        The same list as sens_average but on the top n-reactions are listed.
+
+    """
     values = []
     topnrxnnumbers = []
     for f in flame[0]['Flame'][0]:
@@ -360,7 +575,7 @@ def average_sens_csv(flame, nrxns, save_path):
     sens_average = numpy.array(values, dtype=dtype)
     for i in flame:
         for j in range(len(sens_average)):
-            sens_average[j][1] += abs(i['Flame'][0][j][1])/rxn_average(i, nrxns)        
+            sens_average[j][1] += abs(i['Flame'][0][j][1])/rxn_average(i, nrxns)
     for m in sens_average:
         m[1] = m[1]/len(flame)
     sens_average = numpy.sort(sens_average, order='ANSens')
@@ -376,15 +591,38 @@ def average_sens_csv(flame, nrxns, save_path):
                            "Top "+str(nrxns)+" Rxn Total Average Sensitivities.csv")
     csvformat = ['%d', '%f', '%s']
     csvheader = 'Rxn Number, Average Normalized Sensitivity, Rxn Equation'
-    numpy.savetxt(all_sp, sens_average, delimiter=',', fmt=csvformat, 
+    numpy.savetxt(all_sp, sens_average, delimiter=',', fmt=csvformat,
                   header=csvheader, comments='')
-    numpy.savetxt(topn_sp, topnrxnssens, delimiter=',', fmt=csvformat, 
+    numpy.savetxt(topn_sp, topnrxnssens, delimiter=',', fmt=csvformat,
                   header=csvheader, comments='')
     return sens_average, topnrxnnumbers
 
 
 def rxn_average(flame, nrxns):
-    """[Insert Information]"""
+    """
+    Calculate the average sensitivity of the top n-reactions for the given
+    simulation case.
+
+    Parameters
+    ----------
+    flame : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    nrxns : int
+        An integer that defines the top n-reactions that are used to define the
+        normalized sensitivity
+
+    Returns
+    -------
+    average_sens : float
+        Calculate average senstivity of the top n-reactions.
+
+    """
     rxn_sens = []
     for s in flame['Flame'][0]:
         rxn_sens.append(abs(s[1]))
@@ -395,7 +633,29 @@ def rxn_average(flame, nrxns):
 
 
 def max_sens(flame):
-    """[Insert Information]"""
+    """
+    Determines the most senstivy reaction in a simulation case and provides
+    the reaction number, reaction sensitivity, and the reaction equation.
+
+    Parameters
+    ----------
+    flame : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+
+    Returns
+    -------
+    max_rxn : list
+        A list of information of the reaction that was most senstive given in 
+        the structure:
+            [Reaction Number, Reaction Sensitivity, Reaction Equation]
+
+    """
     max_rxn_num  = 0
     max_rxn_sens = 0
     for m in flame['Flame'][0]:
@@ -408,7 +668,30 @@ def max_sens(flame):
 
 
 def top_rxns(flame, nrxns):
-    """[Insert Information]"""
+    """
+    Creates a list of the most sensitivy n-reactions in descending order.
+
+    Parameters
+    ----------
+    flame : dict
+        Information of the results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]} 
+    nrxns : int
+        An integer that defines the top n-reactions that are used to define the
+        normalized sensitivity
+
+    Returns
+    -------
+    top_rxns_list : list
+        A sorted list of reactions and reaction information in order of 
+        sensitivity in a descending order.
+
+    """
     f = flame['Flame'][0]
     f_sort = []
     for i in f:
@@ -426,34 +709,58 @@ def top_rxns(flame, nrxns):
             if m[0] == n[0]:
                 n[1] = m[1]/rxn_str
     return top_rxns_list
-  
-  
+
+
 if __name__ == "__main__":
-    Folder_name = input('Please type name of folder.'
-                        '\n If blank, use last folder:\n')
-    if Folder_name == '':
-        with open('last run.pkl', 'rb') as f:
-            Folder_name = pickle.load(f)
-        print('Loading ' + Folder_name)
-    Load_folder = '\\'+Folder_name
-    with open('last run.pkl', 'wb') as f:
+    # User-defined items #################################
+    # Reaction numbers of interest. If blank, only plot top Nrxns.
+    Rxn_interest = []
+
+    # Which four items should be plotted?
+    # Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P', or any species name.
+    Four_Plot = ['H2', 'NH3', 'Phi', 'O2']
+
+
+    Min_speed    = 0 # Minimum flame speed for plotting, in m/s
+    Nrxns        = 7 #Top n-reactions
+    Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
+    # ##########################################
+
+    Folder_name = input('Please type name of folder, 1, or 2.\n'
+                        ' 1 or blank: Use the last folder that was analyzed.\n'
+                        ' 2: Use the last folder that was simulated:')
+
+    if Folder_name == '' or Folder_name == '1':
+        try:
+            with open('last run 1d.pkl', 'rb') as f:
+                Folder_name = pickle.load(f)
+        except FileNotFoundError:
+            print('last run 1d.pkl is missing - I do not know which folder was analyzed most recently.')
+            Folder_name = '2'
+    if Folder_name == '2':
+        print('Plotting the most recent simulations.')
+        folders = os.listdir('Flame_Sensitivity_Results')
+        # Assuming this is always sorted in ascending order...
+        Folder_name = [x for x in folders if x[:2] == '20'][-1]
+    print('Loading ' + Folder_name)
+
+    # Save the loaded folder name
+    with open('last run 1d.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
-    #Paths for loading and saving files
-    Load_path = 'Flame_Sensitivity_Results'+Load_folder
+    # Paths for loading and saving files
+    Load_path = 'Flame_Sensitivity_Results\\' + Folder_name
     Plot_path = Load_path+'\\Flame_Sensitivity_Plots'
 
-    #Open up text file with description of simulation
-    File = open(Load_path+'\\Case Description.txt','r')
-    Description = File.read()
-    File.close()
-    print(Description)
+    # Open up text file with description of simulation
+    with open(os.path.join(Load_path, 'Case Description.txt'), 'r') as f:
+        print(f.read())
 
-    #Import flame file found in corresponding folder
+    # Import flame file found in corresponding folder
     with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
         Flame_info = pickle.load(f)
-        
-    #Create two lists of flame and no_flame created from flame_info    
+
+    # Create two lists of flame and no_flame created from flame_info
     Flame = []
     No_flame = []
     for x in Flame_info:
@@ -461,50 +768,45 @@ if __name__ == "__main__":
             No_flame.append(x)
         else:
             Flame.append(x)
-     
-    #If Flame list is empty plotting script will not occur
+
+    # If Flame list is empty plotting script will not occur
     if len(Flame) == 0:
         print('\nNo Conditions Produced a Flame!')
         sys.exit()
-        
-    #Creates list that only appends information where flame speed is above min     
-    Min_speed          = 0 #Minimum flame speed, lower limit
+
+    # Creates list that only appends information where flame speed is above min
     Flame_speed_filter = []
     for x in Flame:
         if x['Flame'][1] >= Min_speed:
             Flame_speed_filter.append(x)
-            
-    #Note Flame and No_flame are dictionaries 
+
+    # Note Flame and No_flame are dictionaries
     # {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
     #  'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
     #                 Fuel_name, Oxidizer_name, Diluent_name,
     #                 Fue_Percent, Oxi_Percent, Dil_Percent, at]}
-    
-    #Plot Functions
-    Rxn_interest = [] #Reaction number of the reaction of interest
-    Nrxns        = 7 #Top n-reactions
-    Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
-    Four_Plot = ['P', 'F', 'Su', 'O2']
+
+    # Plot Functions
     array_type   = Flame[0]['Conditions'][12]
     if array_type == 'log':
-        Logspace = True #If True all plots will use logspace
+        Logspace = True # If True all plots will use logspace
     elif array_type == 'lin':
-        Logspace = False #If False all plots will use linspace
+        Logspace = False # If False all plots will use linspace
     else:
         print('Error! invalid string for array_type.')
-    
+
     Max_rxn_cond, Max_rxns_dict, M = max_rxn_csv(Flame_speed_filter, Load_path)
     T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
     rxn_plots(Flame_speed_filter, Plot_path, Logspace)
     flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
-    Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter, 
-                                                        Nrxns, Load_path)
+    Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter,
+                                                       Nrxns, Load_path)
     if not len(Rxn_interest) == 0:
         for Rxns in Rxn_interest:
             rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
-                                Threshold, Plot_path, Logspace)
+                               Threshold, Plot_path, Logspace, Four_Plot)
             rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
     for Trxns in Topnrxns:
         rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
-                            Threshold, Plot_path, Logspace, Four_Plot)
+                           Threshold, Plot_path, Logspace, Four_Plot)
         rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
