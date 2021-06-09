@@ -24,7 +24,8 @@ import common_functions as cf
 cantera.suppress_thermo_warnings()
 
 def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
-                      mix_params, s_species, stime, etime, dT, ppm, safi, sati):
+                      mix_params, safi, SpecificSpecies, Starttime, Endtime,
+                      Delta_T, threshold, Save_time):
     """
     Takes information from initializer and runs necessary functions to perform
     a zero-dimensional simulation. Simulation results will be saved if booleans
@@ -57,24 +58,24 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
     mix_params : list
         A list of the two mixture parameters and mixtrue type used in creating
         a mixture.
-    s_species : list
+    safi : bool
+        If true simulation conditions and ranking results will be saved.
+    SpecificSpecies : list
         A list of specific species of interest in which the sensitivity to
         each reaction per time step is calculated.
-    stime : float
+    Starttime : float
         Default set to zero in case the sim.time starts before 0.
-    etime : float
+    Endtime : float
         Sets the end time for the sim.time to be performed.
-    dT : float
+    Delta_T : float
         A float to check that the temperature did not change above the given
-        limit. If the temperature change does exceed dT then the simulation
+        limit. If the temperature change does exceed Delta_T then the simulation
         assumes a flame was created and the case is thrown out of the results.
-    ppm : float
+    threshold : float
         A limit set by the experimental device that measures the mole fractions.
         If a species mole fraction is set below this limit the species mole
         fraction is set 0.
-    safi : bool
-        If true simulation conditions and ranking results will be saved.
-    sati : bool
+    Save_time : bool
         If true mole fraction sensitivities in time will be saved.
 
     Returns
@@ -88,7 +89,8 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
     mechan = cf.model_folder(mech)
     pack, paralist = initialization(mechan, arrtype, pres, temp,
                                     fue, oxi, dilu, m_type, mix_params,
-                                    s_species, stime, etime, dT, ppm)
+                                    SpecificSpecies, Starttime, Endtime,
+                                    Delta_T, float(threshold))
     zerod_info, siminfo, s_lists = run_simulations(pack, paralist)
     toc       = time.time()
     #end time
@@ -99,7 +101,7 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
           +format(duration, '0.5f')+' seconds.\n')
 
     if safi:
-        file_saving(pack, s_lists, zerod_info, paralist, siminfo, sati)
+        file_saving(pack, s_lists, zerod_info, paralist, siminfo, Save_time)
 
 def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
                    mix_params, s_species, stime, etime, dT, ppm):
@@ -136,7 +138,7 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
     s_species : list
         A list of specific species of interest in which the sensitivity to
         each reaction per time step is calculated.
-    stime : float
+    Starttime : float
         Default set to zero in case the sim.time starts before 0.
     etime : float
         Sets the end time for the sim.time to be performed.
@@ -475,7 +477,7 @@ def reduce_resolution(mylist, maxlength, time_of_interest):
 
 def T_limit(t_T_P_AMol,temp,delta_T):
     """
-    Determines if the temperature change per time-step is greater than the 
+    Determines if the temperature change per time-step is greater than the
     maximum allowable temperautre change
 
     Parameters
@@ -764,10 +766,10 @@ def sensitivity_score2(SpecificSpecieSens, specificspecies, temp, pressure,
     score2times : list
         Times of maximum sensitivity occurances.
     score2_Max_sens_rxn : list
-        Simulation information appended as well as the reaction with the 
+        Simulation information appended as well as the reaction with the
         maximum sensitivity
     score2_Params_MaxSens_Name_Params : list
-        Simulation information stored as a dictionary as well as a list of 
+        Simulation information stored as a dictionary as well as a list of
         reaction number and equation that was most sensitive.
     fuel : str or list
         As a string the variable represents a single species of fuel being used.
@@ -827,7 +829,7 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
                        score3_Max_sens_rxn, score3_Params_MaxSens_Name_Params,
                        fuel, oxidizer, diluent):
     """
-    Determines what reactions was most sensitivty and appends the simulation 
+    Determines what reactions was most sensitivty and appends the simulation
     case information, reaction information, and simulation results
 
     Parameters
@@ -867,10 +869,10 @@ def sensitivity_score3(specificspecies, mix, temp, pressure, SCORE3_TIME,
     gas : object
         Cantera generated gas object created using user provided mechanism.
     score3_Max_sens_rxn : list
-        Simulation information appended as well as the reaction with the 
+        Simulation information appended as well as the reaction with the
         maximum sensitivity
     score3_Params_MaxSens_Name_Params : list
-        Simulation information stored as a dictionary as well as a list of 
+        Simulation information stored as a dictionary as well as a list of
         reaction number and equation that was most sensitive.
     fuel : str or list
         As a string the variable represents a single species of fuel being used.
@@ -1126,7 +1128,7 @@ def sens_dup_filter(sens_information, duplicate_reactions):
     -------
     sens_information : list
         A reformated list of parameter sens_information which represents the
-        sensitivity analysis of all reactions. Any duplicate reactions are 
+        sensitivity analysis of all reactions. Any duplicate reactions are
         summed together into one reaciton.
 
     """

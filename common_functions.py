@@ -269,7 +269,7 @@ def parallelize(param, cond, fun):
         Simulation case information with the following structure:
         [[Pressure, Temperature, Mixture], ...]
     cond : dict
-        A dictionary of the simulation information specific to the type of 
+        A dictionary of the simulation information specific to the type of
         simulation being performed.
     fun : Function
         Name of the function being used per simulation
@@ -319,11 +319,13 @@ def parallelize(param, cond, fun):
     return outlist
 
 
-def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
+def parameters_string(p_type, P, T, mix_params, chem, fuel, oxidizer, diluent):
     """Return string of useful information.
 
     Parameters
     ----------
+    p_type : str
+        Problem type
     P : list
         [initial, final, # of points]
     T : list
@@ -354,6 +356,7 @@ def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
     mixture_text = '\n'.join(['\t\t{}: {}'.format(k, v) for
                               k, v in zip(labels, mix_params)])
     string = ("========================Parameters========================" +
+              "\nProblem type: " + p_type +
               "\nMechanism: " + chem + "\nFuel: " + str(fuel) +
               "\nOxidizer: " + str(oxidizer) + "\nDiluent: " +
               str(diluent) +
@@ -437,7 +440,7 @@ def update_progress(progress):
 
 def mixture_percentage(components, mix):
     """
-    
+
 
     Parameters
     ----------
@@ -451,7 +454,7 @@ def mixture_percentage(components, mix):
     Raises
     ------
     KeyError
-        If components are missing in the mixture a 0.0 is returned if the 
+        If components are missing in the mixture a 0.0 is returned if the
         components is a string and a pass is used if the components is a list
     TypeError
         Component type is not listed. Function cannot be used with this type.

@@ -21,7 +21,7 @@ ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
 
 def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
-                         mgrid, msoret, loglev, safi):
+                         safi, Mingrid, Mul_soret, Loglevel):
     """
     Takes information from initializer and runs necessary functions to perform
     a one-dimensional simulation. Simulation results will be saved if booleans
@@ -52,15 +52,15 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
     mix_params : list
         A list of the two mixture parameters and mixtrue type used in creating
         a mixture.
-    mgrid : int
-        Number of points to be solved in the simulation
-    msoret : boolean
-        Multicomponent diffuction and Soret effect are calculated if true
-    loglev : int
-        A number from 1 to 10. The larger the number the more information that
-        is printed during the simulation to the user.
     safi : boolean
         If true simulation conditions and ranking results will be saved.
+    Mingrid: int
+        Number of points to be solved in the simulation
+    Mul_soret : boolean
+        Multicomponent diffuction and Soret effect are calculated if true
+    Loglevel : int
+        A number from 1 to 10. The larger the number the more information that
+        is printed during the simulation to the user.
 
     Returns
     -------
@@ -69,7 +69,7 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
     """
     mechan = cf.model_folder(mech)
     condi = initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
-                           mix_params, mgrid, msoret, loglev)
+                           mix_params, Mingrid, Mul_soret, Loglevel)
     paralist = cf.case_maker(condi)
     flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
                                                                   paralist)
@@ -81,7 +81,7 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
 def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
                    diluent, mix_params, mingrid, mul_soret, loglevel):
     """
-    
+
 
     Parameters
     ----------
@@ -201,16 +201,16 @@ def run_simulations(conditions, paramlist):
     flame_info_filtered : list
         A filtered list where duplicate reactions in f_sens are summed together
     flame_info_unfiltered : list
-        Unfiltered list of dictionary information iof the results of the 
+        Unfiltered list of dictionary information iof the results of the
         simulation and conditions with the following structure:
          {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]}   
+                         at]}
     sim_info : list
         A list of information of from performing the simulation including
-        the time it took to run the simulations, the number of cases that 
+        the time it took to run the simulations, the number of cases that
         converged, and the duration of the function.
 
     """
@@ -279,7 +279,7 @@ def flame_sens(p, T, mix, cond):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]}   
+                         at]}
 
     """
     at            = cond['Parameters'][3]
@@ -337,7 +337,7 @@ def flame_info_filter(flame_information, duplicate_reactions):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]}  
+                         at]}
     duplicate_reactions : dict
         Dictionary containing duplicate reactions of the following format:
         dup_rxns = {'Reaction Equation 1': [Rxn Number_a, Rxn Number_b]
@@ -386,13 +386,13 @@ def file_saving(cond, fla_inf, p_list, s_info):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     p_list : list
         Simulation case information the following structure:
         [[Pressure, Temperature, Mixture], ...]
     s_info : list
         A list of information of from performing the simulation including
-        the time it took to run the simulations, the number of cases that 
+        the time it took to run the simulations, the number of cases that
         converged, and the duration of the function.
 
     Returns
