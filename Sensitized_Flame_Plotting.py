@@ -10,6 +10,7 @@ import sys
 import csv
 import numpy
 import pickle
+import yaml
 from operator import itemgetter
 import matplotlib.pyplot as plt
 dirname = os.path.normpath(os.path.dirname(__file__))
@@ -30,7 +31,7 @@ def rxn_plots(f_info, save_path, log):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     save_path : str
         A string of the save path to the plots folder.
     log : boolean
@@ -87,7 +88,7 @@ def rxn_plots(f_info, save_path, log):
 def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                        conditions_a=['P', 'F', 'Phi', 'O2']):
     """
-    Plots and saves figures of a specific reactions with its normalized 
+    Plots and saves figures of a specific reactions with its normalized
     sensitivity versus four specified conditions.
 
     Parameters
@@ -99,7 +100,7 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     rxn_int : list
         A list of reactions of interest to plot.
     nrxns : int
@@ -259,7 +260,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     rxn_int : list
         A list of reactions of interest to plot.
     save_path : str
@@ -338,7 +339,7 @@ def flame_speed_plots(f_info, save_path, log):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     save_path : str
         A string of the save path to the plots folder.
     log : boolean
@@ -408,7 +409,7 @@ def max_rxn_csv(f_info, save_path):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     save_path : str
         A string of the save path to the plots folder.
 
@@ -485,7 +486,7 @@ def max_rxn_csv(f_info, save_path):
 
 def top_nrxns_csv(f_info, nrxns, save_path):
     """
-    Creates a csv file the provides information about the most sensitivy 
+    Creates a csv file the provides information about the most sensitivy
     reaction and the parameters per simulation case.
 
     Parameters
@@ -497,7 +498,7 @@ def top_nrxns_csv(f_info, nrxns, save_path):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     nrxns : int
         An integer that defines the top n-reactions that are used to define the
         normalized sensitivity
@@ -537,8 +538,8 @@ def top_nrxns_csv(f_info, nrxns, save_path):
 
 def average_sens_csv(flame, nrxns, save_path):
     """
-    Creates a csv providing the average sensitivity of reactions across the 
-    entire simulation from the first to last case. Two csvs are created one 
+    Creates a csv providing the average sensitivity of reactions across the
+    entire simulation from the first to last case. Two csvs are created one
     of just the top n-reactions and the other of all reactions in the flame
     information sorted in a descending order.
 
@@ -551,7 +552,7 @@ def average_sens_csv(flame, nrxns, save_path):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     nrxns : int
         An integer that defines the top n-reactions that are used to define the
         normalized sensitivity
@@ -561,7 +562,7 @@ def average_sens_csv(flame, nrxns, save_path):
     Returns
     -------
     sens_average : list
-        A list of reaction information in a descending order of average 
+        A list of reaction information in a descending order of average
         sensitivity.
     topnrxnnumbers : list
         The same list as sens_average but on the top n-reactions are listed.
@@ -612,7 +613,7 @@ def rxn_average(flame, nrxns):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     nrxns : int
         An integer that defines the top n-reactions that are used to define the
         normalized sensitivity
@@ -646,12 +647,12 @@ def max_sens(flame):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
 
     Returns
     -------
     max_rxn : list
-        A list of information of the reaction that was most senstive given in 
+        A list of information of the reaction that was most senstive given in
         the structure:
             [Reaction Number, Reaction Sensitivity, Reaction Equation]
 
@@ -680,7 +681,7 @@ def top_rxns(flame, nrxns):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     nrxns : int
         An integer that defines the top n-reactions that are used to define the
         normalized sensitivity
@@ -688,7 +689,7 @@ def top_rxns(flame, nrxns):
     Returns
     -------
     top_rxns_list : list
-        A sorted list of reactions and reaction information in order of 
+        A sorted list of reactions and reaction information in order of
         sensitivity in a descending order.
 
     """
@@ -710,34 +711,16 @@ def top_rxns(flame, nrxns):
                 n[1] = m[1]/rxn_str
     return top_rxns_list
 
-
-if __name__ == "__main__":
-    # User-defined items #################################
-    # Reaction numbers of interest. If blank, only plot top Nrxns.
-    Rxn_interest = []
-
-    # Which four items should be plotted?
-    # Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P', or any species name.
-    Four_Plot = ['H2', 'NH3', 'Phi', 'O2']
-
-
-    Min_speed    = 0 # Minimum flame speed for plotting, in m/s
-    Nrxns        = 7 #Top n-reactions
-    Threshold    = 0.5 #Threshold for rxn_interst to be above in average strength
-    # ##########################################
-
-    Folder_name = input('Please type name of folder, 1, or 2.\n'
-                        ' 1 or blank: Use the last folder that was analyzed.\n'
-                        ' 2: Use the last folder that was simulated:')
-
-    if Folder_name == '' or Folder_name == '1':
+def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
+    """Main plotting script."""
+    if Folder_name == '' or Folder_name == 1:
         try:
             with open('last run 1d.pkl', 'rb') as f:
                 Folder_name = pickle.load(f)
         except FileNotFoundError:
             print('last run 1d.pkl is missing - I do not know which folder was analyzed most recently.')
-            Folder_name = '2'
-    if Folder_name == '2':
+            Folder_name = 2
+    if Folder_name == 2:
         print('Plotting the most recent simulations.')
         folders = os.listdir('Flame_Sensitivity_Results')
         # Assuming this is always sorted in ascending order...
@@ -810,3 +793,9 @@ if __name__ == "__main__":
         rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
                            Threshold, Plot_path, Logspace, Four_Plot)
         rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
+
+
+if __name__ == "__main__":
+    # Open and parse the input file
+    inputs = list(yaml.safe_load_all(open('input.yaml', 'r')))
+    main(**inputs[1])

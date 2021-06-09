@@ -1213,7 +1213,7 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
 
     #Create Directory Name
     now = datetime.now()
-    dt_string = now.strftime("%d_%m_%Y %H.%M.%S")
+    dt_string = now.strftime("%Y_%m_%d %H.%M.%S")
     directory = dt_string
     save_path = os.path.join(parent_dir, directory)
     os.makedirs(save_path)
@@ -1233,7 +1233,7 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
             "=======Species of Interest======="
             "\r"+format(sspecies)+"\r"
             "=================================\r\n" +
-            cf.parameters_string(P, T, m_params, mech, f_name, o_name, d_name)
+            cf.parameters_string('0D', P, T, m_params, mech, f_name, o_name, d_name)
             + "\n"
             "==========Number of Cases==========\r"
             "Total Cases Simulated 	     = "+format(len(plist))+"\r"
