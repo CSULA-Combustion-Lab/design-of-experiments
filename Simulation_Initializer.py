@@ -7,6 +7,8 @@ Created on Wed Sep 16 13:32:37 2020
 import Sensitized_0D_Experiment as zeroD
 import Sensitized_Flame_Experiment as oneD
 import common_functions as cf
+import Sensitized_Flame_Plotting as flame_plot
+import Sensitized_0D_Plotting as zeroD_plot
 # import BurnerSimulation
 import sys
 import yaml
@@ -70,7 +72,7 @@ if __name__ == "__main__":
 
     print(cf.parameters_string(problem_type, Pressure, Temperature, mix_params,
                                Mechanism, Fuel, Oxidizer, Diluent))
-    if  problem_type == '0D':
+    if problem_type == '0D':
         zeroD.run_0D_simulation(Mechanism, Array_type, Pressure, Temperature,
                                 Fuel, Oxidizer, Diluent, Mixture_type,
                                 mix_params, Save_files,
@@ -80,6 +82,13 @@ if __name__ == "__main__":
                                   Fuel, Oxidizer, Diluent, mix_params,
                                   Save_files, **sim_inputs['Flame_options'])
     else:
-        print('Error! Simulation_Type String Does Not Match!'+
+        print('Error! Simulation_Type String Does Not Match!' +
               '\nMake sure string matches one of two options!')
         sys.exit()
+
+    if sim_inputs['Plot_on_completion']:
+        plot_inputs['Folder_name'] = 2
+        if problem_type == '0D':
+            zeroD_plot.main(plot_inputs)
+        elif problem_type == '1D':
+            flame_plot.main(**plot_inputs)

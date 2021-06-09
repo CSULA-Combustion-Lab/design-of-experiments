@@ -8,7 +8,7 @@
 # Simulation Types (0D, 1D, Burner)
 ## 0D Simulates a no flame condition tracking species concentraion in time
 ## 1D Simulates an adiabatic flame tracking species before, at, and after flame
-Simulation_Type: '0D'
+Simulation_Type: '1D'
 Mechanism: 'Li_model.cti' #Mechanism file
 Save_files: True # Save files for plotting script
 Plot_on_completion: True # Run the plotting script immediately after the simulation.
@@ -89,7 +89,7 @@ Rxn_interest: []
 Four_Plot: ['H2', 'T', 'Phi', 'P']
 
 Min_speed: 0 # Minimum flame speed for plotting, in m/s
-Nrxns: 7 #Top n-reactions
-Threshold: 0.5 #Threshold for rxn_interst to be above in average strength
+Nrxns: 7 # Top n-reactions
+Threshold: 0.5 # Threshold for rxn_interst to be above in average strength
 
 ...

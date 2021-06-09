@@ -16,6 +16,7 @@ import time
 import errno
 import pickle
 import cantera
+import shutil
 import numpy as np
 from tqdm import tqdm
 from datetime import datetime
@@ -1269,6 +1270,7 @@ def file_saving(pack, slists, zerod_info, plist, siminfo, sati):
         with open(file, 'wb') as f:
             pickle.dump(item[0], f)
 
+    shutil.copyfile('input.yaml', os.path.join(save_path, 'input.yaml'))
     if sati:
         Mole_Frac_fname = 'Mole_fractions.pkl'
         file = os.path.join(save_path, Mole_Frac_fname)

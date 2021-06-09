@@ -6,6 +6,7 @@ Created on Fri Mar 20 09:52:04 2020
 """
 
 import os
+import shutil
 import copy
 import errno
 import pickle
@@ -435,6 +436,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     os.makedirs(figure_path)
     print('Directory Created')
 
+    shutil.copyfile('input.yaml', os.path.join(save_path, 'input.yaml'))
     print('\nCreating text file...')
     #Text Description
     filename  = 'Case Description.txt'
@@ -444,7 +446,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     text_description = ("This file provides simulation information.\n"
                         "The following information are the parameters "
                         "and cases simulated\n\n" +
-                        cf.parameters_string(p, T, mix_params, chem,
+                        cf.parameters_string('1D', p, T, mix_params, chem,
                                                Fuel_name, Oxidizer_name,
                                                Diluent_name) +
                         "\n\n======Flame Simulation Information======"
