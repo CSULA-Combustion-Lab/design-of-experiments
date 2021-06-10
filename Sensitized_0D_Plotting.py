@@ -13,10 +13,9 @@ import yaml
 import matplotlib.patches as mpl_patches
 dirname = os.path.normpath(os.path.dirname(__file__))
 plt.style.use(os.path.join(dirname, 'CSULA_Combustion.mplstyle'))
-#from tkinter import filedialog
 
 
-def rxn_plots(max_rxns, species, Array_Type, Plot_path):
+def rxn_plots(max_rxns, species, Array_Type, Plot_path, varnames):
     """
     Plots and saves figures of the reactions that were most sensitive per
     simulation case per independant variable.
@@ -29,6 +28,8 @@ def rxn_plots(max_rxns, species, Array_Type, Plot_path):
     species : list
         A list of specific species of interest in which the sensitivity to
         each reaction per time step is calculated
+    varnames : list
+        A list of the four independent variables to plot.
 
     Returns
     -------
@@ -41,6 +42,7 @@ def rxn_plots(max_rxns, species, Array_Type, Plot_path):
         Equivalence  = []
         Fuel         = []
         Rxns         = []
+        Oxygen = []
         num_ticks = 10
         for ents in max_rxns:
             if ents[1] is None:
@@ -51,41 +53,49 @@ def rxn_plots(max_rxns, species, Array_Type, Plot_path):
             Pressure.append(ents[0]['pressure'])
             Equivalence.append(ents[0]['phi'])
             Fuel.append(ents[0]['fuel'])
+            Oxygen.append(ents[0]['oxidizer'])
 
-        varnames = ['P', 'phi', 'X', 'T']
         # info is a dictionary with an entry for each figure. The entries are
         # [x label, x points, name]
         info = {'P': ['Pressure [kPa]', Pressure, 'Pressure'],
-                'phi': ['Equivalence Ratio [$\phi$]', Equivalence,
+                'Phi': [r'Equivalence Ratio [$\phi$]', Equivalence,
                         'Equivalence'],
-                'X': ['Fuel [mole fraction]', Fuel, 'Fuel'],
+                'F': ['Fuel Mole fraction', Fuel, 'Fuel'],
+                'O2': ['Oxygen Mole Fraction', Oxygen, 'Oxygen'],
                 'T': ['Temperature [K]', Temperature, 'Temperature']}
 
+        for var in varnames:
+            if var not in info.keys():
+                fmt = ('WARNING: {} is an invalid variable name for rxn_plots.'
+                       ' It must be in {}. Using [P, Phi, F, T]')
+                print(fmt.format(var, list(info.keys())))
+                varnames = ['P', 'Phi', 'F', 'T']
+
         fig, axes = plt.subplots(nrows=2, ncols=2)
-        #Four subplots of rxn versus independant variables
+        # Four subplots of rxn versus independent variables
         for var, ax, string in zip(varnames, axes.flatten(),
                                    ['(a)', '(b)', '(c)', '(d)']):
             if Array_Type == 'log':
                 ax.set_xscale('log')
             ax.plot(info[var][1], Rxns)
-            ax.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
+            ax.annotate(xy=(0.90, 0.90), text=string, xycoords='axes fraction')
             ax.set_xlabel(info[var][0])
             ax.set_ylabel('Reaction #')
             ax.set_ylim([0, int(max(Rxns))+1])
             if max(Rxns) <= num_ticks:
-                ax.set_yticks(np.arange(0,max(Rxns)+1, step=2))
+                ax.set_yticks(np.arange(0, max(Rxns)+1, step=2))
             else:
-                ax.set_yticks(np.arange(0,max(Rxns),
+                ax.set_yticks(np.arange(0, max(Rxns),
                                         step=int(max(Rxns)/num_ticks)))
             ax.grid(True)
 
-        fig.suptitle('Time Instance: '+format(species[3][0])+
-                     ' s    Species: '+ specie)
-        fig.savefig(Plot_path+'\\['+format(specie)+
-                                  '] Most Sensitive Reactions.png')
+        fig.suptitle('Time Instance: ' + format(species[3][0]) +
+                     ' s    Species: ' + specie)
+        fig.savefig(Plot_path + '\\[' + format(specie) +
+                    '] Most Sensitive Reactions.png')
         plt.close(fig)
 
-        #Individual plots of Rxn versus independant variable
+        # Individual plots of Rxn versus independent variable
         for var in varnames:
             plt.figure("Sensitivity of "+specie+" to "+info[var][2])
             if Array_Type == 'log':
@@ -93,25 +103,25 @@ def rxn_plots(max_rxns, species, Array_Type, Plot_path):
             plt.plot(info[var][1], Rxns)
             plt.xlabel(info[var][0])
             plt.ylabel('Most Sensitive Reaction Number for '+specie)
-            plt.ylim([0,int(max(Rxns))+1])
+            plt.ylim([0, int(max(Rxns)) + 1])
             if max(Rxns) <= 25:
-                plt.yticks(np.arange(0,max(Rxns)+1, step=1))
+                plt.yticks(np.arange(0, max(Rxns) + 1, step=1))
             else:
-                plt.yticks(np.arange(0,max(Rxns), step=int(max(Rxns)/20)))
+                plt.yticks(np.arange(0, max(Rxns), step=int(max(Rxns)/20)))
             handles = [mpl_patches.Rectangle((0, 0), 1, 1, fc="white",
                                              ec="white", lw=0, alpha=0)] * 2
-            labels = ['Time: '+format(species[3][0])+' s','Species: '+specie]
+            labels = ['Time: ' + format(species[3][0]) + ' s','Species: ' + specie]
             plt.legend(handles, labels, loc='best', fontsize='small',
                        fancybox=True, framealpha=0.7,
                        handlelength=0, handletextpad=0)
             plt.grid(True)
-            plt.savefig(Plot_path+'\\['+format(specie)+
-                        '] '+info[var][2]+' Most Sensitive Reaction.png')
+            plt.savefig(Plot_path + '\\[' + format(specie) +
+                        '] ' + info[var][2] + ' Most Sensitive Reaction.png')
             plt.close()
 
 
 def integrated_strength_plots(int_strength, species, Plot_path, rxn_num,
-                              Array_Type):
+                              Array_Type, varnames):
     """
     Plots and saves figures of the integrated senstivities of reactions of
     interests against each indpendant varaible.
@@ -130,38 +140,48 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num,
         A string of the save path to the plots folder.
     rxn_num : list
         Reaction of interest to plot the senstivities of.
+    varnames : list
+        A list of the four independent variables to plot.
 
     Returns
     -------
     None.
 
     """
-    varnames = ['P', 'phi', 'X', 'T']
     # info is a dictionary with an entry for each figure. The entries are
     # [x label, key for int_strength]
     info = {'P': ['Pressure [kPa]', 'pressure'],
-            'phi': ['Equivalence Ratio', 'phi'],
-            'X': ['Fuel Mole Fraction', 'fuel'],
-            'T': ['Temperature [K]', 'temperature']}
+            'Phi': ['Equivalence Ratio', 'phi'],
+            'F': ['Fuel Mole Fraction', 'fuel'],
+            'T': ['Temperature [K]', 'temperature'],
+            'O2': ['Oxygen Mole Fraction', 'oxidizer']}
     file_format = '[{:}] Normalized Integrated Strength.png'.format
     for i in range(len(species[0])):
         spec = species[0][i]
         fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True,
-            subplot_kw={'ylabel': r'$\hat{IS}_{' + spec + ', j}$'})
+                                 subplot_kw={'ylabel': r'$\hat{IS}_{' + spec + ', j}$'})
         for var, ax, string in zip(varnames, axes.flatten(),
                                    ['(a)', '(b)', '(c)', '(d)']):
-            ax.set_xlabel(info[var][0])
+            if var not in info.keys():
+                ax.set_xlabel(var)
+                key = None
+            else:
+                ax.set_xlabel(info[var][0])
+                key = info[var][1]
             if Array_Type == 'log':
                 ax.set_xscale('log')
             ax.grid(True)
             x = []
             y = []
-            key = info[var][1]
             for condition in int_strength:
                 if condition[1][0] is None:
                     continue
                 else:
-                    x.append(condition[0][key])
+                    if var not in info.keys():
+                        # Assume var is an input species
+                        x.append(condition[0]['mixture'][var])
+                    else:
+                        x.append(condition[0][key])
                     norm_IS = condition[1][i]
                     y.append(norm_IS[rxn_num])
             ax.plot(x, y)
@@ -243,7 +263,7 @@ def integrated_strength_rxn_plots(int_strength, species, Plot_path,
         plt.close(fig)
 
 
-def reaction_of_interest_plot(max_rxns, species, rxn_number, Array_Type):
+def reaction_of_interest_plot(max_rxns, species, rxn_number, Array_Type, Plot_path):
     """
     Plots and saves figures comparing independant variables that were most
     senstivity.
@@ -258,6 +278,8 @@ def reaction_of_interest_plot(max_rxns, species, rxn_number, Array_Type):
         each reaction per time step is calculated
     rxn_num : list
         Reaction of interest to plot the senstivities of.
+    Plot_path : str
+        A string of the save path to the plots folder.
 
     Returns
     -------
@@ -382,7 +404,6 @@ def main(plot_inputs):
     Folder_name = plot_inputs['Folder_name']
 
     print('Warning: Four_Plot is not used for 0D plotting yet.')
-    # TODO: add Four_Plot variable similar to the 1D plotting
 
     if Folder_name == '' or Folder_name == 1:
         try:
@@ -419,11 +440,11 @@ def main(plot_inputs):
     with open(os.path.join(Load_path, 'Integrated Strength.pkl'), 'rb') as f:
         Int_Strength = pickle.load(f)
 
-    rxn_plots(Max_Sens_Rxn, Species_Rxn, Array_type, Plot_path)
+    rxn_plots(Max_Sens_Rxn, Species_Rxn, Array_type, Plot_path, Four_Plot)
     for roi in Rxn_interest:
-        reaction_of_interest_plot(Max_Sens_Rxn, Species_Rxn, roi, Array_type)
+        reaction_of_interest_plot(Max_Sens_Rxn, Species_Rxn, roi, Array_type, Plot_path)
         integrated_strength_plots(Int_Strength, Species_Rxn, Plot_path, roi,
-                                  Array_type)
+                                  Array_type, Four_Plot)
         integrated_strength_rxn_plots(Int_Strength, Species_Rxn, Plot_path,
                                       roi, Threshold, Array_type)
 

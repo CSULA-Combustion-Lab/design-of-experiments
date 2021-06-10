@@ -17,7 +17,7 @@ dirname = os.path.normpath(os.path.dirname(__file__))
 plt.style.use(os.path.join(dirname, 'CSULA_Combustion.mplstyle'))
 #from tkinter import filedialog
 
-def rxn_plots(f_info, save_path, log):
+def rxn_plots(f_info, save_path, log, conditions=['P', 'F', 'Phi', 'O2']):
     """
     Plots and saves figures of the reactions that were most sensitive per
     simulation case per independant variable
@@ -37,6 +37,9 @@ def rxn_plots(f_info, save_path, log):
     log : boolean
         If true plots will use a logarithmic scale.
         If false plots will use a linear scale
+    conditions : list, optional
+        A list of variables to plot the sensitivities against
+        The default is ['P', 'F', 'Phi', 'O2'].
 
     Returns
     -------
@@ -68,7 +71,13 @@ def rxn_plots(f_info, save_path, log):
                  'Oxi': [Oxidizer, 'Oxygen Mole Fraction '+str(Oxi)],
                  'T': [Tint, 'Temperature [K]'],
                  'Rxn': [Max_rxn, 'Reaction #']}
-    conditions = ['P', 'F', 'Phi', 'Oxi']
+
+    for var in conditions:
+        if var not in cond_dict.keys():
+            fmt = ('WARNING: {} is an invalid variable name for rxn_plots.'
+                   ' It must be in {}. Using [P, F, Phi, O2]')
+            print(fmt.format(var, list(cond_dict.keys())))
+            conditions = ['P', 'F', 'Phi', 'O2']
     for a, condition, string in zip(ax, conditions,
                                     ['(a)', '(b)', '(c)', '(d)']):
         x_key = condition

@@ -81,15 +81,15 @@ Flame_options:
 # 2: Use the last folder that was simulated
 Folder_name: 2
 
-# Reaction numbers of interest. If blank, only plot top Nrxns.
-Rxn_interest: []
+# Reaction numbers of interest.
+Rxn_interest: [1]
 
 # Which four independent variables should be plotted?
 # Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P', or any species name.
-Four_Plot: ['H2', 'T', 'Phi', 'P']
+Four_Plot: ['F', 'H2', 'Phi', 'P']
 
 Min_speed: 0 # Minimum flame speed for plotting, in m/s
-Nrxns: 7 # Top n-reactions
+Nrxns: 7 # Top n-reactions. Currently only used for flame case.
 Threshold: 0.5 # Threshold for rxn_interst to be above in average strength
 
 ...
