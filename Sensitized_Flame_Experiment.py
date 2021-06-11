@@ -125,56 +125,20 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp],
-             'T/F': [multifuel, multioxidizer]}
+             'Files': [mechanism, flame_temp]}
 
     """
     #Working directory
     flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
-    if type(oxidizer) is list:
-        multioxidizer = True
-    elif type(oxidizer) is str:
-        multioxidizer = False
-
-    if type(fuel) is list:
-        multifuel = True
-    elif type(fuel) is str:
-        multifuel = False
-
-    #Multifuel mixture percentage of total fuel
-    # fuel is a list of fuels and their percentages in the total fuel
-    #  odds are fuel name as a string
-    #  evens are percetage of previous fuel name in total fuel
-    # percentages should sum to 1 or script will not run
-    if multifuel:
-        check = 0
-        for c in range(1, len(fuel), 2):
-            check += fuel[c]
-        if not np.isclose(check, 1):
-            print('Error in Multifuel.'+
-                  'Sum of individual fuel percentage must add up to 1!')
-            sys.exit()
-
-    #Multioxidizer mixture percentage of total oxidizer
-    # fuel is a list of fuels and their percentages in the total fuel
-    #  odds are fuel name as a string
-    #  evens are percetage of previous fuel name in total fuel
-    # percentages should sum to 1 or script will not run
-    if multioxidizer:
-        check    = 0
-        for c in range(1, len(oxidizer), 2):
-            check += oxidizer[c]
-        if not np.isclose(check, 1):
-            print('Error in Multioxidizer.'+
-                  'Sum of individual fuel percentage must add up to 1!')
-            sys.exit()
+    oxidizer = cf.normalize_mixture(oxidizer)
+    fuel = cf.normalize_mixture(fuel)
+    diluent = cf.normalize_mixture(diluent)
 
     conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
                   'Mixture': [fuel, diluent, oxidizer],
                   'Flame': [mingrid, mul_soret, loglevel],
-                  'Files': [mechanism, flame_temp],
-                  'T/F': [multifuel, multioxidizer]}
+                  'Files': [mechanism, flame_temp]}
     return conditions
 
 
@@ -191,8 +155,7 @@ def run_simulations(conditions, paramlist):
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp],
-             'T/F': [multifuel, multioxidizer]}
+             'Files': [mechanism, flame_temp]}
     paramlist : list
         Simulation case information the following structure:
         [[Pressure, Temperature, Mixture], ...]
@@ -268,8 +231,7 @@ def flame_sens(p, T, mix, cond):
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp],
-             'T/F': [multifuel, multioxidizer]}
+             'Files': [mechanism, flame_temp]}
 
     Returns
     -------
@@ -378,8 +340,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp],
-             'T/F': [multifuel, multioxidizer]}
+             'Files': [mechanism, flame_temp]}
     fla_inf : dict
         Information of the results of the simulation as well as simulation
         conditions with the following structure:

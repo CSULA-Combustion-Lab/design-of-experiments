@@ -55,7 +55,7 @@ def test_case_maker_phi_fuel():
     T = [500 * rand(), 1000, 1]
     mix_params = ('phi_fuel', phi, fuel)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'phi_fuel'],
+                  'Mixture': [{'H2':1}, {'N2':1}, {'O2':1}, 'phi_fuel'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -74,7 +74,7 @@ def test_case_maker_phi_oxi():
     T = [500 * rand(), 1000, 1]
     mix_params = ('phi_oxi', phi, oxidizer)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'phi_oxi'],
+                  'Mixture': [{'H2':1}, {'N2':1}, {'O2':1}, 'phi_oxi'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -93,7 +93,7 @@ def test_case_maker_phi_dil():
     T = [500 * rand(), 1000, 1]
     mix_params = ('phi_dil', phi, diluent)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'phi_dil'],
+                  'Mixture': [{'H2':1}, {'N2':1}, {'O2':1}, 'phi_dil'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -112,7 +112,7 @@ def test_case_maker_phi_oxidil():
     T = [500 * rand(), 1000, 1]
     mix_params = ('phi_oxi/dil', phi, ox_in_oxidizer)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'phi_oxi/dil'],
+                  'Mixture': [{'H2':1}, {'N2':1}, {'O2':1}, 'phi_oxi/dil'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -132,7 +132,7 @@ def test_case_maker_phi_fuedil():
     T = [500 * rand(), 1000, 1]
     mix_params = ('phi_fuel/dil', phi, f_in_fuel)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'phi_fuel/dil'],
+                  'Mixture': [{'H2':1}, {'N2':1}, {'O2':1}, 'phi_fuel/dil'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -152,7 +152,7 @@ def test_case_maker_oxi_fuel():
     T = [500 * rand(), 1000, 1]
     mix_params = ('oxi_fuel', oxi, fuel)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'oxi_fuel'],
+                  'Mixture': [{'H2':1}, {'N2':1}, {'O2':1}, 'oxi_fuel'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -172,7 +172,7 @@ def test_case_maker_fuel_dil():
     T = [500 * rand(), 1000, 1]
     mix_params = ('fuel_dil', fuel, dil)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'fuel_dil'],
+                  'Mixture': [{'H2':1}, {'N2':1}, {'O2':1}, 'fuel_dil'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -192,7 +192,7 @@ def test_case_maker_oxi_dil():
     T = [500 * rand(), 1000, 1]
     mix_params = ('oxi_dil', oxi, dil)
     conditions = {'Parameters': [P, T, mix_params, 'log'],
-                  'Mixture': ['H2', 'N2', 'O2', 'oxi_dil'],
+                  'Mixture': [{'H2':1}, {'N2':1}, {'O2':1}, 'oxi_dil'],
                   'Files': [cf.model_folder('grimech30.cti'), None]}
     paramlist = cf.case_maker(conditions)
     case = paramlist[0]
@@ -212,26 +212,21 @@ def test_multi_f_o():
     T = [500 * rand(), 1000, 1]
     mix_params = ('phi_fuel', phi, fuel)
 
-    multif_1 = ['H2', .3, 'CO', 0.7]
-    multif_2 = {'H2': .3, 'CO': 0.7}
-    multio_1 = ['O2', 0.95, 'AR', 0.05]
-    multio_2 = {'O2': 0.95, 'AR': 0.05}
+    conditions = {'Parameters': [P, T, mix_params, 'log'],
+                  'Mixture': [{'H2': .3, 'CO': 0.7}, {'N2':0.5, 'HE': 0.5}, {'O2': 0.95, 'AR': 0.05}, 'phi_fuel'],
+                  'Files': [cf.model_folder('grimech30.cti'), None]}
+    paramlist = cf.case_maker(conditions)
+    case = paramlist[0]
+    mixture = case[2]
 
-    for f, o in [[multif_1, multio_1], [multif_2, multio_2]]:
-        conditions = {'Parameters': [P, T, mix_params, 'log'],
-                      'Mixture': [f, 'N2', o, 'phi_fuel'],
-                      'Files': [cf.model_folder('grimech30.cti'), None]}
-        paramlist = cf.case_maker(conditions)
-        case = paramlist[0]
-        mixture = case[2]
+    nptest.assert_allclose(case[:2], [P[0], T[0]])
+    nptest.assert_allclose(mixture['H2'] + mixture['CO'], fuel[0])
+    nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'] + mixture['AR'] + mixture['CO'] + mixture['HE'])
+    nptest.assert_allclose(phi[0], (mixture['H2'] + mixture['CO']) / mixture['O2'] * 0.5)
+    nptest.assert_allclose(0.3 / 0.7, mixture['H2'] / mixture['CO'])
+    nptest.assert_allclose(0.95 / 0.05, mixture['O2'] / mixture['AR'])
+    assert all([x >= 0 for k, x in mixture.items()])
 
-        nptest.assert_allclose(case[:2], [P[0], T[0]])
-        nptest.assert_allclose(mixture['H2'] + mixture['CO'], fuel[0])
-        nptest.assert_allclose(1, mixture['H2'] + mixture['O2'] + mixture['N2'] + mixture['AR'] + mixture['CO'])
-        nptest.assert_allclose(phi[0], (mixture['H2'] + mixture['CO']) / mixture['O2'] * 0.5)
-        nptest.assert_allclose(0.3 / 0.7, mixture['H2'] / mixture['CO'])
-        nptest.assert_allclose(0.95 / 0.05, mixture['O2'] / mixture['AR'])
-        assert all([x >= 0 for k, x in mixture.items()])
 
 def test_mixture_percentage():
     phi = [0.3 + rand(), 2, 1]
@@ -240,14 +235,14 @@ def test_mixture_percentage():
     T = [500 * rand(), 1000, 1]
     mix_params = ('phi_fuel', phi, fuel)
 
-    multif = ['H2', .3, 'CO', 0.7]
-    singlf = 'H2'
+    multif = {'H2': .3, 'CO': 0.7}
+    singlf = {'H2': 1}
 
     list_conditions = {'Parameters': [P, T, mix_params, 'log'],
-                       'Mixture': [multif, 'N2', 'O2', 'phi_fuel'],
+                       'Mixture': [multif, {'N2':1}, {'O2':1}, 'phi_fuel'],
                        'Files': [cf.model_folder('grimech30.cti'), None]}
     stri_conditions = {'Parameters': [P, T, mix_params, 'log'],
-                       'Mixture': [singlf, 'N2', 'O2', 'phi_fuel'],
+                       'Mixture': [singlf, {'N2':1}, {'O2':1}, 'phi_fuel'],
                        'Files': [cf.model_folder('grimech30.cti'), None]}
     list_paramlist = cf.case_maker(list_conditions)
     list_case = list_paramlist[0]
@@ -265,3 +260,22 @@ def test_mixture_percentage():
     nptest.assert_allclose(str_comp, fuel[0])
     assert all([x >= 0 for k, x in list_mixture.items()])
     assert all([x >= 0 for k, x in stri_mixture.items()])
+
+
+def test_mixture_normalize():
+    # Using a list
+    lst = ['comp1', rand(), 'comp2', rand(), 'comp3', rand()]
+    total = sum(lst[1::2])
+    mix_dict = cf.normalize_mixture(lst)
+    nptest.assert_allclose([x/total for x in lst[1::2]], [mix_dict[k] for k in lst[::2]])
+    nptest.assert_allclose(1, sum(mix_dict.values()))
+
+    # Using a dict
+    dct = {'comp1': rand(), 'comp2': rand(), 'comp3': rand()}
+    total = sum(dct.values())
+    mix_dict = cf.normalize_mixture(dct)
+    nptest.assert_allclose([x/total for x in dct.values()], list(mix_dict.values()))
+    nptest.assert_allclose(1, sum(mix_dict.values()))
+
+    # using a string
+    assert cf.normalize_mixture('test') == {'test': 1.0}

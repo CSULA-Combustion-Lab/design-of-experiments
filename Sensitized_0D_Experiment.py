@@ -177,7 +177,8 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
     SCORE3_TIME = stime + (etime - stime)*0.75 # time to evaluate score3
 
     Packed = {'Parameters': [pres, temp, mix_params, arrtype],
-              'Mixture':[fue, dilu, oxi, m_type],
+              'Mixture':[cf.normalize_mixture(fue), cf.normalize_mixture(dilu),
+                         cf.normalize_mixture(oxi), m_type],
               'ZeroD': [s_species, dup_reactions,
                         Reactions, SpecificSpecieNumbers],
               'Time_Info': [stime, etime, SCORE3_TIME],

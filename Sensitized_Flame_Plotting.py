@@ -68,7 +68,7 @@ def rxn_plots(f_info, save_path, log, conditions=['P', 'F', 'Phi', 'O2']):
     cond_dict = {'P': [Pressure, 'Pressure [atm]'],
                  'F': [Fuel, 'Fuel Mole Fraction '+str(Fue)],
                  'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'Oxi': [Oxidizer, 'Oxygen Mole Fraction '+str(Oxi)],
+                 'O2': [Oxidizer, 'Oxygen Mole Fraction '+str(Oxi)],
                  'T': [Tint, 'Temperature [K]'],
                  'Rxn': [Max_rxn, 'Reaction #']}
 
