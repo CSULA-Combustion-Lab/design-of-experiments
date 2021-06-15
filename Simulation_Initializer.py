@@ -66,6 +66,7 @@ if __name__ == "__main__":
     Array_type = mix_options['Array_type']
     Mixture_type = mix_options['Mixture_type']
 
+    par = sim_inputs['Parallel']
     Mechanism = sim_inputs['Mechanism']
     Save_files = sim_inputs['Save_files']
     problem_type = sim_inputs['Simulation_Type']
@@ -75,12 +76,12 @@ if __name__ == "__main__":
     if problem_type == '0D':
         zeroD.run_0D_simulation(Mechanism, Array_type, Pressure, Temperature,
                                 Fuel, Oxidizer, Diluent, Mixture_type,
-                                mix_params, Save_files,
+                                mix_params, Save_files, par,
                                 **sim_inputs['ZeroD_options'])
     elif problem_type == '1D':
         oneD.run_flame_simulation(Mechanism, Array_type, Pressure, Temperature,
                                   Fuel, Oxidizer, Diluent, mix_params,
-                                  Save_files, **sim_inputs['Flame_options'])
+                                  Save_files, par, **sim_inputs['Flame_options'])
     else:
         print('Error! Simulation_Type String Does Not Match!' +
               '\nMake sure string matches one of two options!')

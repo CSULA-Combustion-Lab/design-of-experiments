@@ -22,7 +22,7 @@ ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
 
 def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
-                         safi, Mingrid, Mul_soret, Loglevel):
+                         safi, par, Mingrid, Mul_soret, Loglevel):
     """
     Takes information from initializer and runs necessary functions to perform
     a one-dimensional simulation. Simulation results will be saved if booleans
@@ -55,6 +55,8 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
         a mixture.
     safi : boolean
         If true simulation conditions and ranking results will be saved.
+    par : bool
+        If true, run simulations in paralle
     Mingrid: int
         Number of points to be solved in the simulation
     Mul_soret : boolean
@@ -73,7 +75,7 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
                            mix_params, Mingrid, Mul_soret, Loglevel)
     paralist = cf.case_maker(condi)
     flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
-                                                                  paralist)
+                                                                  paralist, par)
     if safi:
         file_saving(condi, flame_info, paralist, siminfo)
 
@@ -142,7 +144,7 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
     return conditions
 
 
-def run_simulations(conditions, paramlist):
+def run_simulations(conditions, paramlist, par):
     """
     Runs the simulation through all functions inlcuding the simulation
     calculations and the rankings.
@@ -159,6 +161,8 @@ def run_simulations(conditions, paramlist):
     paramlist : list
         Simulation case information the following structure:
         [[Pressure, Temperature, Mixture], ...]
+    par : bool
+        If true, run simulations in paralle
 
     Returns
     -------
@@ -185,7 +189,7 @@ def run_simulations(conditions, paramlist):
     print('Initial number of cases: '+format(len(paramlist)))
     print('\nStart of simulations...')
     sim_start  = time.time()
-    flame_info = cf.parallelize(paramlist, conditions, flame_sens)
+    flame_info = cf.parallelize(paramlist, conditions, flame_sens, par)
     sim_end    = time.time()
     sim_time   = sim_end - sim_start
     print('End of simulations')

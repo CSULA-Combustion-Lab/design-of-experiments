@@ -25,7 +25,7 @@ import common_functions as cf
 cantera.suppress_thermo_warnings()
 
 def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
-                      mix_params, safi, SpecificSpecies, Starttime, Endtime,
+                      mix_params, safi, par, SpecificSpecies, Starttime, Endtime,
                       Delta_T, threshold, Save_time):
     """
     Takes information from initializer and runs necessary functions to perform
@@ -61,6 +61,8 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
         a mixture.
     safi : bool
         If true simulation conditions and ranking results will be saved.
+    par : bool
+        If true, run simulations in parallel.
     SpecificSpecies : list
         A list of specific species of interest in which the sensitivity to
         each reaction per time step is calculated.
@@ -92,7 +94,7 @@ def run_0D_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, m_type,
                                     fue, oxi, dilu, m_type, mix_params,
                                     SpecificSpecies, Starttime, Endtime,
                                     Delta_T, float(threshold))
-    zerod_info, siminfo, s_lists = run_simulations(pack, paralist)
+    zerod_info, siminfo, s_lists = run_simulations(pack, paralist, par)
     toc       = time.time()
     #end time
     duration  = toc-tic
@@ -187,7 +189,7 @@ def initialization(mechan, arrtype, pres, temp, fue, oxi, dilu, m_type,
     Parameter_List = cf.case_maker(Packed)
     return Packed, Parameter_List
 
-def run_simulations(pack, plist):
+def run_simulations(pack, plist, par):
     """
     Runs the simulation through all functions inlcuding the simulation
     calculations and the rankings.
@@ -206,6 +208,8 @@ def run_simulations(pack, plist):
     plist : list
         Simulation case information the following structure:
         [[Pressure, Temperature, Mixture], ...]
+    par : bool
+        If true, run simulations in paralle
 
     Returns
     -------
@@ -267,7 +271,7 @@ def run_simulations(pack, plist):
 
     print('Start of Simulations')
     sim_start   = time.time()
-    sim_package = cf.parallelize(plist, pack, reac_sens_parallel)
+    sim_package = cf.parallelize(plist, pack, reac_sens_parallel, par)
     sim_end     = time.time()
     sim_time    = sim_end - sim_start
     print('End of Simulations')

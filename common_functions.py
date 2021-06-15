@@ -288,7 +288,7 @@ def case_maker(cond):
     return list(it.product(P, T, mixlist))
 
 
-def parallelize(param, cond, fun):
+def parallelize(param, cond, fun, parallel=True):
     """
     Parrallelize all cases found in param using information found from cond
     and calculated using function defined by fun.
@@ -303,6 +303,8 @@ def parallelize(param, cond, fun):
         simulation being performed.
     fun : Function
         Name of the function being used per simulation
+    parallel : bool
+        if True, run in parallel.
 
     Returns
     -------
@@ -326,6 +328,9 @@ def parallelize(param, cond, fun):
         proc = loops.index(min(loops))+1
     else: # More cpus than cases
         proc = numcases
+
+    if not parallel:
+        proc = 1  # Don't run in parallel.
 
     pool = Pool(processes=proc)
 
