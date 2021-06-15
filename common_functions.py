@@ -320,8 +320,10 @@ def parallelize(param, cond, fun):
         #Number of cases to run on each processor, rounded up
         loops = [np.ceil(numcases/proc) for proc in range(1, cpu_count())]
         # First entry in loops with the minumum number. Add one because
-        # of 0-based indexing, add another in case one process is much slower.
-        proc = loops.index(min(loops))+2
+        # of 0-based indexing
+        # In the past, I added another in case one process is much slower, but
+        # This runs the risk of using all cpu's
+        proc = loops.index(min(loops))+1
     else: # More cpus than cases
         proc = numcases
 
@@ -397,42 +399,42 @@ def parameters_string(p_type, P, T, mix_params, chem, fuel, oxidizer, diluent):
     return string
 
 
-def calculate_a(fuel, mech):
-    """
-    Calculates the stoichiometric ratio for a given mixture of fuel.
+# def calculate_a(fuel, mech):
+#     """
+#     Calculates the stoichiometric ratio for a given mixture of fuel.
 
-    Parameters
-    ----------
-    fuel : str or list
-        As a string the variable represents a single species of fuel being used.
-        As a list the variable represents multicomponent fuel species
-        followed by the percentage to the total fuel [Component1, % of total, ...]
-    mech : str
-        A .cti mechanism file containing all reaction and species information.
+#     Parameters
+#     ----------
+#     fuel : str or list
+#         As a string the variable represents a single species of fuel being used.
+#         As a list the variable represents multicomponent fuel species
+#         followed by the percentage to the total fuel [Component1, % of total, ...]
+#     mech : str
+#         A .cti mechanism file containing all reaction and species information.
 
-    Returns
-    -------
-    a : float
-        The stoichiometric ratio of the given fuel mixture
+#     Returns
+#     -------
+#     a : float
+#         The stoichiometric ratio of the given fuel mixture
 
-    """
-    #fuel C(x)H(y)O(z)
-    gas        = ct.Solution(mech)
-    fuel_index = gas.species(gas.species_index(fuel)).composition
-    if 'C' in fuel_index:
-        x = fuel_index['C']
-    else:
-        x = 0
-    if 'H' in fuel_index:
-        y = fuel_index['H']
-    else:
-        y = 0
-    if 'O' in fuel_index:
-        z = fuel_index['O']
-    else:
-        z = 0
-    a = x+y/4-z/2
-    return a
+#     """
+#     #fuel C(x)H(y)O(z)
+#     gas        = ct.Solution(mech)
+#     fuel_index = gas.species(gas.species_index(fuel)).composition
+#     if 'C' in fuel_index:
+#         x = fuel_index['C']
+#     else:
+#         x = 0
+#     if 'H' in fuel_index:
+#         y = fuel_index['H']
+#     else:
+#         y = 0
+#     if 'O' in fuel_index:
+#         z = fuel_index['O']
+#     else:
+#         z = 0
+#     a = x+y/4-z/2
+#     return a
 
 def update_progress(progress):
     """
