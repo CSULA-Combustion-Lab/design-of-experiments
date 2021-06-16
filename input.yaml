@@ -9,9 +9,10 @@
 ## 0D Simulates a no flame condition tracking species concentraion in time
 ## 1D Simulates an adiabatic flame tracking species before, at, and after flame
 Simulation_Type: '1D'
-Mechanism: 'Shrestha Ammonia.cti' #Mechanism file
+Mechanism: 'Li_model.cti' #Mechanism file
 Save_files: True # Save files for plotting script
-Plot_on_completion: True # Run the plotting script immediately after the simulation.
+Plot_on_completion: False # Run the plotting script immediately after the simulation.
+Parallel: True  # Run the simulations in parallel.
 
 ## ~~~~~~~~~~~~~~~ Mixture options ~~~~~~~~~~~~~~~~~ ##
 Mixture_options:
@@ -19,11 +20,11 @@ Mixture_options:
 # For multichemical follow structure ['Chemical1', % of Total, ...] or use
 # a dictionary.
 # The percentage following the chemical name should sum up to 1
-    Fuel: 'NH3'
+    Fuel: {'H2':0.9, 'CO': 0.1}
     # Fuel     = ['CH4', .75, 'CO2', .25]
     # Fuel: {'CH4': .75, 'CO2': .25}
-    Oxidizer: {'O2': 0.21, 'N2': 0.79}
-    Diluent: 'CH4'
+    Oxidizer: 'O2'
+    Diluent: 'N2'
 
 # Mixture_type choices:
 #  phi_oxi/dil specifies the equivalence ration and oxidizer to diluent ratio
@@ -34,7 +35,7 @@ Mixture_options:
 #  fuel_dil specifies the fuel and diluent mole fractions
 #  oxi_dil specifies the oxidizer and diluent mole fractions
 #  oxi_fuel specifies the oxidizer and fuel mole fractions
-    Mixture_type: 'phi_fuel/dil'
+    Mixture_type: 'phi_oxi/dil'
 
 #Parameters
 # All parameters are lists of three numbers
@@ -42,14 +43,14 @@ Mixture_options:
 # Second Number: End Point
 # Third Number: Number of points. If set to 1 only first point is evaluated
 # Mixture parameters. Not all of these will be used, depending on Mixture_type
-    Equivalence: [0.2, 5, 10] # Used in mixture types with phi
-    fraction_in_oxidizer_or_fuel: [0.1, 0.9, 10] # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
+    Equivalence: [0.8, 1.2, 2] # Used in mixture types with phi
+    fraction_in_oxidizer_or_fuel: [0.2, 0.3, 2] # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
     fuel_fraction: [0.01, 0.5, 15] # % of total mixture. Used in mixture types with fuel
     oxidizer_fraction: [0.01, 0.9, 15] # % of total mixture. Used in mixture types with oxi
 
 # Thermodynamic parameters. P in atm, T in Kelvin
     Pressure: [1, 1, 1]
-    Temperature: [300, 500, 1]
+    Temperature: [300, 500, 2]
 
 # Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
 # variables should vary in log- or linear- space
@@ -68,7 +69,7 @@ ZeroD_options:
 
 ## ~~~~~~~~~~~~~~~ Flame simulation options ~~~~~~~~~~~~~~~~~ ##
 Flame_options:
-    Mingrid: 200  # Minimum number of grid points in flame.
+    Mingrid: 50  # Minimum number of grid points in flame.
     Mul_soret: False  # Include multicomponent diffusion and Soret effect?
     Loglevel: 0  # Higher values print more information.
 
@@ -82,7 +83,7 @@ Flame_options:
 Folder_name: 2
 
 # Reaction numbers of interest.
-Rxn_interest: [890]
+Rxn_interest: [1]
 
 # Which four independent variables should be plotted?
 # Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P', or any species name.

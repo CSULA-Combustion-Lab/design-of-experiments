@@ -74,8 +74,9 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
     condi = initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
                            mix_params, Mingrid, Mul_soret, Loglevel)
     paralist = cf.case_maker(condi)
-    flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
-                                                                  paralist, par)
+    simtime = run_simulations(condi, paralist, par)
+    flame_info, flame_info_unfiltered, sim_info = load_filter_flame_info(condi)
+    siminfo = [simtime, sim_info[0], simtime + sim_info[1]]
     if safi:
         file_saving(condi, flame_info, paralist, siminfo)
 
@@ -127,11 +128,25 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp]}
+             'Files': [mechanism, save_path]}
 
     """
     #Working directory
-    flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
+    parent_dir = 'Flame_Sensitivity_Results'
+    try:
+        os.makedirs(parent_dir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    now = datetime.datetime.now()
+    dt_string = now.strftime("%Y_%m_%d %H.%M.%S Flame_Speed_Sens")
+    directory = dt_string
+    save_path = os.path.join(parent_dir, directory)
+    os.makedirs(save_path)
+
+    os.makedirs(os.path.join(save_path, 'all_flame_sims'))
+
+    shutil.copyfile('input.yaml', os.path.join(save_path, 'input.yaml'))
 
     oxidizer = cf.normalize_mixture(oxidizer)
     fuel = cf.normalize_mixture(fuel)
@@ -140,7 +155,7 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
     conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
                   'Mixture': [fuel, diluent, oxidizer],
                   'Flame': [mingrid, mul_soret, loglevel],
-                  'Files': [mechanism, flame_temp]}
+                  'Files': [mechanism, save_path]}
     return conditions
 
 
@@ -176,25 +191,48 @@ def run_simulations(conditions, paramlist, par):
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
                          at]}
-    sim_info : list
-        A list of information of from performing the simulation including
-        the time it took to run the simulations, the number of cases that
-        converged, and the duration of the function.
+    sim_time : float
+        The time it took to run the simulations.
 
     """
     tic = time.time()
-    chem = conditions['Files'][0]
-    gas = ct.Solution(chem)
-
     print('Initial number of cases: '+format(len(paramlist)))
     print('\nStart of simulations...')
     sim_start  = time.time()
-    flame_info = cf.parallelize(paramlist, conditions, flame_sens, par)
+    cf.parallelize(paramlist, conditions, flame_sens, par)
     sim_end    = time.time()
     sim_time   = sim_end - sim_start
     print('End of simulations')
     print('Simulations took '+format(sim_time, '0.5f')+' seconds.')
-    print('\nStart flame information filtering...')
+    return sim_time
+
+def load_filter_flame_info(conditions):
+    """
+    Load and filter the individual flame simulations.
+    Deal with duplicate reactions.
+
+    Parameters
+    ----------
+    conditions : dict
+        Simulation information organized into a dictionary with the following
+        structure:
+            {'Parameters': [Press, Temperature, mix_params, array_type],
+             'Mixture': [fuel, diluent, oxidizer],
+             'Flame': [mingrid, mul_soret, loglevel],
+             'Files': [mechanism, flame_temp]}
+
+    Returns
+    -------
+    flame_info_filtered : list
+        list of flame_info dictionaries after filtering
+    flame_info_unfiltered : list
+        list of unfiltered flame_info dictionaries
+    sim_info : list
+        [# of converged simulations, time for filtering]
+
+    """
+    print('Loading and filtering flame information...')
+    flame_info = collect_flame_info(os.path.join(conditions['Files'][1], 'all_flame_sims'))
     filter_start = time.time()
     converged    = 0
     for x in flame_info:
@@ -203,17 +241,16 @@ def run_simulations(conditions, paramlist, par):
         else:
             converged += 1
     flame_info_unfiltered = copy.deepcopy(flame_info)
+
+    chem = conditions['Files'][0]
+    gas = ct.Solution(chem)
     duplicate_rxns = cf.duplicate_reactions(gas)
     flame_info_filtered = flame_info_filter(flame_info, duplicate_rxns)
     filter_end  = time.time()
     filter_time = filter_end - filter_start
-    print('End of filtering')
-    print('Filtering took '+format(filter_time, '0.5f')+ ' seconds.')
+    print('Loading and Filtering took '+format(filter_time, '0.5f')+ ' seconds.')
     print('\nNumber of cases converged:' +str(converged))
-    toc      = time.time() #Main Code Time End
-    duration = toc-tic
-    print('Total time '+format(duration, '0.5f')+' seconds.\n')
-    sim_info = [sim_time, converged, duration]
+    sim_info = [converged, filter_time]
     return flame_info_filtered, flame_info_unfiltered, sim_info
 
 
@@ -287,7 +324,11 @@ def flame_sens(p, T, mix, cond):
                                      Fuel_name, Oxidizer_name, Diluent_name,
                                      Fue_Percent, Oxi_Percent, Dil_Percent,
                                      at]}
-    return flame_info
+    now = datetime.datetime.now()
+    filename = now.strftime("simulation %H_%M_%S.pkl")
+    with open(os.path.join(tempfile, 'all_flame_sims', filename), 'wb') as f:
+        pickle.dump(flame_info, f)
+    return None
 
 
 def flame_info_filter(flame_information, duplicate_reactions):
@@ -345,9 +386,9 @@ def file_saving(cond, fla_inf, p_list, s_info):
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
              'Files': [mechanism, flame_temp]}
-    fla_inf : dict
+    fla_inf : list
         Information of the results of the simulation as well as simulation
-        conditions with the following structure:
+        conditions. List of dictionaries with the following structure:
          {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
@@ -371,6 +412,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     T             = cond['Parameters'][1]
     mix_params    = cond['Parameters'][2]
     chem          = cond['Files'][0]
+    save_path = cond['Files'][1]
     Fuel_name     = cond['Mixture'][0]
     Diluent_name  = cond['Mixture'][1]
     Oxidizer_name = cond['Mixture'][2]
@@ -380,28 +422,11 @@ def file_saving(cond, fla_inf, p_list, s_info):
     conv          = s_info[1]
     dur           = datetime.timedelta(seconds=s_info[2])
 
-    #Save Path/Parent Directory
-    parent_dir = 'Flame_Sensitivity_Results'
-    try:
-        os.makedirs(parent_dir)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-
-    #Create Directory Name
-    print('Creating Directory...')
-    now = datetime.datetime.now()
-    dt_string = now.strftime("%Y_%m_%d %H.%M.%S Flame_Speed_Sens")
-    directory = dt_string
-    save_path = os.path.join(parent_dir, directory)
-    os.makedirs(save_path)
-
     figures_dir = 'Flame_Sensitivity_Plots'
     figure_path = os.path.join(save_path, figures_dir)
     os.makedirs(figure_path)
     print('Directory Created')
 
-    shutil.copyfile('input.yaml', os.path.join(save_path, 'input.yaml'))
     print('\nCreating text file...')
     #Text Description
     filename  = 'Case Description.txt'
@@ -491,3 +516,25 @@ if __name__ == "__main__":
                          O_to_D, Tint, Fuel, Oxidizer, Diluent, Air, Mingrid,
                          Mul_soret, Loglevel, Mixture_type, Save_files)
 
+def collect_flame_info(path):
+    """
+    Collect flame information from individual pickled files in path.
+
+    Parameters
+    ----------
+    path : string
+        Path to a folder containing pickled flame info files
+
+    Returns
+    -------
+    flame_info : list
+        list of flame information dictionaries.
+
+    """
+    flame_info = []
+    for file in os.listdir(path):
+        with open(os.path.join(path, file), 'rb') as f:
+            flame_info.append(pickle.load(f))
+    return flame_info
+
+    return flame_info
