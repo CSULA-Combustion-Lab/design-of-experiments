@@ -6,6 +6,7 @@ Created on Fri Mar 20 09:52:04 2020
 """
 
 import os
+import shutil
 import copy
 import errno
 import pickle
@@ -21,7 +22,7 @@ ct.suppress_thermo_warnings() #Suppress cantera warnings!
 
 
 def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
-                         mgrid, msoret, loglev, safi):
+                         safi, par, Mingrid, Mul_soret, Loglevel):
     """
     Takes information from initializer and runs necessary functions to perform
     a one-dimensional simulation. Simulation results will be saved if booleans
@@ -52,15 +53,17 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
     mix_params : list
         A list of the two mixture parameters and mixtrue type used in creating
         a mixture.
-    mgrid : int
-        Number of points to be solved in the simulation
-    msoret : boolean
-        Multicomponent diffuction and Soret effect are calculated if true
-    loglev : int
-        A number from 1 to 10. The larger the number the more information that
-        is printed during the simulation to the user.
     safi : boolean
         If true simulation conditions and ranking results will be saved.
+    par : bool
+        If true, run simulations in paralle
+    Mingrid: int
+        Number of points to be solved in the simulation
+    Mul_soret : boolean
+        Multicomponent diffuction and Soret effect are calculated if true
+    Loglevel : int
+        A number from 1 to 10. The larger the number the more information that
+        is printed during the simulation to the user.
 
     Returns
     -------
@@ -69,10 +72,10 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
     """
     mechan = cf.model_folder(mech)
     condi = initialization(mechan, arrtype, pres, temp, fue, oxi, dilu,
-                           mix_params, mgrid, msoret, loglev)
+                           mix_params, Mingrid, Mul_soret, Loglevel)
     paralist = cf.case_maker(condi)
     flame_info, flame_info_unfiltered, siminfo = run_simulations(condi,
-                                                                  paralist)
+                                                                  paralist, par)
     if safi:
         file_saving(condi, flame_info, paralist, siminfo)
 
@@ -81,7 +84,7 @@ def run_flame_simulation(mech, arrtype, pres, temp, fue, oxi, dilu, mix_params,
 def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
                    diluent, mix_params, mingrid, mul_soret, loglevel):
     """
-    
+
 
     Parameters
     ----------
@@ -124,60 +127,24 @@ def initialization(mechanism, array_type, Press, Temperature, fuel, oxidizer,
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp],
-             'T/F': [multifuel, multioxidizer]}
+             'Files': [mechanism, flame_temp]}
 
     """
     #Working directory
     flame_temp = os.path.join(r'Flame_Files', 'temp_flame_files')
 
-    if type(oxidizer) is list:
-        multioxidizer = True
-    elif type(oxidizer) is str:
-        multioxidizer = False
-
-    if type(fuel) is list:
-        multifuel = True
-    elif type(fuel) is str:
-        multifuel = False
-
-    #Multifuel mixture percentage of total fuel
-    # fuel is a list of fuels and their percentages in the total fuel
-    #  odds are fuel name as a string
-    #  evens are percetage of previous fuel name in total fuel
-    # percentages should sum to 1 or script will not run
-    if multifuel:
-        check = 0
-        for c in range(1, len(fuel), 2):
-            check += fuel[c]
-        if not np.isclose(check, 1):
-            print('Error in Multifuel.'+
-                  'Sum of individual fuel percentage must add up to 1!')
-            sys.exit()
-
-    #Multioxidizer mixture percentage of total oxidizer
-    # fuel is a list of fuels and their percentages in the total fuel
-    #  odds are fuel name as a string
-    #  evens are percetage of previous fuel name in total fuel
-    # percentages should sum to 1 or script will not run
-    if multioxidizer:
-        check    = 0
-        for c in range(1, len(oxidizer), 2):
-            check += oxidizer[c]
-        if not np.isclose(check, 1):
-            print('Error in Multioxidizer.'+
-                  'Sum of individual fuel percentage must add up to 1!')
-            sys.exit()
+    oxidizer = cf.normalize_mixture(oxidizer)
+    fuel = cf.normalize_mixture(fuel)
+    diluent = cf.normalize_mixture(diluent)
 
     conditions = {'Parameters': [Press, Temperature, mix_params, array_type],
                   'Mixture': [fuel, diluent, oxidizer],
                   'Flame': [mingrid, mul_soret, loglevel],
-                  'Files': [mechanism, flame_temp],
-                  'T/F': [multifuel, multioxidizer]}
+                  'Files': [mechanism, flame_temp]}
     return conditions
 
 
-def run_simulations(conditions, paramlist):
+def run_simulations(conditions, paramlist, par):
     """
     Runs the simulation through all functions inlcuding the simulation
     calculations and the rankings.
@@ -190,27 +157,28 @@ def run_simulations(conditions, paramlist):
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp],
-             'T/F': [multifuel, multioxidizer]}
+             'Files': [mechanism, flame_temp]}
     paramlist : list
         Simulation case information the following structure:
         [[Pressure, Temperature, Mixture], ...]
+    par : bool
+        If true, run simulations in paralle
 
     Returns
     -------
     flame_info_filtered : list
         A filtered list where duplicate reactions in f_sens are summed together
     flame_info_unfiltered : list
-        Unfiltered list of dictionary information iof the results of the 
+        Unfiltered list of dictionary information iof the results of the
         simulation and conditions with the following structure:
          {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]}   
+                         at]}
     sim_info : list
         A list of information of from performing the simulation including
-        the time it took to run the simulations, the number of cases that 
+        the time it took to run the simulations, the number of cases that
         converged, and the duration of the function.
 
     """
@@ -221,7 +189,7 @@ def run_simulations(conditions, paramlist):
     print('Initial number of cases: '+format(len(paramlist)))
     print('\nStart of simulations...')
     sim_start  = time.time()
-    flame_info = cf.parallelize(paramlist, conditions, flame_sens)
+    flame_info = cf.parallelize(paramlist, conditions, flame_sens, par)
     sim_end    = time.time()
     sim_time   = sim_end - sim_start
     print('End of simulations')
@@ -267,8 +235,7 @@ def flame_sens(p, T, mix, cond):
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp],
-             'T/F': [multifuel, multioxidizer]}
+             'Files': [mechanism, flame_temp]}
 
     Returns
     -------
@@ -279,7 +246,7 @@ def flame_sens(p, T, mix, cond):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]}   
+                         at]}
 
     """
     at            = cond['Parameters'][3]
@@ -337,7 +304,7 @@ def flame_info_filter(flame_information, duplicate_reactions):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]}  
+                         at]}
     duplicate_reactions : dict
         Dictionary containing duplicate reactions of the following format:
         dup_rxns = {'Reaction Equation 1': [Rxn Number_a, Rxn Number_b]
@@ -377,8 +344,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
             {'Parameters': [Press, Temperature, mix_params, array_type],
              'Mixture': [fuel, diluent, oxidizer],
              'Flame': [mingrid, mul_soret, loglevel],
-             'Files': [mechanism, flame_temp],
-             'T/F': [multifuel, multioxidizer]}
+             'Files': [mechanism, flame_temp]}
     fla_inf : dict
         Information of the results of the simulation as well as simulation
         conditions with the following structure:
@@ -386,13 +352,13 @@ def file_saving(cond, fla_inf, p_list, s_info):
           'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]} 
+                         at]}
     p_list : list
         Simulation case information the following structure:
         [[Pressure, Temperature, Mixture], ...]
     s_info : list
         A list of information of from performing the simulation including
-        the time it took to run the simulations, the number of cases that 
+        the time it took to run the simulations, the number of cases that
         converged, and the duration of the function.
 
     Returns
@@ -435,6 +401,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     os.makedirs(figure_path)
     print('Directory Created')
 
+    shutil.copyfile('input.yaml', os.path.join(save_path, 'input.yaml'))
     print('\nCreating text file...')
     #Text Description
     filename  = 'Case Description.txt'
@@ -444,7 +411,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     text_description = ("This file provides simulation information.\n"
                         "The following information are the parameters "
                         "and cases simulated\n\n" +
-                        cf.parameters_string(p, T, mix_params, chem,
+                        cf.parameters_string('1D', p, T, mix_params, chem,
                                                Fuel_name, Oxidizer_name,
                                                Diluent_name) +
                         "\n\n======Flame Simulation Information======"

@@ -1,0 +1,95 @@
+# Input file for the design of experiments code. As a normal user, this is the
+# only file you should modify. After modifying this file, run
+# Simulation_Initializer.py in order to run all simulations, and/or run
+# Sensitized_Flame_Plotting.py to run all the plots.
+
+---
+## ~~~~~~~~~~~~~~~ Simulation options ~~~~~~~~~~~~~~~~~ ##
+# Simulation Types (0D, 1D, Burner)
+## 0D Simulates a no flame condition tracking species concentraion in time
+## 1D Simulates an adiabatic flame tracking species before, at, and after flame
+Simulation_Type: '1D'
+Mechanism: 'Shrestha Ammonia.cti' #Mechanism file
+Save_files: True # Save files for plotting script
+Plot_on_completion: True # Run the plotting script immediately after the simulation.
+
+## ~~~~~~~~~~~~~~~ Mixture options ~~~~~~~~~~~~~~~~~ ##
+Mixture_options:
+# Fuel, Oxidizer, and Diluent can either be a single species or mixture
+# For multichemical follow structure ['Chemical1', % of Total, ...] or use
+# a dictionary.
+# The percentage following the chemical name should sum up to 1
+    Fuel: 'NH3'
+    # Fuel     = ['CH4', .75, 'CO2', .25]
+    # Fuel: {'CH4': .75, 'CO2': .25}
+    Oxidizer: {'O2': 0.21, 'N2': 0.79}
+    Diluent: 'CH4'
+
+# Mixture_type choices:
+#  phi_oxi/dil specifies the equivalence ration and oxidizer to diluent ratio
+#  phi_fuel/dil specifies the equivalence ration and fuel to diluent ratio
+#  phi_fuel specifies the equivalence ratio and fuel mole fraction
+#  phi_oxi specifies the equivalence ratio and oxidizer mole fraction
+#  phi_dil specifies the equivalence ratio and diluent mole fraction
+#  fuel_dil specifies the fuel and diluent mole fractions
+#  oxi_dil specifies the oxidizer and diluent mole fractions
+#  oxi_fuel specifies the oxidizer and fuel mole fractions
+    Mixture_type: 'phi_fuel/dil'
+
+#Parameters
+# All parameters are lists of three numbers
+# First Number: Initial point
+# Second Number: End Point
+# Third Number: Number of points. If set to 1 only first point is evaluated
+# Mixture parameters. Not all of these will be used, depending on Mixture_type
+    Equivalence: [0.2, 5, 10] # Used in mixture types with phi
+    fraction_in_oxidizer_or_fuel: [0.1, 0.9, 10] # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
+    fuel_fraction: [0.01, 0.5, 15] # % of total mixture. Used in mixture types with fuel
+    oxidizer_fraction: [0.01, 0.9, 15] # % of total mixture. Used in mixture types with oxi
+
+# Thermodynamic parameters. P in atm, T in Kelvin
+    Pressure: [1, 1, 1]
+    Temperature: [300, 500, 1]
+
+# Array_type: 'log' or 'lin', specifying if thermodynamic and mixture
+# variables should vary in log- or linear- space
+    Array_type: 'lin'
+
+## ~~~~~~~~~~~~~~~ Zero-D simulation options ~~~~~~~~~~~~~~~~~ ##
+ZeroD_options:
+    SpecificSpecies: #Species of interest for rxn ranking data
+        -  'OH'
+    Starttime: 0     # In the case a reading is too early
+    Endtime: 0.001 # One milisecond
+    Delta_T: 100  # Ignore simulations if T change is larger than this value, indicating a flame.
+    threshold: 1e-6 # Ignore measurements below this mole fraction
+    Save_time: True # Save time for GUI
+
+
+## ~~~~~~~~~~~~~~~ Flame simulation options ~~~~~~~~~~~~~~~~~ ##
+Flame_options:
+    Mingrid: 200  # Minimum number of grid points in flame.
+    Mul_soret: False  # Include multicomponent diffusion and Soret effect?
+    Loglevel: 0  # Higher values print more information.
+
+...
+---
+## ~~~~~~~~~~~~~~~ Plotting options ~~~~~~~~~~~~~~~~~ ##
+# Which folder to plot? Ignored if Plot_on_completion is True
+# Give a string for the name of the folder, 1, or 2.
+# 1: Use the last folder that was analyzed.
+# 2: Use the last folder that was simulated
+Folder_name: 2
+
+# Reaction numbers of interest.
+Rxn_interest: [890]
+
+# Which four independent variables should be plotted?
+# Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P', or any species name.
+Four_Plot: ['NH3', 'CH4', 'Phi', 'Su']
+
+Min_speed: 0 # Minimum flame speed for plotting, in m/s
+Nrxns: 5 # Top n-reactions. Currently only used for flame case.
+Threshold: 0.5 # Threshold for rxn_interst to be above in average strength
+
+...

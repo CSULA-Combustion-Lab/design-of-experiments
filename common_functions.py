@@ -80,6 +80,49 @@ def duplicate_reactions(gas):
     return dup_rxns
 
 
+def normalize_mixture(mix):
+    """
+    Convert a mixture into a mixture dictionary, normalize mole fractions.
+
+    Parameters
+    ----------
+    mixture_list : list, str, or dict
+        [species1, molefrac1, species2, molefrac2....]
+        'species'
+        {species1: molefrac1, species2: molefrac2...}
+
+    Returns
+    -------
+    mixture_dict : dict
+        {species1: molefrac1, species2: molefrac2....}
+
+    """
+    if type(mix) is str:
+        mixture_dict = {mix: 1.0}
+
+    elif type(mix) is list:
+        total = sum(mix[1::2])
+        mixture_dict = {}
+        for i in range(0, len(mix), 2):
+            mixture_dict[mix[i]] = mix[i+1] / total
+
+    elif type(mix) is dict:
+        mixture_dict = {}
+        total = sum(mix.values())
+        for k, v in mix.items():
+            mixture_dict[k] = v / total
+
+    else:
+        msg = ('Fuel, diluent, or oxidizer input format is incorrect.'
+               ' It should be a string with the name of the component, a'
+               ' list of the format '
+               '[component1, quantity1, component2, quantity2...], or a dict '
+               '{comp1: quant1, comp2: quant2}')
+        raise TypeError(msg)
+
+    return mixture_dict
+
+
 def case_maker(cond):
     """Generate mixture and thermodynamic parameters for each simulation.
 
@@ -108,9 +151,9 @@ def case_maker(cond):
         Format is [[Pressure, Temperature, Mixture dictionary], [...], ...]
 
     """
-    Fuel_name     = cond['Mixture'][0]
-    Diluent_name  = cond['Mixture'][1]
-    Oxidizer_name = cond['Mixture'][2]
+    Fuel         = cond['Mixture'][0]
+    Diluent      = cond['Mixture'][1]
+    Oxidizer     = cond['Mixture'][2]
     Press        = cond['Parameters'][0]
     Temperature  = cond['Parameters'][1]
     mix_params   = cond['Parameters'][2]
@@ -137,31 +180,13 @@ def case_maker(cond):
     param2 = function(*mix_params[2])
     mix_type = mix_params[0]
 
-    # Deal with multi-fuel and multi-oxidizer
-    msg = ('Fuel or oxidizer input format is incorrect. It should be a string '
-           'with the name of the component, or a list of the format '
-           '[component1, quantity1, component2, quantity2...]')
-    if type(Fuel_name) is str:
-        Fuel = {Fuel_name: 1}
-    elif type(Fuel_name) is list:  # multi_fuel
-        Fuel = {}
-        for fl in range(0, len(Fuel_name), 2):
-            Fuel[Fuel_name[fl]] = Fuel_name[fl+1]
-    elif type(Fuel_name) is dict:
-        Fuel = Fuel_name
-    else:
-        raise ValueError(msg)
-
-    if type(Oxidizer_name) is str:
-        Oxidizer = {Oxidizer_name: 1}
-    elif type(Oxidizer_name) is list:  # multi_ox
-        Oxidizer = {}
-        for ox in range(0, len(Oxidizer_name), 2):
-            Oxidizer[Oxidizer_name[ox]] = Oxidizer_name[ox+1]
-    elif type(Oxidizer_name) is dict:
-        Oxidizer = Oxidizer_name
-    else:
-        raise ValueError(msg)
+    # Check that there isn't any overlap between fuel, oxidizer, and diluent
+    if len(Fuel.keys() & Diluent.keys()) > 0:
+        raise ValueError('Fuel and Diluent cannot contain the same species')
+    if len(Fuel.keys() & Oxidizer.keys()) > 0:
+        raise ValueError('Fuel and Oxidizer cannot contain the same species')
+    if len(Oxidizer.keys() & Diluent.keys()) > 0:
+        raise ValueError('Oxidizer and Diluent cannot contain the same species')
 
     # Create mixtures
     gas = ct.Solution(chem)
@@ -175,8 +200,9 @@ def case_maker(cond):
                 continue  # Impossible mixture
 
             # Mix the oxidizer with diluent
-            diluted_ox = {k: v * ox_to_dil for k, v in Oxidizer.items()}
-            diluted_ox[Diluent_name] = 1 - ox_to_dil
+            reduced_ox = {k: v * ox_to_dil for k, v in Oxidizer.items()}
+            reduced_dil = {k: v * (1 - ox_to_dil) for k, v in Diluent.items()}
+            diluted_ox = {**reduced_ox, **reduced_dil}
 
             gas.set_equivalence_ratio(equiv, Fuel, diluted_ox)
             mixlist.append(gas.mole_fraction_dict())
@@ -187,8 +213,9 @@ def case_maker(cond):
                 continue  # Impossible mixture
 
             # Mix the fuel with diluent
-            diluted_f = {k: v * f_to_dil for k, v in Fuel.items()}
-            diluted_f[Diluent_name] = 1 - f_to_dil
+            reduced_f = {k: v * f_to_dil for k, v in Fuel.items()}
+            reduced_dil = {k: v * (1 - f_to_dil) for k, v in Diluent.items()}
+            diluted_f = {**reduced_f, **reduced_dil}
 
             gas.set_equivalence_ratio(equiv, diluted_f, Oxidizer)
             mixlist.append(gas.mole_fraction_dict())
@@ -207,8 +234,9 @@ def case_maker(cond):
             var_total = sum([initial_mix[k] for k in Variable])
             if var_total < var_frac:
                 continue  # Cannot create mixture at this phi + fuel or oxidizer
-            mixture = {k: v*var_frac/var_total for k, v in initial_mix.items()}
-            mixture[Diluent_name] = 1 - var_frac / var_total
+            undil_mixture = {k: v*var_frac/var_total for k, v in initial_mix.items()}
+            dil_comp = {k: v * (1 - var_frac / var_total) for k, v in Diluent.items()}
+            mixture = {**undil_mixture, **dil_comp}
             mixlist.append(mixture)
 
     elif mix_type == 'oxi_fuel':
@@ -217,8 +245,8 @@ def case_maker(cond):
                 continue  # Impossible mixture
             reduced_fuel = {k: v * fuel_frac for k, v in Fuel.items()}
             reduced_ox = {k: v * oxi_frac for k, v in Oxidizer.items()}
-            mixture = {**reduced_fuel, **reduced_ox,
-                       Diluent_name: 1 - fuel_frac - oxi_frac}
+            reduced_dil = {k: v * (1 - fuel_frac - oxi_frac) for k, v in Diluent.items()}
+            mixture = {**reduced_fuel, **reduced_ox, **reduced_dil}
             mixlist.append(mixture)
 
     elif mix_type in ('fuel_dil', 'oxi_dil'):
@@ -234,7 +262,8 @@ def case_maker(cond):
             var2_frac = 1 - var1_frac - dil_frac
             reduced_var1 = {k: v*var1_frac for k, v in Variable1.items()}
             reduced_var2 = {k: v*var2_frac for k, v in Variable2.items()}
-            mixture = {**reduced_var1, **reduced_var2, Diluent_name: dil_frac}
+            reduced_dil = {k: v*dil_frac for k, v in Diluent.items()}
+            mixture = {**reduced_var1, **reduced_var2, **reduced_dil}
             mixlist.append(mixture)
 
     elif mix_type == 'phi_dil':
@@ -248,7 +277,8 @@ def case_maker(cond):
             oxi_frac  = sum([initial_mix[k] for k in Oxidizer])
             reduced_fuel = {k: v*fueloxi_frac*fuel_frac for k, v in Fuel.items()}
             reduced_oxi = {k: v*fueloxi_frac*oxi_frac for k, v in Oxidizer.items()}
-            mixture = {**reduced_fuel, **reduced_oxi, Diluent_name: dil_frac}
+            reduced_dil = {k: v*dil_frac for k, v in Diluent.items()}
+            mixture = {**reduced_fuel, **reduced_oxi, **reduced_dil}
             mixlist.append(mixture)
 
     else:
@@ -258,7 +288,7 @@ def case_maker(cond):
     return list(it.product(P, T, mixlist))
 
 
-def parallelize(param, cond, fun):
+def parallelize(param, cond, fun, parallel=True):
     """
     Parrallelize all cases found in param using information found from cond
     and calculated using function defined by fun.
@@ -269,10 +299,12 @@ def parallelize(param, cond, fun):
         Simulation case information with the following structure:
         [[Pressure, Temperature, Mixture], ...]
     cond : dict
-        A dictionary of the simulation information specific to the type of 
+        A dictionary of the simulation information specific to the type of
         simulation being performed.
     fun : Function
         Name of the function being used per simulation
+    parallel : bool
+        if True, run in parallel.
 
     Returns
     -------
@@ -290,10 +322,15 @@ def parallelize(param, cond, fun):
         #Number of cases to run on each processor, rounded up
         loops = [np.ceil(numcases/proc) for proc in range(1, cpu_count())]
         # First entry in loops with the minumum number. Add one because
-        # of 0-based indexing, add another in case one process is much slower.
-        proc = loops.index(min(loops))+2
+        # of 0-based indexing
+        # In the past, I added another in case one process is much slower, but
+        # This runs the risk of using all cpu's
+        proc = loops.index(min(loops))+1
     else: # More cpus than cases
         proc = numcases
+
+    if not parallel:
+        proc = 1  # Don't run in parallel.
 
     pool = Pool(processes=proc)
 
@@ -319,11 +356,13 @@ def parallelize(param, cond, fun):
     return outlist
 
 
-def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
+def parameters_string(p_type, P, T, mix_params, chem, fuel, oxidizer, diluent):
     """Return string of useful information.
 
     Parameters
     ----------
+    p_type : str
+        Problem type
     P : list
         [initial, final, # of points]
     T : list
@@ -354,6 +393,7 @@ def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
     mixture_text = '\n'.join(['\t\t{}: {}'.format(k, v) for
                               k, v in zip(labels, mix_params)])
     string = ("========================Parameters========================" +
+              "\nProblem type: " + p_type +
               "\nMechanism: " + chem + "\nFuel: " + str(fuel) +
               "\nOxidizer: " + str(oxidizer) + "\nDiluent: " +
               str(diluent) +
@@ -364,42 +404,42 @@ def parameters_string(P, T, mix_params, chem, fuel, oxidizer, diluent):
     return string
 
 
-def calculate_a(fuel, mech):
-    """
-    Calculates the stoichiometric ratio for a given mixture of fuel.
+# def calculate_a(fuel, mech):
+#     """
+#     Calculates the stoichiometric ratio for a given mixture of fuel.
 
-    Parameters
-    ----------
-    fuel : str or list
-        As a string the variable represents a single species of fuel being used.
-        As a list the variable represents multicomponent fuel species
-        followed by the percentage to the total fuel [Component1, % of total, ...]
-    mech : str
-        A .cti mechanism file containing all reaction and species information.
+#     Parameters
+#     ----------
+#     fuel : str or list
+#         As a string the variable represents a single species of fuel being used.
+#         As a list the variable represents multicomponent fuel species
+#         followed by the percentage to the total fuel [Component1, % of total, ...]
+#     mech : str
+#         A .cti mechanism file containing all reaction and species information.
 
-    Returns
-    -------
-    a : float
-        The stoichiometric ratio of the given fuel mixture
+#     Returns
+#     -------
+#     a : float
+#         The stoichiometric ratio of the given fuel mixture
 
-    """
-    #fuel C(x)H(y)O(z)
-    gas        = ct.Solution(mech)
-    fuel_index = gas.species(gas.species_index(fuel)).composition
-    if 'C' in fuel_index:
-        x = fuel_index['C']
-    else:
-        x = 0
-    if 'H' in fuel_index:
-        y = fuel_index['H']
-    else:
-        y = 0
-    if 'O' in fuel_index:
-        z = fuel_index['O']
-    else:
-        z = 0
-    a = x+y/4-z/2
-    return a
+#     """
+#     #fuel C(x)H(y)O(z)
+#     gas        = ct.Solution(mech)
+#     fuel_index = gas.species(gas.species_index(fuel)).composition
+#     if 'C' in fuel_index:
+#         x = fuel_index['C']
+#     else:
+#         x = 0
+#     if 'H' in fuel_index:
+#         y = fuel_index['H']
+#     else:
+#         y = 0
+#     if 'O' in fuel_index:
+#         z = fuel_index['O']
+#     else:
+#         z = 0
+#     a = x+y/4-z/2
+#     return a
 
 def update_progress(progress):
     """
@@ -437,7 +477,7 @@ def update_progress(progress):
 
 def mixture_percentage(components, mix):
     """
-    
+
 
     Parameters
     ----------
@@ -451,7 +491,7 @@ def mixture_percentage(components, mix):
     Raises
     ------
     KeyError
-        If components are missing in the mixture a 0.0 is returned if the 
+        If components are missing in the mixture a 0.0 is returned if the
         components is a string and a pass is used if the components is a list
     TypeError
         Component type is not listed. Function cannot be used with this type.
