@@ -11,7 +11,7 @@
 Simulation_Type: '1D'
 Mechanism: 'Li_model.cti' #Mechanism file
 Save_files: True # Save files for plotting script
-Plot_on_completion: False # Run the plotting script immediately after the simulation.
+Plot_on_completion: True # Run the plotting script immediately after the simulation.
 Parallel: True  # Run the simulations in parallel.
 
 ## ~~~~~~~~~~~~~~~ Mixture options ~~~~~~~~~~~~~~~~~ ##
@@ -43,7 +43,7 @@ Mixture_options:
 # Second Number: End Point
 # Third Number: Number of points. If set to 1 only first point is evaluated
 # Mixture parameters. Not all of these will be used, depending on Mixture_type
-    Equivalence: [0.8, 1.2, 2] # Used in mixture types with phi
+    Equivalence: [1.0, 1.1, 2] # Used in mixture types with phi
     fraction_in_oxidizer_or_fuel: [0.2, 0.3, 2] # X / (X+diluent) where X is O2 or fuel. Used for Oxi_dil or Fue_dil
     fuel_fraction: [0.01, 0.5, 15] # % of total mixture. Used in mixture types with fuel
     oxidizer_fraction: [0.01, 0.9, 15] # % of total mixture. Used in mixture types with oxi
@@ -77,10 +77,12 @@ Flame_options:
 ---
 ## ~~~~~~~~~~~~~~~ Plotting options ~~~~~~~~~~~~~~~~~ ##
 # Which folder to plot? Ignored if Plot_on_completion is True
-# Give a string for the name of the folder, 1, or 2.
+# Options:
+# String for the name of the folder
+# ['folder1', 'folder2', ...] to combine folders
 # 1: Use the last folder that was analyzed.
 # 2: Use the last folder that was simulated
-Folder_name: 2
+Folder_name: ['2021_06_16 14.02.11 Flame_Speed_Sens', '2021_06_16 11.02.00 Flame_Speed_Sens']
 
 # Reaction numbers of interest.
 Rxn_interest: [1]

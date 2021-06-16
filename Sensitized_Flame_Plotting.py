@@ -11,8 +11,11 @@ import csv
 import numpy
 import pickle
 import yaml
+import datetime
+import shutil
 from operator import itemgetter
 import matplotlib.pyplot as plt
+import Sensitized_Flame_Experiment as experiment
 dirname = os.path.normpath(os.path.dirname(__file__))
 plt.style.use(os.path.join(dirname, 'CSULA_Combustion.mplstyle'))
 #from tkinter import filedialog
@@ -720,8 +723,24 @@ def top_rxns(flame, nrxns):
                 n[1] = m[1]/rxn_str
     return top_rxns_list
 
+
+def check_compatible(folder, file1, file2):
+    f1 = os.path.join(folder, file1)
+    f2 = os.path.join(folder, file2)
+
+    input1 = list(yaml.safe_load_all(open(f1, 'r')))[0]
+    input2 = list(yaml.safe_load_all(open(f2, 'r')))[0]
+
+    assert input1['Simulation_Type'] == input2['Simulation_Type']
+    assert input1['Mechanism'] == input2['Mechanism']
+    assert input1['Mixture_options']['Fuel'] == input2['Mixture_options']['Fuel']
+    assert input1['Mixture_options']['Oxidizer'] == input2['Mixture_options']['Oxidizer']
+    assert input1['Mixture_options']['Diluent'] == input2['Mixture_options']['Diluent']
+
+
 def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
     """Main plotting script."""
+    multiple = False
     if Folder_name == '' or Folder_name == 1:
         try:
             with open('last run 1d.pkl', 'rb') as f:
@@ -729,28 +748,55 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
         except FileNotFoundError:
             print('last run 1d.pkl is missing - I do not know which folder was analyzed most recently.')
             Folder_name = 2
-    if Folder_name == 2:
+    elif Folder_name == 2:
         print('Plotting the most recent simulations.')
         folders = os.listdir('Flame_Sensitivity_Results')
         # Assuming this is always sorted in ascending order...
         Folder_name = [x for x in folders if x[:2] == '20'][-1]
-    print('Loading ' + Folder_name)
+    elif type(Folder_name) is list:
+        # Combine and load multiple simulations.
+        multiple = True
+        # Working directory
+        now = datetime.datetime.now()
+        directory = now.strftime("%Y_%m_%d %H.%M.%S Combined_sens_plots")
+        Load_path = os.path.join('Flame_Sensitivity_Results', directory)
+        figure_path = os.path.join(Load_path, 'Flame_Sensitivity_Plots')
+        os.makedirs(figure_path)
+
+        shutil.copyfile('input.yaml', os.path.join(Load_path, 'plot_input.yaml'))
+
+        count = 0
+        Flame_info = []
+        for load_dir in Folder_name:
+            full_dir = os.path.join('Flame_Sensitivity_Results', load_dir)
+            count += 1
+            shutil.copyfile(os.path.join(full_dir, 'input.yaml'),
+                            os.path.join(Load_path, 'input ' + str(count) + '.yaml'))
+
+            if count > 1:
+                # Check that most recent folder is compatible
+                check_compatible(Load_path, 'input 1.yaml', 'input ' + str(count) + '.yaml')
+
+            one_set = experiment.collect_flame_info(os.path.join(full_dir, 'all_flame_sims'))
+            Flame_info.extend(one_set)
+
+    print('Loading ' + str(Folder_name))
 
     # Save the loaded folder name
     with open('last run 1d.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
-    # Paths for loading and saving files
-    Load_path = 'Flame_Sensitivity_Results\\' + Folder_name
-    Plot_path = Load_path+'\\Flame_Sensitivity_Plots'
+    if not multiple:
+        Load_path = os.path.join('Flame_Sensitivity_Results', Folder_name)
+        # Open up text file with description of simulation
+        with open(os.path.join(Load_path, 'Case Description.txt'), 'r') as f:
+            print(f.read())
 
-    # Open up text file with description of simulation
-    with open(os.path.join(Load_path, 'Case Description.txt'), 'r') as f:
-        print(f.read())
+        # Import flame file found in corresponding folder
+        with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
+            Flame_info = pickle.load(f)
 
-    # Import flame file found in corresponding folder
-    with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
-        Flame_info = pickle.load(f)
+    Plot_path = os.path.join(Load_path, 'Flame_Sensitivity_Plots')
 
     # Create two lists of flame and no_flame created from flame_info
     Flame = []
