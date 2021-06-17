@@ -20,6 +20,7 @@ dirname = os.path.normpath(os.path.dirname(__file__))
 plt.style.use(os.path.join(dirname, 'CSULA_Combustion.mplstyle'))
 #from tkinter import filedialog
 
+
 def simple_four_plot(cond_dict, save_path, log, y_key,
                      conditions=['P', 'F', 'Phi', 'Oxi'], title=None,
                      fname=None):
@@ -56,13 +57,13 @@ def simple_four_plot(cond_dict, save_path, log, y_key,
 
     """
     fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
-    ax        = axes.flatten()
+    ax = axes.flatten()
 
     for a, condition, string in zip(ax, conditions,
                                     ['(a)', '(b)', '(c)', '(d)']):
         x_key = condition
         a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
-        a.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
+        a.annotate(xy=(0.90, 0.90), text=string, xycoords='axes fraction')
         a.set_xlabel(cond_dict[x_key][1])
         a.set_ylabel(cond_dict[y_key][1])
         if log:
@@ -75,8 +76,8 @@ def simple_four_plot(cond_dict, save_path, log, y_key,
     plt.close(fig)
 
 
-def rxn_strength_plots(f_info, cond_dict,  rxn_int, nrxns, threshold, save_path, log,
-                       conditions_a=['P', 'F', 'Phi', 'Oxi']):
+def rxn_strength_plots(f_info, cond_dict,  rxn_int, nrxns, threshold,
+                       save_path, log, conditions_a=['P', 'F', 'Phi', 'Oxi']):
     """
     Plots and saves figures of a specific reactions with its normalized
     sensitivity versus four specified conditions.
@@ -119,19 +120,8 @@ def rxn_strength_plots(f_info, cond_dict,  rxn_int, nrxns, threshold, save_path,
     """
     Rxn_Eq     = format(f_info[0]['Flame'][0][rxn_int][2])
     Rxn_Number = format(f_info[0]['Flame'][0][rxn_int][0]+1)  # 1-based
-    #List for strengths
 
     Sens_strength = []
-
-    #Lists for above threshold
-    P_threshold        = []
-    Phi_threshold      = []
-    F_threshold        = []
-    Oxygen_threshold   = []
-    Su_threshold       = []
-    Sens_str_threshold = []
-    T_threshold        = []
-
     for f in f_info:
         average_nrxns = rxn_average(f, nrxns)
         strength = f['Flame'][0][rxn_int][1]/average_nrxns
@@ -149,10 +139,9 @@ def rxn_strength_plots(f_info, cond_dict,  rxn_int, nrxns, threshold, save_path,
     simple_four_plot(cond_extended, save_path, log, 'Strength', conditions_a,
                      title='Reaction {}'.format(Rxn_Eq), fname=fname)
 
-    # Remove all simulation results
+    # Get results where strength is above the threshold.
     thresholded = {k: [[], v[1]] for k, v in cond_extended.items()}
     for n in range(len(Sens_strength)):
-        # Add simulation results back in if they're above the threshold
         if abs(Sens_strength[n]) >= threshold:
             for k in thresholded:
                 thresholded[k][0].append(cond_extended[k][0][n])
@@ -244,7 +233,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
         cond_dict = {'P': [Pressure, 'Pressure [atm]'],
                      'F': [Fuel, 'Fuel Mole Fraction'],
                      'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                     'O2':[Oxygen, 'Oxygen Fuel Mole Fraction'],
+                     'O2':[Oxygen, 'Oxidizer Fuel Mole Fraction'],
                      'T': [Tint, 'Temperature [K]']}
         conditions = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
                       ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
@@ -592,6 +581,11 @@ def top_rxns(flame, nrxns):
 
 
 def check_compatible(folder, file1, file2):
+    """Check that the two files belong to compatible simulations.
+
+    Must have the same simulation type, chemistry model, fuel, oxidizer,
+    and diluent."""
+
     f1 = os.path.join(folder, file1)
     f2 = os.path.join(folder, file2)
 
@@ -654,7 +648,7 @@ def organize_for_plotting(f_info, Four_plot):
         for key, index in [('T', 0), ('P', 1), ('Phi', 2), ('F', 9), ('Oxi', 10)]:
             cond_dict[key][0].append(f['Conditions'][index])
         cond_dict['Su'][0].append(f['Flame'][1])
-        max_num  = max_sens(f)[0]
+        max_num = max_sens(f)[0]
         cond_dict['Rxn'][0].append(max_num+1)
 
         for cond in Four_plot:
@@ -694,8 +688,8 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
         now = datetime.datetime.now()
         directory = now.strftime("%Y_%m_%d %H.%M.%S Combined_sens_plots")
         Load_path = os.path.join('Flame_Sensitivity_Results', directory)
-        figure_path = os.path.join(Load_path, 'Flame_Sensitivity_Plots')
-        os.makedirs(figure_path)
+        Plot_path = os.path.join(Load_path, 'Flame_Sensitivity_Plots')
+        os.makedirs(Plot_path)
 
         shutil.copyfile('input.yaml', os.path.join(Load_path, 'plot_input.yaml'))
 
@@ -722,6 +716,7 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
 
     if not multiple:
         Load_path = os.path.join('Flame_Sensitivity_Results', Folder_name)
+        Plot_path = os.path.join(Load_path, 'Flame_Sensitivity_Plots')
         # Open up text file with description of simulation
         with open(os.path.join(Load_path, 'Case Description.txt'), 'r') as f:
             print(f.read())
@@ -730,15 +725,10 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
         with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
             Flame_info = pickle.load(f)
 
-    Plot_path = os.path.join(Load_path, 'Flame_Sensitivity_Plots')
-
-    # Create two lists of flame and no_flame created from flame_info
+    # Remove simulations that didn't converge.
     Flame = []
-    No_flame = []
     for x in Flame_info:
-        if x['Flame'][0] is None:
-            No_flame.append(x)
-        else:
+        if x['Flame'][0] is not None:
             Flame.append(x)
 
     # If Flame list is empty plotting script will not occur
@@ -752,7 +742,7 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
         if x['Flame'][1] >= Min_speed:
             Flame_speed_filter.append(x)
 
-    # Note Flame and No_flame are dictionaries
+    # Note Flame is a list of dictionaries:
     # {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
     #  'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
     #                 Fuel_name, Oxidizer_name, Diluent_name,
