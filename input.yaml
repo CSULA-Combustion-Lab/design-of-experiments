@@ -88,7 +88,7 @@ Folder_name: ['2021_06_16 14.02.11 Flame_Speed_Sens', '2021_06_16 11.02.00 Flame
 Rxn_interest: [1]
 
 # Which four independent variables should be plotted?
-# Options are 'T', 'F', 'Phi', 'O2', 'Su', 'P', or any species name.
+# Options are 'T', 'F', 'Phi', 'Oxi', 'Su', 'P', or any species name.
 Four_Plot: ['NH3', 'CH4', 'Phi', 'Su']
 
 Min_speed: 0 # Minimum flame speed for plotting, in m/s

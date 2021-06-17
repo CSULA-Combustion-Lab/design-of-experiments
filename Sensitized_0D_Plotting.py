@@ -61,7 +61,7 @@ def rxn_plots(max_rxns, species, Array_Type, Plot_path, varnames):
                 'Phi': [r'Equivalence Ratio [$\phi$]', Equivalence,
                         'Equivalence'],
                 'F': ['Fuel Mole fraction', Fuel, 'Fuel'],
-                'O2': ['Oxygen Mole Fraction', Oxygen, 'Oxygen'],
+                'Oxi': ['Oxidizer Mole Fraction', Oxygen, 'Oxygen'],
                 'T': ['Temperature [K]', Temperature, 'Temperature']}
 
         for var in varnames:
@@ -154,7 +154,7 @@ def integrated_strength_plots(int_strength, species, Plot_path, rxn_num,
             'Phi': ['Equivalence Ratio', 'phi'],
             'F': ['Fuel Mole Fraction', 'fuel'],
             'T': ['Temperature [K]', 'temperature'],
-            'O2': ['Oxygen Mole Fraction', 'oxidizer']}
+            'Oxi': ['Oxidizer Mole Fraction', 'oxidizer']}
     file_format = '[{:}] Normalized Integrated Strength.png'.format
     for i in range(len(species[0])):
         spec = species[0][i]
@@ -402,8 +402,6 @@ def main(plot_inputs):
     Four_Plot = plot_inputs['Four_Plot']
     Threshold = plot_inputs['Threshold']
     Folder_name = plot_inputs['Folder_name']
-
-    print('Warning: Four_Plot is not used for 0D plotting yet.')
 
     if Folder_name == '' or Folder_name == 1:
         try:
