@@ -777,7 +777,7 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
                 # Check that most recent folder is compatible
                 check_compatible(Load_path, 'input 1.yaml', 'input ' + str(count) + '.yaml')
 
-            one_set = experiment.collect_flame_info(os.path.join(full_dir, 'all_flame_sims'))
+            one_set = experiment.collect_flame_info(full_dir)
             Flame_info.extend(one_set)
 
     print('Loading ' + str(Folder_name))

@@ -232,7 +232,7 @@ def load_filter_flame_info(conditions):
 
     """
     print('Loading and filtering flame information...')
-    flame_info = collect_flame_info(os.path.join(conditions['Files'][1], 'all_flame_sims'))
+    flame_info = collect_flame_info(conditions['Files'][1])
     filter_start = time.time()
     converged    = 0
     for x in flame_info:
@@ -458,6 +458,7 @@ def file_saving(cond, fla_inf, p_list, s_info):
     file = os.path.join(save_path, 'Flame Information.pkl')
     with open(file, 'wb') as f:
         pickle.dump(fla_inf, f)
+    shutil.rmtree(os.path.join(save_path, 'all_flame_sims')) # clean up individual flame files
     save_time_end = time.time()
     save_time = save_time_end - save_time_start
     print('Total File Save Time: '+format(save_time, '0.5f')+' seconds.\n')
@@ -518,12 +519,13 @@ if __name__ == "__main__":
 
 def collect_flame_info(path):
     """
-    Collect flame information from individual pickled files in path.
+    Collect flame information from individual pickled files or summary file.
 
     Parameters
     ----------
     path : string
-        Path to a folder containing pickled flame info files
+        Path to the main folder for a group of simulations, usually formatted
+        as Y_M_D H.M.S Flame_Speed_Sens
 
     Returns
     -------
@@ -531,10 +533,14 @@ def collect_flame_info(path):
         list of flame information dictionaries.
 
     """
-    flame_info = []
-    for file in os.listdir(path):
-        with open(os.path.join(path, file), 'rb') as f:
-            flame_info.append(pickle.load(f))
-    return flame_info
+    all_sim_path = os.path.join(path, 'all_flame_sims')
+    if os.path.exists(all_sim_path):  # Load each individual simulation
+        flame_info = []
+        for file in os.listdir(all_sim_path):
+            with open(os.path.join(all_sim_path, file), 'rb') as f:
+                flame_info.append(pickle.load(f))
+    else:
+        with open(os.path.join(path, 'Flame Information.pkl'), 'rb') as f:
+            flame_info = pickle.load(f)
 
     return flame_info
