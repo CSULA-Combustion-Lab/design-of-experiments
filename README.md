@@ -2,7 +2,7 @@
 Optimally design flow reactor experimental conditions with Sensiztized_0D_Experiment.py
 Optimally design flame experimental conditions with Sensitized_Flame_Experiment.py
 
-This is version 1.1. Some changes have been made after submission of the manuscript submitted to Frontiers in Mechanical Engineering. For the code version that was submitted for publication can be found [here](https://github.com/CSULA-Combustion-Lab/design-of-experiments/tree/52a925ae703ef777d7fc361940dd1863e1ca0124)
+This is version 1.1. Some changes have been made after submission of the [manuscript](https://doi.org/10.3389/fmech.2021.705586) submitted to Frontiers in Mechanical Engineering. For the code version that was submitted for publication can be found [here](https://github.com/CSULA-Combustion-Lab/design-of-experiments/tree/52a925ae703ef777d7fc361940dd1863e1ca0124)
 
 ## Simulation Initializer Usage
 The file `Simulation_Initializer.py` contains options that control the simulations. This is the major file that a typical user will modify.
@@ -94,4 +94,4 @@ Run Plotting Scripts
 [CSULA](https://www.calstatela.edu/faculty/jeff-santner)
 
 ## Publication
-For more details, see the publication in Frontiers in Mechanical Engineering: [citation will be added here]
+For more details, [see the publication in Frontiers in Mechanical Engineering](https://doi.org/10.3389/fmech.2021.705586)
