@@ -23,13 +23,13 @@ import common_functions as cf
 
 
 def function(array, dum=None):
-    time.sleep(1e-3)
+    time.sleep(0.5)
     return np.sum(array)
 
 
 def test_parallelize():
 
-    n = 1000
+    n = 10
     params = [[np.random.randint(0, 50, 10)] for i in range(n)]
 
     start = time.time()
@@ -37,10 +37,12 @@ def test_parallelize():
     for param in params:
         output_s.append(function(param))
     series = time.time() - start
+    print(start, series)
 
     start = time.time()
     output_p = cf.parallelize(params, None, function)
     parallel = time.time() - start
+    print(start, parallel)
 
     assert parallel / series < 0.8
     assert output_p == output_s

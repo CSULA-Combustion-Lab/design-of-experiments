@@ -516,7 +516,12 @@ def mixture_percentage(components, mix):
             except KeyError:  # Component isn't in mixture
                 pass
     elif type(components) is dict:
-        Percentage = sum((mix[key] for key in components))
+        Percentage = 0
+        for key in components:
+            try:
+                Percentage += mix[key]
+            except KeyError: # Component isn't in mixture
+                pass
     else:
         raise TypeError
 

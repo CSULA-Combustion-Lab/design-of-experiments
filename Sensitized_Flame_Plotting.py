@@ -11,91 +11,73 @@ import csv
 import numpy
 import pickle
 import yaml
+import datetime
+import shutil
 from operator import itemgetter
 import matplotlib.pyplot as plt
+import Sensitized_Flame_Experiment as experiment
 dirname = os.path.normpath(os.path.dirname(__file__))
 plt.style.use(os.path.join(dirname, 'CSULA_Combustion.mplstyle'))
 #from tkinter import filedialog
 
-def rxn_plots(f_info, save_path, log, conditions=['P', 'F', 'Phi', 'O2']):
+
+def simple_four_plot(cond_dict, save_path, log, y_key,
+                     conditions=['P', 'F', 'Phi', 'Oxi'], title=None,
+                     fname=None):
     """
-    Plots and saves figures of the reactions that were most sensitive per
-    simulation case per independant variable
+    Plots and saves 4-part figure.
+    All plots use y_key for their vertical axis. Horizontal axis determined by
+    conditions.
 
     Parameters
     ----------
-    f_info : dict
-        Information of the results of the simulation as well as simulation
+    cond_dict : dict
+        Information for plotting, from organize_for_plotting.
         conditions with the following structure:
-         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
-          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
-                         Fuel_name, Oxidizer_name, Diluent_name,
-                         Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]}
+        {'P': [list of pressures for all sims, 'Pressure (atm)'],
+             key: [List of that key for all sims, 'Axis label for that key']}
     save_path : str
         A string of the save path to the plots folder.
     log : boolean
         If true plots will use a logarithmic scale.
         If false plots will use a linear scale
+    y_key : str
+        Key to cond_dict indicating the variable to plot on the vertical axis.
     conditions : list, optional
         A list of variables to plot the sensitivities against
-        The default is ['P', 'F', 'Phi', 'O2'].
+        The default is ['P', 'F', 'Phi', 'Oxi'].
+    title : str, optional
+        Title of the figure.
+    fname : str, optional
+        Figure name, including extension
 
     Returns
     -------
     None.
 
     """
-    Tint     = f_info[0]['Conditions'][0]
-    Fue      = f_info[0]['Conditions'][6]
-    Oxi      = f_info[0]['Conditions'][7]
-    Pressure = []
-    Phi      = []
-    Fuel     = []
-    Oxidizer = []
-    Max_rxn  = []
-    for f in f_info:
-        max_rxn  = max_sens(f)
-        max_num  = max_rxn[0]
-        Max_rxn.append(max_num+1)
-        Pressure.append(f['Conditions'][1])
-        Phi.append(f['Conditions'][2])
-        Fuel.append(f['Conditions'][9])
-        Oxidizer.append(f['Conditions'][10])
-
     fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
-    ax        = axes.flatten()
-    cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel Mole Fraction '+str(Fue)],
-                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'O2': [Oxidizer, 'Oxygen Mole Fraction '+str(Oxi)],
-                 'T': [Tint, 'Temperature [K]'],
-                 'Rxn': [Max_rxn, 'Reaction #']}
+    ax = axes.flatten()
 
-    for var in conditions:
-        if var not in cond_dict.keys():
-            fmt = ('WARNING: {} is an invalid variable name for rxn_plots.'
-                   ' It must be in {}. Using [P, F, Phi, O2]')
-            print(fmt.format(var, list(cond_dict.keys())))
-            conditions = ['P', 'F', 'Phi', 'O2']
     for a, condition, string in zip(ax, conditions,
                                     ['(a)', '(b)', '(c)', '(d)']):
         x_key = condition
-        y_key = 'Rxn'
         a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
-        a.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
+        a.annotate(xy=(0.90, 0.90), text=string, xycoords='axes fraction')
         a.set_xlabel(cond_dict[x_key][1])
         a.set_ylabel(cond_dict[y_key][1])
         if log:
             a.set_xscale('log')
-        fig.suptitle('Initial Temperature: {:.0f} K'.format(Tint))
-        plt.savefig(save_path +
-                    '\\Max Reactions with Initial Temperature {:.0f} K.png'.format(Tint))
+    if fname is None:
+        fname = y_key + ' vs independent variables.png'
+    if title is not None:
+        fig.suptitle(title)
+    plt.savefig(os.path.join(save_path, fname))
     plt.close(fig)
 
 
-def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
-                       conditions_a=['P', 'F', 'Phi', 'O2']):
+def rxn_strength_plots(f_info, cond_dict,  rxn_int, nrxns, threshold,
+                       save_path, log, conditions_a=['P', 'F', 'Phi', 'Oxi']):
     """
     Plots and saves figures of a specific reactions with its normalized
     sensitivity versus four specified conditions.
@@ -110,8 +92,13 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
                          Fuel_name, Oxidizer_name, Diluent_name,
                          Fue_Percent, Oxi_Percent, Dil_Percent,
                          at]}
-    rxn_int : list
-        A list of reactions of interest to plot.
+    cond_dict : dict
+        Information for plotting, from organize_for_plotting.
+        conditions with the following structure:
+        {'P': [list of pressures for all sims, 'Pressure (atm)'],
+             key: [List of that key for all sims, 'Axis label for that key']}
+    rxn_int : int
+        Reaction number for reaction of interest to plot.
     nrxns : int
         An integer that defines the top n-reactions that are used to define the
         normalized sensitivity
@@ -132,111 +119,52 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
 
     """
     Rxn_Eq     = format(f_info[0]['Flame'][0][rxn_int][2])
-    Rxn_Number = format(f_info[0]['Flame'][0][rxn_int][0]+1)
-    #List for strengths
-    Pressure      = []
-    Phi           = []
-    Fuel          = []
-    Oxygen        = []
-    Su            = []
+    Rxn_Number = format(f_info[0]['Flame'][0][rxn_int][0]+1)  # 1-based
+
     Sens_strength = []
-    Tint          = []
-    #Lists for above threshold
-    P_threshold        = []
-    Phi_threshold      = []
-    F_threshold        = []
-    Oxygen_threshold   = []
-    Su_threshold       = []
-    Sens_str_threshold = []
-    T_threshold        = []
-
-    species_of_interest = {}
-    for cond in conditions_a:
-        if cond not in ['T', 'F', 'Phi', 'O2', 'Su', 'P']:
-            species_of_interest[cond] = []
-
     for f in f_info:
         average_nrxns = rxn_average(f, nrxns)
         strength = f['Flame'][0][rxn_int][1]/average_nrxns
         Sens_strength.append(strength)
-        Tint.append(f['Conditions'][0])
-        Pressure.append(f['Conditions'][1])
-        Phi.append(f['Conditions'][2])
-        Fuel.append(f['Conditions'][9])
-        Oxygen.append(f['Conditions'][10])
-        Su.append(f['Flame'][1])
-        for cond in conditions_a:
-            if cond not in ['T', 'F', 'Phi', 'O2', 'Su', 'P']:
-                # This must be a species name. search for that species
-                try:
-                    species_of_interest[cond].append(f['Conditions'][5][cond])
-                except KeyError:
-                    species_of_interest[cond].append(0)
 
-    s_of_interest = {k: [v, k + ' Mole Fraction', None] for k, v in
-                     species_of_interest.items()}
+    # Sanity check
+    for k, v in cond_dict.items():
+        assert len(v[0]) == len(Sens_strength)
 
+    cond_extended = {**cond_dict,
+                     'Strength': [Sens_strength, r'$\hat S_{'+Rxn_Eq+'}$']}
+
+    fname = ('Reaction ' + Rxn_Number + ' Normalized Strength against top ' +
+            format(nrxns) + ' rxns.png')
+    simple_four_plot(cond_extended, save_path, log, 'Strength', conditions_a,
+                     title='Reaction {}'.format(Rxn_Eq), fname=fname)
+
+    # Get results where strength is above the threshold.
+    thresholded = {k: [[], v[1]] for k, v in cond_extended.items()}
     for n in range(len(Sens_strength)):
         if abs(Sens_strength[n]) >= threshold:
-            P_threshold.append(f_info[n]['Conditions'][1])
-            Phi_threshold.append(f_info[n]['Conditions'][2])
-            F_threshold.append(f_info[n]['Conditions'][9])
-            Oxygen_threshold.append(f_info[n]['Conditions'][10])
-            Su_threshold.append(f['Flame'][1])
-            Sens_str_threshold.append(Sens_strength[n])
-            T_threshold.append(f_info[n]['Conditions'][0])
+            for k in thresholded:
+                thresholded[k][0].append(cond_extended[k][0][n])
 
-    #Dictionary organized as follow 'Key': [Data, axis-label, Data_threshold]
-    cond_dict = {'P': [Pressure, 'Pressure [atm]', P_threshold],
-                 'F': [Fuel, 'Fuel Mole Fraction', F_threshold],
-                 'Phi': [Phi, 'Equivalence Ratio [$\phi$]', Phi_threshold],
-                 'O2': [Oxygen, 'Oxygen Mole Fraction', Oxygen_threshold],
-                 'T': [Tint, 'Temperature [K]', T_threshold],
-                 'Su': [Su, 'Flame Speed [m/s]', Su_threshold],
-                 'Strength': [Sens_strength, r'$\hat S_{'+Rxn_Eq+'}$',
-                              Sens_str_threshold]}
-    cond_dict = {**cond_dict, **s_of_interest}  # Add species mole fractions
-
-    figa, axesa = plt.subplots(nrows=2, ncols=2, sharey=True)
-    axa         = axesa.flatten()
-
-    T_initials = set(Tint)
-    T_fmt = 'Initial Temperature = ' + ', '.join(['{:.0f} K' for x in T_initials])
-    for a, condition, string in zip(axa, conditions_a,
-                                    ['(a)', '(b)', '(c)', '(d)']):
-        x_key = condition
-        y_key = 'Strength'
-        a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
-        a.annotate(xy=(0.90,0.90), text=string, xycoords='axes fraction')
-        a.set_xlabel(cond_dict[x_key][1])
-        a.set_ylabel(cond_dict[y_key][1])
-        if log:
-            a.set_xscale('log')
-
-        figa.suptitle(('Reaction {}\n' + T_fmt).format(Rxn_Eq, *T_initials))
-        plt.savefig(save_path+'\\Reaction '+Rxn_Number+
-                    ' Average Strength against top '+format(nrxns)+' rxns.png')
-    plt.close(figa)
-
-    if not len(Sens_str_threshold) == 0:
+    if not len(thresholded['Strength'][0]) == 0:
         figb, axesb  = plt.subplots(nrows=2, ncols=3)
         axb          = axesb.flatten()
-        conditions_b = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
-                        ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
+        conditions_b = [('P', 'F'), ('P', 'Phi'), ('P','Oxi'),
+                        ('F', 'Phi'), ('F', 'Oxi'), ('Oxi', 'Phi')]
         for a, condition in zip(axb, conditions_b):
             x_key = condition[0]
             y_key = condition[1]
-            a.plot(cond_dict[x_key][2], cond_dict[y_key][2])
-            a.set_xlabel(cond_dict[x_key][1])
-            a.set_ylabel(cond_dict[y_key][1])
+            a.plot(thresholded[x_key][0], thresholded[y_key][0])
+            a.set_xlabel(thresholded[x_key][1])
+            a.set_ylabel(thresholded[y_key][1])
             if log:
                 a.set_xscale('log')
             if log:
                 a.set_yscale('log')
 
-            figb.suptitle(('Reaction {}\n Threshold >= {:.1f}, ' + T_fmt).format(Rxn_Eq, threshold, *T_initials))
-            fname = ('Reaction {} Average Strength with ' + T_fmt + '.png').format(Rxn_Number, *T_initials)
-            plt.savefig(os.path.join(save_path, fname))
+        figb.suptitle('Reaction {}\n Threshold >= {:.1f}, '.format(Rxn_Eq, threshold))
+        fname = 'Reaction {}  Strength above threshold.png'.format(Rxn_Number)
+        plt.savefig(os.path.join(save_path, fname))
         plt.close(figb)
     else:
         print('Reaction: '+str(f_info[0]['Flame'][0][rxn_int][2])+
@@ -246,11 +174,11 @@ def rxn_strength_plots(f_info, rxn_int, nrxns, threshold, save_path, log,
     figc, axc = plt.subplots(nrows=1, ncols=1)
     x_key = 'Su'
     y_key = 'Strength'
-    axc.plot(cond_dict[x_key][0], cond_dict[y_key][0])
-    axc.set(xlabel=cond_dict[x_key][1], ylabel=cond_dict[y_key][1],
+    axc.plot(cond_extended[x_key][0], cond_extended[y_key][0])
+    axc.set(xlabel=cond_extended[x_key][1], ylabel=cond_extended[y_key][1],
             title='Normalized Sensitivity of Reaction '+Rxn_Eq+
             ' vs. Flame Speed')
-    fname = ('Reaction {} Normalized Sensitivity vs Flame speed with ' + T_fmt + '.png').format(Rxn_Number, *T_initials)
+    fname = ('Reaction {} Normalized Sensitivity vs Flame.png').format(Rxn_Number)
     figc.savefig(os.path.join(save_path, fname))
     plt.close(figc)
 
@@ -305,7 +233,7 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
         cond_dict = {'P': [Pressure, 'Pressure [atm]'],
                      'F': [Fuel, 'Fuel Mole Fraction'],
                      'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                     'O2':[Oxygen, 'Oxygen Fuel Mole Fraction'],
+                     'O2':[Oxygen, 'Oxidizer Fuel Mole Fraction'],
                      'T': [Tint, 'Temperature [K]']}
         conditions = [('P', 'F'), ('P', 'Phi'), ('P','O2'),
                       ('F', 'Phi'), ('F', 'O2'), ('O2', 'Phi')]
@@ -331,75 +259,6 @@ def rxn_interest_plots(f_info, rxn_int, save_path, log):
     else:
         print('Reaction Number '+str(Rxn_num)+', Reaction: '+str(Rxn_name)+
               ' shows no cases where it is most sensitive reaction')
-
-
-def flame_speed_plots(f_info, save_path, log):
-    """
-    Plots and saves figures of simulations where the flame speed is above
-    the minumum flame speed defined by the user. The plots show two independant
-    variables where the conditions have been met.
-
-    Parameters
-    ----------
-    f_info : dict
-        Information of the results of the simulation as well as simulation
-        conditions with the following structure:
-         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
-          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
-                         Fuel_name, Oxidizer_name, Diluent_name,
-                         Fue_Percent, Oxi_Percent, Dil_Percent,
-                         at]}
-    save_path : str
-        A string of the save path to the plots folder.
-    log : boolean
-        If true plots will use a logarithmic scale.
-        If false plots will use a linear scale
-
-    Returns
-    -------
-    None.
-
-    """
-    Tint     = f_info[0]['Conditions'][0]
-    Pressure = []
-    Phi      = []
-    Fuel     = []
-    Oxidizer = []
-    Su       = []
-    Flame_T  = []
-    for s in f_info:
-        Pressure.append(s['Conditions'][1])
-        Phi.append(s['Conditions'][2])
-        Fuel.append(s['Conditions'][9])
-        Oxidizer.append(s['Conditions'][10])
-        Su.append(s['Flame'][1])
-        Flame_T.append(s['Flame'][3])
-
-    fig, axes = plt.subplots(nrows=2, ncols=2, sharey=True)
-    ax        = axes.flatten()
-    #Dictionary organized as follow 'Key': [Data, axis-label]
-    cond_dict = {'P': [Pressure, 'Pressure [atm]'],
-                 'F': [Fuel, 'Fuel Mole Fraction'],
-                 'Phi':[Phi, 'Equivalence Ratio [$\phi$]'],
-                 'Oxi':[Oxidizer, 'Oxygen Mole Fraction'],
-                 'T': [Tint, 'Temperature [K]'],
-                 'Su': [Su, 'Su [m/s]'],
-                 'Flame_T': [Flame_T, 'Flame Temperature [K]']}
-    conditions = ['P', 'F', 'Phi', 'Oxi']
-    for a, condition in zip(ax, conditions):
-        x_key = condition
-        y_key = 'Su'
-        a.plot(cond_dict[x_key][0], cond_dict[y_key][0], ls='none',
-                marker='o', mfc='none', mec='k')
-        a.plot(cond_dict[x_key][0], cond_dict[y_key][0])
-        a.set_xlabel(cond_dict[x_key][1])
-        a.set_ylabel(cond_dict[y_key][1])
-        if log:
-            a.set_xscale('log')
-        fig.suptitle('Initial Temperature: '+format(Tint, '.0f')+' K')
-        plt.savefig(save_path+'\\Flame Speed vs. Independant Variables with'
-                    ' Initial Temperature '+format(Tint, '.0f')+'K.png')
-    plt.close(fig)
 
 
 def max_rxn_csv(f_info, save_path):
@@ -720,8 +579,96 @@ def top_rxns(flame, nrxns):
                 n[1] = m[1]/rxn_str
     return top_rxns_list
 
+
+def check_compatible(folder, file1, file2):
+    """Check that the two files belong to compatible simulations.
+
+    Must have the same simulation type, chemistry model, fuel, oxidizer,
+    and diluent."""
+
+    f1 = os.path.join(folder, file1)
+    f2 = os.path.join(folder, file2)
+
+    input1 = list(yaml.safe_load_all(open(f1, 'r')))[0]
+    input2 = list(yaml.safe_load_all(open(f2, 'r')))[0]
+
+    assert input1['Simulation_Type'] == input2['Simulation_Type']
+    assert input1['Mechanism'] == input2['Mechanism']
+    assert input1['Mixture_options']['Fuel'] == input2['Mixture_options']['Fuel']
+    assert input1['Mixture_options']['Oxidizer'] == input2['Mixture_options']['Oxidizer']
+    assert input1['Mixture_options']['Diluent'] == input2['Mixture_options']['Diluent']
+
+
+def organize_for_plotting(f_info, Four_plot):
+    """
+    Organize flame info to make it easier to plot.
+
+    This was previously done separately in each plotting function, it was moved
+    here for consistency and cleanliness. It includes any species requested in
+    Four_plot, but doesn't include calculated items like sensitivity strength.
+
+    Parameters
+    ----------
+    f_info : list
+        List of dicts with results of the simulation as well as simulation
+        conditions with the following structure:
+         {'Flame': [f_sens, Su, flame_rho, flame_T, mg, ms],
+          'Conditions': [T, p, phi, Fuel, Oxidizer, mix,
+                         Fuel_name, Oxidizer_name, Diluent_name,
+                         Fue_Percent, Oxi_Percent, Dil_Percent,
+                         at]}
+    nrxns : int
+        An integer that defines the top n-reactions that are used to define the
+        normalized sensitivity
+    Four_Plot : list
+        A list of variables to plot sensitivities against
+
+    Returns
+    -------
+    condition_dict : dict
+        Dictionary that is organized for plotting as below:
+            {'P': [list of pressures for all sims, 'Pressure (atm)'],
+             key: [List of that key for all sims, 'Axis label for that key']}
+
+    """
+    cond_dict = {'P': [[], 'Pressure [atm]'],
+                 'F': [[], 'Fuel Mole Fraction'],
+                 'Phi': [[], r'Equivalence Ratio [$\phi$]'],
+                 'Oxi': [[], 'Oxidizer Mole Fraction'],
+                 'T': [[], 'Temperature [K]'],
+                 'Su': [[], 'Flame Speed [m/s]'],
+                 'Rxn': [[], 'Reaction #']}
+
+    species_of_interest = {}
+    for cond in Four_plot:  # It's a species, search for it later.
+        if cond not in cond_dict.keys():
+            species_of_interest[cond] = []
+
+    for f in f_info:
+        for key, index in [('T', 0), ('P', 1), ('Phi', 2), ('F', 9), ('Oxi', 10)]:
+            cond_dict[key][0].append(f['Conditions'][index])
+        cond_dict['Su'][0].append(f['Flame'][1])
+        max_num = max_sens(f)[0]
+        cond_dict['Rxn'][0].append(max_num+1)
+
+        for cond in Four_plot:
+            if cond not in cond_dict.keys():
+                # This must be a species name. search for that species
+                try:
+                    species_of_interest[cond].append(f['Conditions'][5][cond])
+                except KeyError:
+                    species_of_interest[cond].append(0)
+
+    s_of_interest = {k: [v, k + ' Mole Fraction', None] for k, v in
+                     species_of_interest.items()}
+
+    condition_dict = {**cond_dict, **s_of_interest}  # Add species mole fractions
+    return condition_dict
+
+
 def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
     """Main plotting script."""
+    multiple = False
     if Folder_name == '' or Folder_name == 1:
         try:
             with open('last run 1d.pkl', 'rb') as f:
@@ -729,36 +676,59 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
         except FileNotFoundError:
             print('last run 1d.pkl is missing - I do not know which folder was analyzed most recently.')
             Folder_name = 2
-    if Folder_name == 2:
+    elif Folder_name == 2:
         print('Plotting the most recent simulations.')
         folders = os.listdir('Flame_Sensitivity_Results')
         # Assuming this is always sorted in ascending order...
         Folder_name = [x for x in folders if x[:2] == '20'][-1]
-    print('Loading ' + Folder_name)
+    elif type(Folder_name) is list:
+        # Combine and load multiple simulations.
+        multiple = True
+        # Working directory
+        now = datetime.datetime.now()
+        directory = now.strftime("%Y_%m_%d %H.%M.%S Combined_sens_plots")
+        Load_path = os.path.join('Flame_Sensitivity_Results', directory)
+        Plot_path = os.path.join(Load_path, 'Flame_Sensitivity_Plots')
+        os.makedirs(Plot_path)
+
+        shutil.copyfile('input.yaml', os.path.join(Load_path, 'plot_input.yaml'))
+
+        count = 0
+        Flame_info = []
+        for load_dir in Folder_name:
+            full_dir = os.path.join('Flame_Sensitivity_Results', load_dir)
+            count += 1
+            shutil.copyfile(os.path.join(full_dir, 'input.yaml'),
+                            os.path.join(Load_path, 'input ' + str(count) + '.yaml'))
+
+            if count > 1:
+                # Check that most recent folder is compatible
+                check_compatible(Load_path, 'input 1.yaml', 'input ' + str(count) + '.yaml')
+
+            one_set = experiment.collect_flame_info(full_dir)
+            Flame_info.extend(one_set)
+
+    print('Loading ' + str(Folder_name))
 
     # Save the loaded folder name
     with open('last run 1d.pkl', 'wb') as f:
         pickle.dump(Folder_name, f)
 
-    # Paths for loading and saving files
-    Load_path = 'Flame_Sensitivity_Results\\' + Folder_name
-    Plot_path = Load_path+'\\Flame_Sensitivity_Plots'
+    if not multiple:
+        Load_path = os.path.join('Flame_Sensitivity_Results', Folder_name)
+        Plot_path = os.path.join(Load_path, 'Flame_Sensitivity_Plots')
+        # Open up text file with description of simulation
+        with open(os.path.join(Load_path, 'Case Description.txt'), 'r') as f:
+            print(f.read())
 
-    # Open up text file with description of simulation
-    with open(os.path.join(Load_path, 'Case Description.txt'), 'r') as f:
-        print(f.read())
+        # Import flame file found in corresponding folder
+        with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
+            Flame_info = pickle.load(f)
 
-    # Import flame file found in corresponding folder
-    with open(os.path.join(Load_path, 'Flame Information.pkl'), 'rb') as f:
-        Flame_info = pickle.load(f)
-
-    # Create two lists of flame and no_flame created from flame_info
+    # Remove simulations that didn't converge.
     Flame = []
-    No_flame = []
     for x in Flame_info:
-        if x['Flame'][0] is None:
-            No_flame.append(x)
-        else:
+        if x['Flame'][0] is not None:
             Flame.append(x)
 
     # If Flame list is empty plotting script will not occur
@@ -772,7 +742,7 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
         if x['Flame'][1] >= Min_speed:
             Flame_speed_filter.append(x)
 
-    # Note Flame and No_flame are dictionaries
+    # Note Flame is a list of dictionaries:
     # {'Flame': [flame_sens, Su, flame_rho, flame_T, mg, ms],
     #  'Conditions': [Tin, P, Phi, Fuel, Oxidizer, Mix,
     #                 Fuel_name, Oxidizer_name, Diluent_name,
@@ -789,17 +759,24 @@ def main(Folder_name, Rxn_interest, Four_Plot, Min_speed, Nrxns, Threshold):
 
     Max_rxn_cond, Max_rxns_dict, M = max_rxn_csv(Flame_speed_filter, Load_path)
     T_Rxn_List = top_nrxns_csv(Flame_speed_filter, Nrxns, Load_path)
-    rxn_plots(Flame_speed_filter, Plot_path, Logspace)
-    flame_speed_plots(Flame_speed_filter, Plot_path, Logspace)
+
+    condition_dict = organize_for_plotting(Flame_speed_filter, Four_Plot)
+    simple_four_plot(condition_dict, Plot_path, Logspace, 'Su', Four_Plot)
+    simple_four_plot(condition_dict, Plot_path, Logspace, 'Rxn', Four_Plot)
+
     Average_Sensitivities, Topnrxns = average_sens_csv(Flame_speed_filter,
                                                        Nrxns, Load_path)
     if not len(Rxn_interest) == 0:
         for Rxns in Rxn_interest:
-            rxn_strength_plots(Flame_speed_filter, Rxns, Nrxns,
+            print('Plotting for reaction ' + str(Rxns))
+            rxn_strength_plots(Flame_speed_filter, condition_dict, Rxns, Nrxns,
                                Threshold, Plot_path, Logspace, Four_Plot)
             rxn_interest_plots(Flame_speed_filter, Rxns, Plot_path, Logspace)
     for Trxns in Topnrxns:
-        rxn_strength_plots(Flame_speed_filter, Trxns, Nrxns,
+        if Trxns in Rxn_interest:
+            continue
+        print('Plotting for reaction ' + str(Trxns))
+        rxn_strength_plots(Flame_speed_filter, condition_dict, Trxns, Nrxns,
                            Threshold, Plot_path, Logspace, Four_Plot)
         rxn_interest_plots(Flame_speed_filter, Trxns, Plot_path, Logspace)
 
