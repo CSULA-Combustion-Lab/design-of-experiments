@@ -51,6 +51,11 @@ class GUI(ttk.Frame):
         # Other buttons
         plot_button = ttk.Button(self, text='Plot', command=self.plot)
         plot_button.grid(row=0, column=2)
+        ttk.Label(self, text='Min. # of reactions:').grid(row=0, column=3)
+        self.n = tkinter.IntVar()
+        n_entry = ttk.Entry(self, textvariable=self.n)
+        self.n.set(7)
+        n_entry.grid(row=0, column=4)
 
         # Build empty grid for conditions
         self.max_cases = 7
@@ -91,10 +96,10 @@ class GUI(ttk.Frame):
     def pick_folder(self):
         """Chose the folder. """
         # TEMP
-        self.workingdir = r'C:\Users\jsantne\Documents\GitHub\design-of-experiments\Flame_Sensitivity_Results\Methanol Tighter range'
-        # self.workingdir = filedialog.askdirectory(
-        #         title='Select folder',
-        #         initialdir=os.path.join(os.getcwd(), 'Flame_Sensitivity_Results'))
+        # self.workingdir = r'C:\Users\jsantne\Documents\GitHub\design-of-experiments\Flame_Sensitivity_Results\Methanol Tighter range'
+        self.workingdir = filedialog.askdirectory(
+                title='Select folder',
+                initialdir=os.path.join(os.getcwd(), 'Flame_Sensitivity_Results'))
         self.workingdir_var.set(os.path.split(self.workingdir)[1])
         self.set_dropdown_menus_and_info()
 
@@ -174,7 +179,7 @@ class GUI(ttk.Frame):
             else:
                 self.cell_data[(row, 0)].set("Impossible or didn't converge.")
         if len(sens) > 0:
-            sens_plot(sens, labels)
+            sens_plot(sens, labels, self.n.get())
 
 
 def sens_plot(sens, labels, n=7):
