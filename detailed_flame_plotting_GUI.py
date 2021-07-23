@@ -13,6 +13,7 @@ from tkinter import scrolledtext
 import numpy as np
 import yaml
 import pickle
+import matplotlib.pyplot as plt
 import cantera
 import common_functions as cf
 import Simulation_Initializer
@@ -161,10 +162,71 @@ class GUI(ttk.Frame):
     def plot(self):
         with open(self.workingdir + '/Flame Information.pkl', 'rb') as f:
             Flame_info = pickle.load(f)
-
+        labels = []
+        sens = []
         for row in range(self.max_cases):
-            case = find_case(self.cell_data, row, self.headings,
+            case, label = find_case(self.cell_data, row, self.headings,
                              self.mixture_type, self.chemfile, Flame_info)
+            if case is not None and case['Flame'][0] is not None:
+                labels.append(label)
+                sens.append(case['Flame'][0])
+                self.cell_data[(row, 0)].set(u'\u2713')  # Check mark
+            else:
+                self.cell_data[(row, 0)].set("Impossible or didn't converge.")
+        if len(sens) > 0:
+            sens_plot(sens, labels)
+
+
+def sens_plot(sens, labels, n=7):
+    # Sort them
+    for condition in sens:
+        condition.sort(key=lambda x: abs(x[1]), reverse=True)
+    reactions = []
+    rank = 0
+    while len(reactions) < n:
+        # This while loop will find at least the "n" most sensitive reactions
+        # among all conditions.
+        for condition in sens:
+            rxn = condition[rank][2]
+            if rxn not in reactions:
+                reactions.append(rxn)
+        rank += 1
+    sens_plot = []
+    for rxn in reactions:
+        # This loop will populate the sensitivities to plot
+        intermediate = []
+        for condition in sens:
+            intermediate.append([s[1] for s in condition if s[2] == rxn][0])
+        sens_plot.append(intermediate)
+    sens_plot = np.array(sens_plot)
+
+    n = len(reactions)  # Adjust in case extra reactions were found
+    fig, ax = plt.subplots()
+    barheight = 1 / (len(labels) + 1)
+    ax.grid(axis='x', which='major', ls='--')
+    # ax.grid(axis='y', which='minor', c='k', ls='.')
+
+    for i, label in enumerate(labels):
+        ylocs = np.arange(n) + i * barheight
+        ax.barh(ylocs, sens_plot[:, i], height=barheight, label=label,
+                align='center')
+
+    for y in np.arange(n):
+        ax.axhline(y - barheight, c='k', ls='--')
+
+    ax.set_yticks(np.arange(n) + barheight * (len(labels) - 1) / 2)
+    ax.set_yticklabels(reactions, rotation=30, fontsize=15)
+    ax.set_yticks(np.arange(n), minor=True)
+#    ax.tick_params(axis='y', which='minor', bottom='off')
+    ax.invert_yaxis()
+    ax.axvline(c='k', ls='-')  # Why doesn't this show up?
+    ax.set_xlabel('Normalized Sensitivity')
+    ax.legend()
+    # ax.set_ylim([max(ylocs)+0.5, min(ylocs)-0.5])
+    # fig.tight_layout()
+    fig.show()
+
+
 
 
 
@@ -176,7 +238,10 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
     var2 = cell_data[(row, 4)].get()
 
     if any([x == 0.0 for x in [T, P, var1, var2]]):
-        return None
+        return None, None
+
+    label = 'T={} K, P={} atm, {}={}, {}={}'.format(T, P, headings[3].get(),
+                                                    var1, headings[4].get(), var2)
 
     # use cf.case_maker to create the target mixture
     flame_cond = flame_info[0]['Conditions']
@@ -190,7 +255,7 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
         target_mix = cf.case_maker(cond)[0]
     except IndexError:  # Impossible Mixture
         print('Mixture is impossible with {}, {}, {}, {}'.format(T, P, var1, var2))
-        return None
+        return None, label
     for case in flame_info:
         cond = case['Conditions']
         mix = cond[5]
@@ -199,11 +264,11 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
             array_1 = np.array([target_mix[2][key] for key in species])
             array_2 = np.array([mix[key] for key in species])
             if np.allclose(array_1, array_2, rtol=3e-3):
-                return case
+                return case, label
 
     print('This case was not found')
     print(target_mix)
-    return None
+    return None, None
 
 
 def _reset_option_menu(options_menu, om_variable, options):
