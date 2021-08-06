@@ -245,9 +245,6 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
     if any([x == 0.0 for x in [T, P, var1, var2]]):
         return None, None
 
-    label = 'T={} K, P={} atm, {}={}, {}={}'.format(T, P, headings[3].get(),
-                                                    var1, headings[4].get(), var2)
-
     # use cf.case_maker to create the target mixture
     flame_cond = flame_info[0]['Conditions']
     cond = {'Parameters': [[P, 1e10, 1], [T, 1e10, 1],
@@ -260,7 +257,7 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
         target_mix = cf.case_maker(cond)[0]
     except IndexError:  # Impossible Mixture
         print('Mixture is impossible with {}, {}, {}, {}'.format(T, P, var1, var2))
-        return None, label
+        return None, None
     for case in flame_info:
         cond = case['Conditions']
         mix = cond[5]
@@ -268,6 +265,13 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
             species = target_mix[2].keys()
             array_1 = np.array([target_mix[2][key] for key in species])
             array_2 = np.array([mix[key] for key in species])
+
+            Su = case['Flame'][1] * 100
+            if type(Su) is str:
+                Su = 0.0
+
+            label = 'T={} K, P={} atm, {}={}, {}={}, Su={:.1g} cm/s'.format(
+                T, P, headings[3].get(), var1, headings[4].get(), var2, Su)
             if np.allclose(array_1, array_2, rtol=3e-3):
                 return case, label
 
