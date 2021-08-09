@@ -270,8 +270,8 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
             if type(Su) is str:
                 Su = 0.0
 
-            label = 'T={} K, P={} atm, {}={}, {}={}, Su={:.1g} cm/s'.format(
-                T, P, headings[3].get(), var1, headings[4].get(), var2, Su)
+            label = series_label(T, P, headings[3].get(), var1,
+                                 headings[4].get(), var2, Su)
             if np.allclose(array_1, array_2, rtol=3e-3):
                 return case, label
 
@@ -279,6 +279,22 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
     print(target_mix)
     return None, None
 
+def series_label(T, P, h1, v1, h2, v2, Su):
+    headings_dict = {'phi': r'$\phi$', 'oxi/dil': 'ox/(ox+dil)',
+                     'fuel/dil': 'fuel/(fuel+dil)'}
+    try:
+        heading1 = headings_dict[h1]
+    except KeyError:
+        heading1 = h1
+
+    try:
+        heading2 = headings_dict[h2]
+    except KeyError:
+        heading2 = h2
+
+    label = r'T={} K, P={} atm, {}={}, {}={}, $S_u$={:.2g} cm/s'.format(
+                T, P, heading1, v1, heading2, v2, Su)
+    return label
 
 def _reset_option_menu(options_menu, om_variable, options):
         menu = options_menu["menu"]
