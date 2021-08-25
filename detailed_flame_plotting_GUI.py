@@ -205,6 +205,13 @@ def sens_plot(sens, labels, n=7):
         sens_plot.append(intermediate)
     sens_plot = np.array(sens_plot)
 
+    # Sort by average sensitivity of each reaction
+    sens_avgs = np.mean(abs(sens_plot), axis=1)
+    sorted_rxns = [x for _, x in sorted(zip(sens_avgs, reactions),
+                                        reverse=True)]
+    sorted_sens = np.array([x for _, x in sorted(zip(sens_avgs, sens_plot),
+                                                 reverse=True)])
+
     n = len(reactions)  # Adjust in case extra reactions were found
     fig, ax = plt.subplots()
     barheight = 1 / (len(labels) + 1)
@@ -213,14 +220,14 @@ def sens_plot(sens, labels, n=7):
 
     for i, label in enumerate(labels):
         ylocs = np.arange(n) + i * barheight
-        ax.barh(ylocs, sens_plot[:, i], height=barheight, label=label,
+        ax.barh(ylocs, sorted_sens[:, i], height=barheight, label=label,
                 align='center')
 
     for y in np.arange(n):
         ax.axhline(y - barheight, c='k', ls='--')
 
     ax.set_yticks(np.arange(n) + barheight * (len(labels) - 1) / 2)
-    ax.set_yticklabels(reactions, rotation=30, fontsize=15)
+    ax.set_yticklabels(sorted_rxns, rotation=30, fontsize=15)
     ax.set_yticks(np.arange(n), minor=True)
 #    ax.tick_params(axis='y', which='minor', bottom='off')
     ax.invert_yaxis()
