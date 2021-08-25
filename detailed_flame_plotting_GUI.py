@@ -270,6 +270,9 @@ def find_case(cell_data, row, headings, mix_type, chemfile, flame_info):
         mix = cond[5]
         if np.allclose(target_mix[:2], cond[1::-1]):
             species = target_mix[2].keys()
+            for key in species:
+                if key not in mix.keys():
+                    mix[key] = 0
             array_1 = np.array([target_mix[2][key] for key in species])
             array_2 = np.array([mix[key] for key in species])
 
