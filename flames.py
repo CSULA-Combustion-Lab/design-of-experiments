@@ -501,7 +501,7 @@ class Mixture(object):
     def __str__(self):
         "This is called if you print(mixture)"
         outstr = ''
-        for species, molefraction in self.comp:
+        for species, molefraction in self.comp.items():
             outstr += species + ':\t'+'{:5.3f}'.format(molefraction)+'\n'
         return outstr
 
